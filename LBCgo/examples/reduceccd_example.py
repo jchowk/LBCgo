@@ -7,6 +7,9 @@
 #                                RGB@IAA                                   #
 #                                                                          #
 #                       Last Change: 2017/02/27                            #
+#                                                                          #
+#                                                                          #
+# See https://github.com/rgbIAA/reduceccd                                  #
 ############################################################################
 
 from photutils import Background2D, SigmaClip, MedianBackground, MeanBackground
@@ -151,7 +154,8 @@ def ImageFileCollectionFilter(image_file_collection, ldfilter={}, dirname=None, 
 def getListFiles(list_files, dfilter=None, mask=None, key_find='find', invert_find=False):
     if isinstance(list_files, ImageFileCollection):
         if mask is None:
-            list_files = ImageFileCollectionFilter(list_files, dfilter, key_find=key_find, invert_find=invert_find)
+            list_files = ImageFileCollectionFilter(list_files, dfilter,
+                                                   key_find=key_find, invert_find=invert_find)
         else:
             list_files = [join_path(image, list_files.location) for image in list_files.summary['file'][mask]]
     return list_files
@@ -383,7 +387,8 @@ def ccdproc_images_filter(list_files, image_filter=None, master_flat=None, maste
                           gain=None, readnoise=None,
                           error=False, sky=True, dout=None, cosmic=False, mbox=15, rbox=15, gbox=11,
                           cleantype="medmask", cosmic_method='lacosmic',
-                          sigclip=5, key_filter='filter', dfilter={'imagetyp': 'LIGHT'}, mask=None, key_find='find',
+                          sigclip=5, key_filter='filter', dfilter={'imagetyp': 'LIGHT'},
+                          mask=None, key_find='find',
                           invert_find=False, **kwargs):
     if error and (gain is None or readnoise is None):
         print ('WARNING: You need to provide "gain" and "readnoise" to compute the error!')
@@ -421,7 +426,8 @@ def ccdproc_images_filter(list_files, image_filter=None, master_flat=None, maste
     return dccd
 
 
-def ccdproc_images(list_files, dmaster_flat, master_bias=None, fits_section=None, sky=True, verbose=True, **kwargs):
+def ccdproc_images(list_files, dmaster_flat, master_bias=None,
+                   fits_section=None, sky=True, verbose=True, **kwargs):
     dccd_images = {}
     for filt in dmaster_flat:
         if verbose:
@@ -657,10 +663,14 @@ def reduceNight(path, filters=None, fits_section=None, date=None, dout=None, cre
                 correct_images=True, gain=None, readnoise=None, sky=True, lower=1.0, upper=95., combine=True,
                 align=True,
                 objects=None, cosmic=True, mbox=15, rbox=15, gbox=11, cleantype="medmask", sky_after=True, dict_sky={},
-                dict_combine={}, method='median', mask_bias=None, dfilter_bias={'imagetyp': 'bias'}, lfits_bias=None,
-                invert_find_bias=False, dfilter_flat={'imagetyp': 'FLAT'}, mask_flat=None, cosmic_method='lacosmic',
-                invert_find_flat=False, dfilter_images={'imagetyp': 'LIGHT'}, mask_images=None, key_find='find',
-                key_filter='filter', find_obj=True, invert_find_images=False, find_filter=True, error=False,
+                dict_combine={}, method='median', mask_bias=None, dfilter_bias={'imagetyp': 'bias'},
+                lfits_bias=None,
+                invert_find_bias=False, dfilter_flat={'imagetyp': 'FLAT'}, mask_flat=None,
+                cosmic_method='lacosmic',
+                invert_find_flat=False, dfilter_images={'imagetyp': 'LIGHT'}, mask_images=None,
+                key_find='find',
+                key_filter='filter', find_obj=True, invert_find_images=False, find_filter=True,
+                error=False,
                 invert_find_align=False, suffix=None, dict_align_combine={}, verbose=True):
     if date is None:
         date = path.split('/')[-2] if path.endswith('/') else path.split('/')[-1]
@@ -717,7 +727,8 @@ def reduceNight(path, filters=None, fits_section=None, date=None, dout=None, cre
         if verbose:
             print ('>>> Creating BIAS: %s' % os.path.basename(master_bias))
         ccd_master_bias = create_master_bias(lfits_bias, master_bias, fits_section=fits_section, gain=gain,
-                                             method=method, dfilter=dfilter_bias, mask=mask_bias, key_find=key_find,
+                                             method=method, dfilter=dfilter_bias,
+                                             mask=mask_bias, key_find=key_find,
                                              invert_find=invert_find_bias)
     if not create_bias and master_bias is not None:
         ccd_master_bias = fits2CCDData(master_bias, single=True)
@@ -725,8 +736,10 @@ def reduceNight(path, filters=None, fits_section=None, date=None, dout=None, cre
     # -------- Create Master File for each filter ---------
     dccd_master_flat = None
     if create_flat:
-        dccd_master_flat = create_master_flat_from_dict(ic_all, dflat, bias=ccd_master_bias, fits_section=fits_section,
-                                                        gain=gain, method=method, dfilter=dfilter_flat, mask=mask_flat,
+        dccd_master_flat = create_master_flat_from_dict(ic_all, dflat, bias=ccd_master_bias,
+                                                        fits_section=fits_section,
+                                                        gain=gain, method=method, dfilter=dfilter_flat,
+                                                        mask=mask_flat,
                                                         key_find=key_find, invert_find=invert_find_flat,
                                                         verbose=verbose)
     else:
@@ -736,11 +749,14 @@ def reduceNight(path, filters=None, fits_section=None, date=None, dout=None, cre
 
     # ----------- Correct all science and standard stards images -------------
     if correct_images:
-        ccdproc_images(ic_all, dccd_master_flat, master_bias=ccd_master_bias, fits_section=fits_section, gain=gain,
+        ccdproc_images(ic_all, dccd_master_flat, master_bias=ccd_master_bias,
+                       fits_section=fits_section, gain=gain,
                        dout=dout, sky=sky_before,
-                       cosmic=cosmic, mbox=mbox, rbox=rbox, gbox=gbox, cleantype=cleantype, cosmic_method=cosmic_method,
+                       cosmic=cosmic, mbox=mbox, rbox=rbox, gbox=gbox, cleantype=cleantype,
+                       cosmic_method=cosmic_method,
                        key_filter=key_filter,
-                       dfilter=dfilter_images, mask=mask_images, key_find=key_find, invert_find=invert_find_images,
+                       dfilter=dfilter_images, mask=mask_images, key_find=key_find,
+                       invert_find=invert_find_images,
                        verbose=verbose,
                        readnoise=readnoise, error=error, **dict_sky)
 
@@ -749,7 +765,8 @@ def reduceNight(path, filters=None, fits_section=None, date=None, dout=None, cre
         align_file_collection = image_file_collection if dout is None else ImageFileCollection(dout, keywords=None)
         align_combine(align_file_collection, filters, objects, dout=dout, sky=sky_after, dict_sky=dict_sky,
                       dict_combine=dict_combine, key_find=key_find, invert_find=invert_find_align, suffix=suffix,
-                      dfilter=dfilter_images, find_obj=find_obj, find_filter=find_filter, align=align, verbose=verbose,
+                      dfilter=dfilter_images, find_obj=find_obj, find_filter=find_filter, align=align,
+                      verbose=verbose,
                       **dict_align_combine)
 
 # ----------------------------------------------------------------------
