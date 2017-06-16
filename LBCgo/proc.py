@@ -32,7 +32,7 @@ from collections import OrderedDict
 # TODO cosmic ray cleaning
 
 
-def do_overscan(image_collection,objects_only = True):
+def do_overscan(image_collection, objects_only=True, verbose=True):
     ##
     ## Fit, subtract overscan
     ##
@@ -71,6 +71,11 @@ def do_overscan(image_collection,objects_only = True):
             # Put the data back into the hdu:
             output_hdu[chip].data = ccd.data
             output_hdu[chip].header = ccd.header
+            # Remove unneeded header keywords. Makes this consistent
+            #   with IRAF treatment.
+            output_hdu[chip].header['trimsec'] = ''
+            output_hdu[chip].header['biassec'] = ''
+            output_hdu[chip].header['datasec'] = ''
 
         # Write the data
         # TODO Do we want to write these files or just keep them in memory to return to main?
@@ -78,10 +83,12 @@ def do_overscan(image_collection,objects_only = True):
         output_hdu.close()
 
         # Report:
-        print("Created {0}".format(output_filename))
+        if verbose == True:
+            print("Created {0}".format(output_filename))
 
 
-def do_flatfield(image_collection,flat_file=None,flat_directory='./'):
+def do_flatfield(image_collection,flat_file=None,
+                    flat_directory='./', verbose=True):
     """Apply flat fields to MEF data."""
 
     # Hardwire number of CCDs in LBC
@@ -105,7 +112,8 @@ def do_flatfield(image_collection,flat_file=None,flat_directory='./'):
         # For each filter, read the flat field just once, stack into a list.
         # We do this here, as it's faster than repeating this for every chip of every file.
         flatfield_chips = []
-        print('Reading flatfield {0}'.format(flat_filename))
+        if verbose == True:
+            print('Reading flatfield {0}'.format(flat_filename))
         for chip in np.arange(1, num_lbc_chips + 1):
              flatchip = CCDData.read(flat_filename, chip, unit=u.adu)
              flatfield_chips.append(flatchip)
@@ -131,7 +139,9 @@ def do_flatfield(image_collection,flat_file=None,flat_directory='./'):
             output_filename = output_filebase+'_flat.fits'
             # Write the output flat-fielded data
             master_hdu.writeto(output_filename,overwrite=True)
-            print('Flattened {0} to {1}.'.format(file,output_filename))
+
+            if verbose == True:
+                print('Flattened {0} to {1}.'.format(file,output_filename))
 
 def make_bias(image_collection):
     """Make a master bias image for a collection of images."""
