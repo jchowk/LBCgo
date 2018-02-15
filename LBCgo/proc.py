@@ -1,14 +1,15 @@
+import numpy as np
+from glob import glob
 
-# Holder: information useful for CR rejection
-# lacos_im = OrderedDict()
-# lacos_im['gain']=1.75
-# lacos_im['readn']=12.0
-# lacos_im['sigclip']=4.5
-# lacos_im['sigfrac']=0.3
-# lacos_im['objlim']=1.0
-# lacos_im['niter']=2
+import ccdproc
+from ccdproc import ImageFileCollection, CCDData
 
 # Import the utils code here. It has to be done outside of a function in py3.
+from .utils import *
+
+# from .utils import make_bias, make_bpm, make_flatfield
+# from .utils import do_overscan, do_bias, do_flatfield
+# from .utils import make_targetdirectories, extract_chips
 
 
 def proclbc(raw_directory='./raw/', image_directory='./',
@@ -23,19 +24,6 @@ def proclbc(raw_directory='./raw/', image_directory='./',
 
 
     """
-    import numpy as np
-    from glob import glob
-
-    from .utils import make_bias, make_bpm, make_flatfield
-    from .utils import do_overscan, do_bias, do_flatfield
-
-    import ccdproc
-    from ccdproc import ImageFileCollection, CCDData
-
-    from astropy.io import fits
-    import astropy.units as u
-    import astropy.constants as c
-
 
     # It will go something like this...
 
@@ -56,18 +44,17 @@ def proclbc(raw_directory='./raw/', image_directory='./',
 
     ##### Create an ImageFileCollection object to hold the raw data list.
     if np.int(ccdproc.__version__[0]) == 2:
-        ic0 = ImageFileCollection(image_directory, keywords=keywds,
+        ic0 = ImageFileCollection(raw_directory, keywords=keywds,
                                   glob_include=lbc_file_base)
     else:
-        ic0 = ImageFileCollection(image_directory, keywords=keywds,
+        ic0 = ImageFileCollection(raw_directory, keywords=keywds,
                                   filenames=raw_lbc_files)
 
     ######### Create the master bias frame (if requested)
-    # if bias_proc == True:
-    # TODO implement bias creation, testing
     if bias_proc == True:
         make_bias(ic0,
                   image_directory=image_directory,raw_directory=raw_directory)
+
 
     ###### Per filter:
     # Do this on a per filter basis. Right now I'm just laying
@@ -75,7 +62,7 @@ def proclbc(raw_directory='./raw/', image_directory='./',
 
     # The filters to go through are all those in the IC file unless otherwise specified.
     if filter_names == None:
-        filter_names = np.unique(ic0.summary['filter'])
+        filter_names = ic0.values('filter',unique=True)
 
     # Loop through each of the filters
     for filter in filter_names:
@@ -84,12 +71,13 @@ def proclbc(raw_directory='./raw/', image_directory='./',
             print('Processing {0} files.'.format(filter))
 
         # List of images in the current filter
+
         ic1 = ImageFileCollection(raw_directory,
                         keywords=keywds,
                         filenames=(ic0.files_filtered(filter=filter)).tolist())
 
         # Make master flat fields. Could be done for all filters at once, but keeping it here for now.
-        make_flatfield(ic1,verbose=verbose,
+        make_flatfield(ic1,verbose=verbose,simple_masks=True,
                        raw_directory=raw_directory,image_directory=image_directory)
 
         # Remove overscan, trim object files.
@@ -106,7 +94,8 @@ def proclbc(raw_directory='./raw/', image_directory='./',
                     keywords=keywds,filenames=overfiles)
 
         # Apply the flatfields
-        flatfiles = do_flatfield(ic2, image_directory=image_directory, verbose=verbose)
+        flatfiles = do_flatfield(ic2, return_files=True,
+                                 image_directory=image_directory, verbose=verbose)
 
         # Image collection of object frames overscanned & bias subtracted + flattened
         ic3 = ImageFileCollection(image_directory,
@@ -116,9 +105,8 @@ def proclbc(raw_directory='./raw/', image_directory='./',
         tgt_dirs, fltr_dirs = make_targetdirectories(ic3,
                                         image_directory = image_directory, verbose = verbose)
 
-        # TODO: Extract individual chips to object / filter directories
         # Extract individual chips
-        extract_chips(ic3, verbose = verbose)
+        extract_chips(fltr_dirs, verbose = verbose)
 
         # TODO: do_sextractor
         # TODO: do_scampswarp

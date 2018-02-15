@@ -5,9 +5,17 @@ from glob import glob
 
 import pdb
 
-from astropy.io import fits
 import astropy.units as u
 from astropy.modeling import models
+
+from astropy.io import fits
+
+# Suppress some of the WCS warnings
+import warnings
+from astropy.utils.exceptions import AstropyWarning,AstropyUserWarning
+warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
+warnings.filterwarnings('ignore', category=AstropyUserWarning, append=True)
+
 
 import ccdproc
 from ccdproc import  ImageFileCollection,CCDData
@@ -21,15 +29,19 @@ from ccdproc import  ImageFileCollection,CCDData
 # lacos_im['objlim']=1.0
 # lacos_im['niter']=2
 
-# TODO Create some common block variables for information? num_lbc_chips, gain, RN?
+
+
+# TODO FIXPIX!
+# TODO Cosmic ray cleaning
+
 # TODO Create option for cleaning intermediate steps (_over, _zero, _flat)
 # TODO Do gain correction, uncertainty system?
 # TODO More general MEF flat fielding?
 # TODO Logging system
 
-# TODO cosmic ray cleaning
 # TODO Saturation correction?
-# TODO image weights.
+# TODO image weights
+
 
 def do_overscan(image_collection, objects_only=True,
                 image_directory='./',raw_directory='./raw/',
@@ -58,29 +70,24 @@ def do_overscan(image_collection, objects_only=True,
         over_files = image_collection.files
     over_files_out=[]
 
-    # import IPython; IPython.embed()
 
     # Loop through the files
     for filename in over_files:
         # Create the output filename.
         output_filename = filename.split('.fits')[0]+'_over.fits'
-        print(output_filename)
 
-        # This will serve to hold all of the master flats before writing
-        output_hdu = fits.open(raw_directory+filename)
-
-        # TODO Fix the output headers so it maintains the relative WCS info of the chips.
-        #  ---> SEE EXTRACT_CHIPS code.
+        # Set up the output HDU list
         # Capture the 0th header
-        # base_header = fits.getheader(raw_directory+filename)
-        # master_hdu = fits.PrimaryHDU(header=base_header)
+        base_header = fits.getheader(raw_directory+filename)
+        master_hdu = fits.PrimaryHDU(header=base_header)
+        # Start output HDU list:
+        output_hdu = fits.HDUList([master_hdu])
 
         # Loop through the chips
         for chip in lbc_chips:
             # Create the CCDData version of this chip
             ccd = CCDData.read(raw_directory+filename, chip,
                                unit=u.adu)
-            ccd_filter = ccd.header['filter']
 
             # Fit, subtract overscan
             poly_model = models.Polynomial1D(4)
@@ -98,13 +105,11 @@ def do_overscan(image_collection, objects_only=True,
             del temp_header['biassec']
             del temp_header['datasec']
 
-            # Put the data back into the hdu:
-            output_hdu[chip].data = np.array(ccd.data,dtype=np.float32)
-            output_hdu[chip].header = temp_header
+            # Append the current chip into the hdu:
+            output_hdu.append(ccd.to_hdu()[0])
 
         # Write the data
-        output_hdu.writeto(image_directory+output_filename, overwrite=True)
-        output_hdu.close()
+        output_hdu.writeto(output_filename, overwrite=True)
 
         # Keep track of what files we've written.
         over_files_out.append(output_filename)
@@ -159,7 +164,14 @@ def make_bias(image_collection, bias_filename=None,
 
         # This will serve to hold all of the master flats before writing
         if filename == zero_files[0]:
-            master_hdu = fits.open(raw_directory+filename)
+            # master_hdu = fits.open(raw_directory+filename)
+
+            # Set up the output HDU list
+            # Capture the 0th header
+            base_header = fits.getheader(raw_directory + filename)
+            master_hdu = fits.PrimaryHDU(header=base_header)
+            # Start output HDU list:
+            output_hdu = fits.HDUList([master_hdu])
 
         # Loop through the chips
         for chip in lbc_chips:
@@ -168,7 +180,8 @@ def make_bias(image_collection, bias_filename=None,
 
             # Fit, subtract overscan
             poly_model = models.Polynomial1D(4)
-            ccd = ccdproc.subtract_overscan(ccd, dtype=np.float32,
+            ccd = ccdproc.subtract_overscan(ccd,
+                                            #dtype=np.float32,
                                         overscan_axis=1,
                                         model = poly_model,
                                         fits_section=ccd.header['BIASSEC'])
@@ -182,29 +195,32 @@ def make_bias(image_collection, bias_filename=None,
     # After looping files, chips:
     # Create master bias from subtracted images
     for chip in lbc_chips:
-        master_zero = ccdproc.combine(zero_list[chip-1], dtype=np.float32,
+        master_zero = ccdproc.combine(zero_list[chip-1],
+                                      #dtype=np.float32,
                                       method='median',sigma_clip=True,
                                       sigma_clip_high_thresh=3.,
                                       sigma_clip_low_thresh=3.)
-        master_hdu[chip].data = master_zero.data
+        # master_hdu[chip].data = master_zero.data
+        output_hdu.append(master_zero.to_hdu()[0])
 
         # Remove unneeded header keywords. Makes this consistent
         #   with IRAF treatment.
-        temp_header = master_zero.header
+        # import IPython; IPython.embed()
+        temp_header = output_hdu[chip].header
         del temp_header['trimsec']
         del temp_header['biassec']
         del temp_header['datasec']
 
         # Note how many files are combined
-        temp_header['ncombine'] = num_zero_images[chip-1]
+        temp_header['ncombine'] = num_zero_images
 
         # Fill chip-level master header
-        master_hdu[chip].header = temp_header
+        output_hdu[chip].header = temp_header
 
 
-    # Write the master flat
-    master_hdu.writeto(image_directory+zero_output_name, overwrite=True)
-    master_hdu.close()
+    # Write the master bias
+    output_hdu.writeto(image_directory+zero_output_name, overwrite=True)
+    output_hdu.close()
 
     # Report:
     if verbose:
@@ -261,16 +277,22 @@ def do_bias(image_collection, bias_file=None,
 
 
     for file in image_files:
-        master_hdu = fits.open(file)
+        # Set up the output HDU list
+        # Capture the 0th header
+        base_header = fits.getheader(file)
+        master_hdu = fits.PrimaryHDU(header=base_header)
+        # Start output HDU list:
+        output_hdu = fits.HDUList([master_hdu])
+
         # Loop through the chips
         for chip in lbc_chips:
             # Create the CCDData version of this chip
             image = CCDData.read(input_directory+file, chip, unit=u.adu)
             # Apply the flat
             image_zeroed = ccdproc.subtract_bias(image,zero_chips[chip-1])
-            # Put the flattened data and header into the master HDU
-            master_hdu[chip].data = np.array(image_zeroed.data,dtype=np.float32)
-            master_hdu[chip].header = image_zeroed.header
+
+            # Append the flattened data into output HDU:
+            output_hdu.append(image_zeroed.to_hdu()[0])
 
         # Create the output file name
         #   - Get rid of the overscan or zero labels and the .fits extension.
@@ -279,7 +301,7 @@ def do_bias(image_collection, bias_file=None,
         output_filename = output_filename.replace('.fits','_zero.fits')
 
         # Write the output flat-fielded data
-        master_hdu.writeto(image_directory+output_filename,overwrite=True)
+        output_hdu.writeto(image_directory + output_filename, overwrite=True)
         zero_corrected.append(output_filename)
 
         if verbose:
@@ -307,6 +329,7 @@ def make_flatfield(image_collection, filter_name=None, simple_masks=False,
 
     # TODO Update make_flatfield to allow for _zero suffix if we've done bias subtraction.
     # TODO Update to step through all the filters in a list.
+    # TODO Implement bias subtraction in flatfields.
 
     # Hardwire the number of CCDs in LBC
     lbc_chips = [1,2,3,4]
@@ -339,10 +362,15 @@ def make_flatfield(image_collection, filter_name=None, simple_masks=False,
     for filename in flt_files:
         # This will serve to hold all of the master flats before writing
         if filename == flt_files[0]:
-            master_hdu = fits.open(raw_directory+filename)
+            # Set up the output HDU list
+            # Capture the 0th header
+            base_header = fits.getheader(raw_directory+filename)
+            master_hdu = fits.PrimaryHDU(header=base_header)
 
-            # Set up the masks: tied to the flats since they are based on flats.
-            mask_hdu = fits.open(raw_directory+filename)
+            # Start output HDU list:
+            output_hdu = fits.HDUList([master_hdu])
+
+            mask_hdu = fits.HDUList([master_hdu])
             mask_list = [[] for i in range(num_lbc_chips)]
             num_mask_images = np.zeros(num_lbc_chips)
 
@@ -396,40 +424,27 @@ def make_flatfield(image_collection, filter_name=None, simple_masks=False,
 
         # TODO Weight the images to avoid adding too much noise. Prob weight by inverse sqrt.
         # Use ccdproc.combine to combine flat images
-        master_flat = ccdproc.combine(chip_list, dtype=np.float32,
+        master_flat = ccdproc.combine(chip_list,
+                                      # dtype=np.float32,
                                       scale=flat_scale,
                                       method='median',sigma_clip=True,
                                       sigma_clip_high_thresh=3.,
                                       sigma_clip_low_thresh=3.)
 
-        # pdb.set_trace()
-        from IPython import embed
-        # embed()
 
         # Remove unneeded header keywords. Makes this consistent
         #   with IRAF treatment.
-        temp_header = master_flat.header
-        del temp_header['trimsec']
-        del temp_header['biassec']
-        del temp_header['datasec']
-        del temp_header['bzero']    # This is sometimes different than our value
-        temp_header['bitpix'] = -32
+        del master_flat.header['trimsec']
+        del master_flat.header['biassec']
+        del master_flat.header['datasec']
+        del master_flat.header['bzero']    # This is sometimes different than our value
 
-        # Note how many files are combined
-        temp_header['ncombine'] = num_flat_images[chip-1]
-
-        # Fill chip-level master header
-        master_hdu[chip].header = temp_header
-
-        # Insert the combined image into the master HDU.
-        master_hdu[chip].data = master_flat.data
-
+        # Append the flat for this chip to the output HDU
+        output_hdu.append(master_flat.to_hdu()[0])
 
         # Create the ratio image
         #   **Don't calculate the masks unless directed to do so! too long...**
         ratio = mask_list[chip - 1][0].divide(mask_list[chip - 1][1])
-        # Same basic header for the masks
-        mask_hdu[chip].header = temp_header
 
         # Calculate mask for this chip.
         if not simple_masks:
@@ -439,27 +454,32 @@ def make_flatfield(image_collection, filter_name=None, simple_masks=False,
             # Calculate mask. This is _slow_ due to the median calculation.
             mask_out = ccdproc.ccdmask(ratio,findbadcolumns=True)
             # The *1 makes it an int array.
-            mask_out = mask_out * np.ones(1,dtype=np.float32)
-            mask_hdu[chip].data = mask_out
+            # mask_out.data = mask_out.data * np.ones(1,dtype=np.float32)
+            mask_out.data = mask_out.data * np.ones(1)
+            mask_hdu.append(mask_out.to_hdu()[0])
 
         if simple_masks:
             print('Creating simple pixel mask for {0} chip {1}'.format(
                 filter_name, chip))
             # If not calculating full mask, for now set everything to good (0).
-            mask_temp = ratio.data * np.zeros(1,dtype=np.float32)
-            mask_hdu[chip].data = mask_temp
+            mask_temp = ratio.copy()
+            mask_temp.data = mask_temp.data * np.zeros(1)
+            mask_hdu.append(mask_temp.to_hdu()[0])
+
+        # Same basic header for the masks
+        temp_header = output_hdu[0].header
+        mask_hdu[0].header = temp_header
+
 
     # TODO Include list of flatfield images combined in output header
     # Put the combined image number in the top header, as well.
-    master_hdu[0].header['ncombine'] = num_flat_images[0]
+    output_hdu[0].header['ncombine'] = num_flat_images[0]
 
     # Write the master flat
-    master_hdu.writeto(image_directory+flat_output_name, overwrite=True)
-    master_hdu.close()
+    output_hdu.writeto(image_directory+flat_output_name, overwrite=True)
 
     # Write the mask
     mask_hdu.writeto(image_directory+mask_output_name, overwrite=True)
-    mask_hdu.close()
 
     # Report:
     if verbose:
@@ -523,7 +543,13 @@ def do_flatfield(image_collection, flat_file=None, filter_names = None,
         image_files = image_collection.files_filtered(filter=filter)
 
         for file in image_files:
-            master_hdu = fits.open(file)
+            # Set up the output HDU list
+            # Capture the 0th header
+            base_header = fits.getheader(file)
+            master_hdu = fits.PrimaryHDU(header=base_header)
+            # Start output HDU list:
+            output_hdu = fits.HDUList([master_hdu])
+
             # Loop through the chips
             for chip in lbc_chips:
                 # Create the CCDData version of this chip
@@ -534,10 +560,9 @@ def do_flatfield(image_collection, flat_file=None, filter_names = None,
                             flatfield_chips[chip-1],
                             min_value=0.1,
                             norm_value=np.median(flatfield_chips[chip-1]))
-                # Put the flattened data and header into the master HDU
-                master_hdu[chip].data = np.array(image_normed.data,
-                                            dtype=np.float32)
-                master_hdu[chip].header = image_normed.header
+
+                # Append the flattened data into output HDU:
+                output_hdu.append(image_normed.to_hdu()[0])
 
             # Create the output file name
             #   - Get rid of the overscan or zero labels and the .fits extension.
@@ -546,7 +571,9 @@ def do_flatfield(image_collection, flat_file=None, filter_names = None,
             output_filename = output_filename.replace('.fits','_flat.fits')
 
             # Write the output flat-fielded data
-            master_hdu.writeto(image_directory+output_filename,overwrite=True)
+            output_hdu.writeto(image_directory+output_filename,overwrite=True)
+
+            # Append the flattened image to our final list.
             flattened_files.append(output_filename)
 
             if verbose:
@@ -686,14 +713,21 @@ def extract_chips(filter_directories, object_names=None,
         for fl in fls:
             input_filenames.append(fl)
 
-    import IPython; IPython.embed()
-
     chip_files = []
     # Loop through the files
     for filename in input_filenames:
+        # Fill the 0th header with the right info
+        base_header = fits.getheader(filename)
+        master_hdu = fits.PrimaryHDU(header=base_header)
+
+        # We will only house one extension in these files:
+        master_hdu.header['NEXTEND'] = 1
+
+        # Create the output HDU list:
+        output_hdu = fits.HDUList([master_hdu])
+
         # Loop through the chips
         for chip in lbc_chips:
-            print('\n{0}\n'.format(chip))
             # Create the output filename.
             filesuffix = '_{0}.fits'.format(chip)
             output_filename = filename.split('_flat.fits')[0] + filesuffix
@@ -712,8 +746,6 @@ def extract_chips(filter_directories, object_names=None,
             ccd = CCDData.read(filename, chip,
                                unit=u.adu)
             # Create the new HDU
-            master_hdu = fits.PrimaryHDU()
-            output_hdu = fits.HDUList([master_hdu])
             output_hdu.append(ccd.to_hdu()[0])
 
             # Write the data
