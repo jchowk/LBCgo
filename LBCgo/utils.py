@@ -1,6 +1,7 @@
 import numpy as np
 import os
 from subprocess import call
+from glob import glob
 
 import pdb
 
@@ -583,8 +584,8 @@ def clean_cosmic(ccd, mbox=15, rbox=15, gbox=11, sigclip=5,
     return ccd
 
 
-def mk_targetdirectories(image_collection, image_directory='./',
-                         object_names=None, verbose=True):
+def make_targetdirectories(image_collection, image_directory='./',
+                           object_names=None, verbose=True):
     """ Make directories to store data from individual targets and move the data for those targets into the directories.
 
     :param image_collection:
@@ -662,8 +663,12 @@ def mk_targetdirectories(image_collection, image_directory='./',
     return object_directories, filter_directories
 
 
-def extract_chips(filter_directories, image_directory='./',
-                         object_names=None, verbose=True):
+def extract_chips(filter_directories, object_names=None,
+                  verbose=True, return_files = False):
+
+    # If user enters just a single directory:
+    if np.size(filter_directories) == 1 & ~isinstance(filter_directories,list):
+        filter_directories = [filter_directories]
 
     # Hardwire the num. of LBC chips
     lbc_chips = [1,2,3,4]
@@ -674,23 +679,24 @@ def extract_chips(filter_directories, image_directory='./',
     # ImageFileCollection keywords
     keywds = ['object', 'filter', 'exptime', 'objra', 'objdec']
 
-    # Create an image file collection of files to split apart.
+    # Create a list of files to split apart.
     input_filenames = []
     for fltdr in filter_directories:
-        fls = glob(dr + '*fits')
+        fls = glob(fltdr + '*_flat.fits')
         for fl in fls:
             input_filenames.append(fl)
-    ic = ImageFileCollection(image_directory, keywords=keywds,
-                              filenames=fl1)
+
+    import IPython; IPython.embed()
 
     chip_files = []
     # Loop through the files
     for filename in input_filenames:
         # Loop through the chips
         for chip in lbc_chips:
+            print('\n{0}\n'.format(chip))
             # Create the output filename.
-            output_filename = filename.split('_flat.fits')[0] + '_over.fits'
-            print(output_filename)
+            filesuffix = '_{0}.fits'.format(chip)
+            output_filename = filename.split('_flat.fits')[0] + filesuffix
 
             # This will serve to hold all of the master flats before writing
             # Fill the 0th header with the right info

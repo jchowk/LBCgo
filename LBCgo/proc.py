@@ -113,12 +113,12 @@ def proclbc(raw_directory='./raw/', image_directory='./',
                     keywords=keywds,filenames=flatfiles)
 
         # Create directories for extracting individual chips.
-        tgt_dirs, fltr_dirs = mk_targetdirectories(ic3,
+        tgt_dirs, fltr_dirs = make_targetdirectories(ic3,
                                         image_directory = image_directory, verbose = verbose)
 
         # TODO: Extract individual chips to object / filter directories
         # Extract individual chips
-        extract_chips(ic3, image_directory = image_directory, verbose = verbose)
+        extract_chips(ic3, verbose = verbose)
 
         # TODO: do_sextractor
         # TODO: do_scampswarp
