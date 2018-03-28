@@ -5,11 +5,9 @@ import ccdproc
 from ccdproc import ImageFileCollection, CCDData
 
 # Import the utils code here. It has to be done outside of a function in py3.
-from .utils import *
-
-# from .utils import make_bias, make_bpm, make_flatfield
-# from .utils import do_overscan, do_bias, do_flatfield
-# from .utils import make_targetdirectories, extract_chips
+from .utils import make_bias, make_bpm, make_flatfield
+from .utils import do_overscan, do_bias, do_flatfield
+from .utils import make_targetdirectories, extract_chips
 
 
 def proclbc(raw_directory='./raw/', image_directory='./',
@@ -33,12 +31,13 @@ def proclbc(raw_directory='./raw/', image_directory='./',
     if image_directory[-1] != '/':
         image_directory += '/'
 
+    # TODO: Loop B/R to avoid issues w/V-band from LBCB/LBCR?
     ########## Collect basic image information
     # Find the raw files we'll use
     lbc_file_base = 'lbc?.????????.??????.fits'
     raw_lbc_files = glob(raw_directory+lbc_file_base)
 
-    # What information do we want from them?
+    # What information do we want from the headers?
     keywds = ['object', 'filter', 'exptime', 'imagetyp', 'propid', 'lbcobnam',
               'airmass', 'HA', 'objra', 'objdec']
 
@@ -53,7 +52,8 @@ def proclbc(raw_directory='./raw/', image_directory='./',
     ######### Create the master bias frame (if requested)
     if bias_proc == True:
         make_bias(ic0,
-                  image_directory=image_directory,raw_directory=raw_directory)
+                  image_directory=image_directory,
+                  raw_directory=raw_directory)
 
 
     ###### Per filter:
@@ -62,7 +62,10 @@ def proclbc(raw_directory='./raw/', image_directory='./',
 
     # The filters to go through are all those in the IC file unless otherwise specified.
     if filter_names == None:
-        filter_names = ic0.values('filter',unique=True)
+        icX = ImageFileCollection(raw_directory,
+                        keywords=keywds,
+                        filenames=(ic0.files_filtered(imagetyp='object')).tolist())
+        filter_names = icX.values('filter',unique=True)
 
     # Loop through each of the filters
     for filter in filter_names:
@@ -71,7 +74,6 @@ def proclbc(raw_directory='./raw/', image_directory='./',
             print('Processing {0} files.'.format(filter))
 
         # List of images in the current filter
-
         ic1 = ImageFileCollection(raw_directory,
                         keywords=keywds,
                         filenames=(ic0.files_filtered(filter=filter)).tolist())
@@ -103,7 +105,8 @@ def proclbc(raw_directory='./raw/', image_directory='./',
 
         # Create directories for extracting individual chips.
         tgt_dirs, fltr_dirs = make_targetdirectories(ic3,
-                                        image_directory = image_directory, verbose = verbose)
+                         image_directory = image_directory,
+                         verbose = verbose)
 
         # Extract individual chips
         extract_chips(fltr_dirs, verbose = verbose)

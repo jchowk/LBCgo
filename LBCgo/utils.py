@@ -16,7 +16,6 @@ from astropy.utils.exceptions import AstropyWarning,AstropyUserWarning
 warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
 warnings.filterwarnings('ignore', category=AstropyUserWarning, append=True)
 
-
 import ccdproc
 from ccdproc import  ImageFileCollection,CCDData
 
@@ -692,7 +691,15 @@ def make_targetdirectories(image_collection, image_directory='./',
 
 def extract_chips(filter_directories, object_names=None,
                   verbose=True, return_files = False):
+    """Extract individual chips from flat-fielded data in preparation for
+    combination using sextractor/scamp/swarp.
 
+    :param filter_directories:
+    :param object_names:
+    :param verbose:
+    :param return_files:
+    :return:
+    """
     # If user enters just a single directory:
     if np.size(filter_directories) == 1 & ~isinstance(filter_directories,list):
         filter_directories = [filter_directories]
@@ -723,11 +730,11 @@ def extract_chips(filter_directories, object_names=None,
         # We will only house one extension in these files:
         master_hdu.header['NEXTEND'] = 1
 
-        # Create the output HDU list:
-        output_hdu = fits.HDUList([master_hdu])
-
         # Loop through the chips
         for chip in lbc_chips:
+            # Create the output HDU list:
+            output_hdu = fits.HDUList([master_hdu])
+
             # Create the output filename.
             filesuffix = '_{0}.fits'.format(chip)
             output_filename = filename.split('_flat.fits')[0] + filesuffix
@@ -761,4 +768,3 @@ def extract_chips(filter_directories, object_names=None,
     # Return the corrected filenames if requested (True is default).
     if return_files == True:
         return chip_files
-

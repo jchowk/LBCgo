@@ -1,0 +1,257 @@
+import os
+import numpy as np
+from subprocess import Popen, DEVNULL
+import shlex
+from glob import glob
+from astropy.io import fits
+
+import pdb
+
+def do_sextractor(inputfile,
+                configfile=None,
+                paramfile = None,
+                convfile = 'default.conv',
+                nnwfile = 'default.nnw',
+                verbose=True):
+    """
+    """
+    # path = os.path.abspath(amodule.__file__)
+
+    if configfile == None:
+        configfile = 'sextractor.conf'
+
+    # TODO: Use default if output.param file doesnt exist
+    if paramfile == None:
+        paramfile = 'sextractor.output.param'
+        file_exists = os.path.exists(paramfile)
+        if not file_exists:
+            print("Warning: SEXTRACTOR paramater file {0} "
+                  "does not exist".format(paramfile))
+            return None
+
+    # Test for convolution file
+    file_exists = os.path.exists(convfile)
+    if not file_exists:
+        print("Warning: SEXTRACTOR convolution file {0} "
+              "does not exist".format(convfile))
+        return None
+
+    # Test for NNW file
+    file_exists = os.path.exists(nnwfile)
+    if not file_exists:
+        print("Warning: SEXTRACTOR convolution file {0} "
+              "does not exist".format(nnwfile))
+        return None
+
+
+    # import IPython; IPython.embed()
+
+    # Which chips to process
+    lbc_chips = [1,2,3,4]
+    num_lbc_chips = np.size(lbc_chips)
+
+    # Base filename:
+    filebase = inputfile.replace('.fits','')
+
+    # Source extractor catalog suffix
+    outputsuffix = '.cat'
+    outputcatalog = filebase+outputsuffix
+
+
+    cmd_flags = ' -c '+ configfile + \
+        ' -CATALOG_NAME '+outputcatalog + \
+        ' -CATALOG_TYPE FITS_LDAC'+ \
+        ' -DETECT_THRESH 2.0 -ANALYSIS_THRESH 3.0'+ \
+        ' -PARAMETERS_NAME '+paramfile
+
+    cmd = 'sex '+inputfile+cmd_flags
+    # print(cmd)
+
+    try:
+        if verbose:
+            sextract = Popen(shlex.split(cmd),
+                             close_fds=True)
+        else:
+            sextract = Popen(shlex.split(cmd),
+                             stdout=DEVNULL,
+                             stderr=DEVNULL,
+                             close_fds=True)
+    except Exception as e:
+        print('Whoops: source Extractor call:', (e))
+        return None
+
+    sextract.wait()
+
+
+def do_scamp(inputfile,
+                configfile=None,astroref_catalog='GAIA-DR1',
+                verbose=True):
+
+    """ Run Astromatic.net code SCAMP to calculate astrometric
+     solution on an image.
+    """
+
+    # Fix the number of SCAMP iterations:
+    num_scamp_iterations = 3
+
+    # Make sure the input file is a SEXTRACTOR catalog:
+    inputfile = inputfile.replace('.fits','.cat')
+
+    # Make sure we have a configuration file:
+    if configfile == None:
+        # TODO: replace this with default config file for LBCgo.
+        configfile = 'scamp.conf'
+
+    for iter in np.arange(num_scamp_iterations):
+        if iter == 0:
+            degree = '3'
+            mosaic_type = 'LOOSE'
+            pixscale_maxerr = '1.2'
+            position_maxerr = '2.0'
+            posangle_maxerr = '3.0'
+            crossid_radius = '10.0'
+            aheader_suffix = '.ahead'
+        elif iter == 1:
+           degree = '3'
+           mosaic_type = 'FIX_FOCALPLANE'
+           pixscale_maxerr = '1.1'
+           position_maxerr = '1.0'
+           posangle_maxerr = '1.0'
+           crossid_radius = '5.0'
+           aheader_suffix = '.head'
+        else:
+           degree = '3'
+           mosaic_type = 'FIX_FOCALPLANE'
+           pixscale_maxerr = '1.05'
+           position_maxerr = '0.5'
+           posangle_maxerr = '1.0'
+           crossid_radius = '2.5'
+           aheader_suffix = '.head'
+
+        cmd_flags = ' -c '+ configfile + \
+            ' -PIXSCALE_MAXERR '+pixscale_maxerr+ \
+            ' -POSANGLE_MAXERR '+posangle_maxerr+ \
+            ' -POSITION_MAXERR '+position_maxerr+ \
+            ' -MOSAIC_TYPE '+mosaic_type+ \
+            ' -DISTORT_DEGREES '+degree+ \
+            ' -ASTREF_CATALOG '+astroref_catalog+ \
+            ' -ASTREF_BAND DEFAULT '+\
+            ' -AHEADER_SUFFIX '+aheader_suffix+ \
+            ' -CROSSID_RADIUS '+crossid_radius+\
+            ' -STABILITY_TYPE EXPOSURE'+  \
+            ' -ASTRINSTRU_KEY FILTER'
+
+        # Create the final command:
+        cmd = 'scamp '+inputfile+cmd_flags
+        # print(cmd)
+
+        try:
+            if verbose:
+                scamp = Popen(shlex.split(cmd),
+                                   close_fds=True)
+            else:
+                scamp = Popen(shlex.split(cmd),
+                                   stdout=DEVNULL,
+                                   stderr=DEVNULL,
+                                   close_fds=True)
+        except Exception as e:
+            print('Whoops: source Extractor call:', (e))
+            return None
+
+        scamp.wait()
+
+def do_swarp(inputfiles, output_filename = None, configfile=None,
+                verbose=True):
+    """Do SWARP"""
+
+    # Make sure we have a configuration file:
+    if configfile == None:
+        # TODO: replace this with default config file for LBCgo.
+        configfile = 'swamp.conf'
+
+
+    # Set up the output filename:
+    # TODO: Check that these are all in the same filter!
+    # keywds = ['object', 'filter', 'exptime', 'objra', 'objdec']
+    # ImageFileCollection(dirname, keywords=keywds,
+    #                     filenames=
+    #                     output_filename =
+
+    # For now grab the information from the first header:
+    if output_filename == None:
+        imhead = fits.getheader(inputfiles[0])
+        # Shorten the filter names used:
+        filter_text = imhead['FILTER']
+        filter_text = filter_text.replace('-SLOAN','')
+        filter_text = filter_text.replace('-BESSEL','')
+        filter_text = filter_text.replace('SDT_Uspec','Uspec')
+        # Create final output filename
+        output_filename = imhead['object']+'.'+filter_text+'.mos.fits'
+
+    # Create the list of input files:
+    inputfile_text = ''
+    for fl in inputfiles: inputfile_text = inputfile_text+' '+fl
+
+    cmd_flags = ' -c '+configfile+ \
+        ' -IMAGEOUT_NAME '+ output_filename + \
+        ' -HEADER_ONLY N ' + \
+        ' -WEIGHT_TYPE NONE '+ \
+        ' -HEADER_SUFFIX ".head"'+ \
+        ' -FSCALE_KEYWORD NONE -FSCALE_DEFAULT 1.0 '+\
+        ' -CELESTIAL_TYPE EQUATORIAL -CENTER_TYPE ALL '+\
+        ' -COMBINE_BUFSIZE 4096 ' +\
+        ' -COPY_KEYWORDS '+\
+        ' OBJECT,FILTER,SATURATE,RDNOISE,GAIN,EXPTIME,AIRMASS,TIME-OBS'
+
+    # Create the final command:
+    cmd = 'swarp ' + inputfile_text + cmd_flags
+    print(cmd)
+
+    try:
+        if verbose:
+            swarp = Popen(shlex.split(cmd),
+                          close_fds=True)
+        else:
+            swarp = Popen(shlex.split(cmd),
+                          stdout=DEVNULL,
+                          stderr=DEVNULL,
+                          close_fds=True)
+    except Exception as e:
+        print('Whoops: source Extractor call:', (e))
+        return None
+
+    swarp.wait()
+
+
+def do_register(filter_directories,
+                lbc_chips = [1,2,3,4],
+                run_sextractor=True,
+                run_scamp=True,
+                run_swarp=True):
+
+    # If user enters just a single directory:
+    if np.size(filter_directories) == 1 & ~isinstance(filter_directories,list):
+        filter_directories = [filter_directories]
+
+
+    # Loop through each of the filter directories:
+    for fltdr in filter_directories:
+        input_filenames = []
+
+        # Only include the chips we want in the final image:
+        for chp in lbc_chips:
+            fls = glob(fltdr + '*_'+str(chp)+'.fits')
+            for fl in fls:
+                input_filenames.append(fl)
+
+        # Loop through the files
+        # do_sextractor = find sources
+        # do_scamp = calculate astrometry
+        for filename in input_filenames:
+            # Find sources for alignment
+            if run_sextractor: do_sextractor(filename)
+            # Calculate the astrometry
+            if run_scamp: do_scamp(filename)
+
+        # Stitch together the images
+        if run_swarp: do_swarp(input_filenames)
