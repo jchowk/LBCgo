@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import shlex
 from subprocess import call
 from glob import glob
 
@@ -40,6 +41,7 @@ from ccdproc import  ImageFileCollection,CCDData
 
 # TODO Saturation correction?
 # TODO image weights
+# TODO clean up
 
 
 def do_overscan(image_collection, objects_only=True,
@@ -54,8 +56,6 @@ def do_overscan(image_collection, objects_only=True,
     ##   image_directory  -- Where to store the output images.
     ##   raw_directory    -- Where to find the raw data
     ##   return_files     -- Return a list of subtracted files (default: True)
-
-
 
     # Hardwire the num. of LBC chips
     lbc_chips = [1,2,3,4]
@@ -180,13 +180,13 @@ def make_bias(image_collection, bias_filename=None,
             # Fit, subtract overscan
             poly_model = models.Polynomial1D(4)
             ccd = ccdproc.subtract_overscan(ccd,
-                                            #dtype=np.float32,
                                         overscan_axis=1,
                                         model = poly_model,
                                         fits_section=ccd.header['BIASSEC'])
 
             # Trim the image
-            ccd = ccdproc.trim_image(ccd, fits_section=ccd.header['TRIMSEC'])
+            ccd = ccdproc.trim_image(ccd,
+                                     fits_section=ccd.header['TRIMSEC'])
 
             # Add the current image to the list
             zero_list[chip-1].append(ccd)
@@ -489,7 +489,8 @@ def make_flatfield(image_collection, filter_name=None, simple_masks=False,
 
 
 def do_flatfield(image_collection, flat_file=None, filter_names = None,
-                 image_directory='./',input_directory = './',flat_directory='./',
+                 image_directory='./',input_directory = './',
+                 flat_directory='./',
                  verbose=True, return_files=False):
     """Apply flat fields to MEF data."""
     ##
@@ -504,6 +505,10 @@ def do_flatfield(image_collection, flat_file=None, filter_names = None,
     ##   flat_directory   -- Where to find the flat fields (default ./)
     ##   return_files     -- Return a list of files that were flattened (default False)
 
+    # The pre-flatfield images will be put in a data/ directory:
+    datadir = 'data/'
+    if ~os.path.exists(datadir):
+        os.makedirs(datadir)
 
     # Hardwire number of CCDs in LBC
     lbc_chips = [1,2,3,4]
@@ -574,6 +579,12 @@ def do_flatfield(image_collection, flat_file=None, filter_names = None,
 
             # Append the flattened image to our final list.
             flattened_files.append(output_filename)
+
+            # Move pre-flatfield file to data directory
+            cmd = 'mv '+file+' '+datadir
+            mvover = Popen(shlex.split(cmd),
+                  close_fds=True)
+            mvover.wait()
 
             if verbose:
                 print('Flattened {0} to {1}.'.format(file,output_filename))
@@ -689,13 +700,12 @@ def make_targetdirectories(image_collection, image_directory='./',
     return object_directories, filter_directories
 
 
-def extract_chips(filter_directories, object_names=None,
+def extract_chips(filter_directories,
                   verbose=True, return_files = False):
     """Extract individual chips from flat-fielded data in preparation for
     combination using sextractor/scamp/swarp.
 
     :param filter_directories:
-    :param object_names:
     :param verbose:
     :param return_files:
     :return:
@@ -704,11 +714,14 @@ def extract_chips(filter_directories, object_names=None,
     if np.size(filter_directories) == 1 & ~isinstance(filter_directories,list):
         filter_directories = [filter_directories]
 
+    # The pre-chip-extraction images will be put in a data/ directory:
+    datadir = 'data/'
+    if ~os.path.exists(datadir):
+        os.makedirs(datadir)
+
     # Hardwire the num. of LBC chips
     lbc_chips = [1,2,3,4]
     num_lbc_chips = np.size(lbc_chips)
-
-    # TODO: Filter the full list by specific objects?
 
     # ImageFileCollection keywords
     keywds = ['object', 'filter', 'exptime', 'objra', 'objdec']
@@ -764,6 +777,12 @@ def extract_chips(filter_directories, object_names=None,
             # Report:
             if verbose:
                 print("Created {0}".format(output_filename))
+
+        # Move pre-flatfield file to data directory
+        cmd = 'mv '+filename+' '+datadir
+        mvflt = Popen(shlex.split(cmd),
+              close_fds=True)
+        mvflt.wait()
 
     # Return the corrected filenames if requested (True is default).
     if return_files == True:

@@ -182,9 +182,7 @@ def do_swarp(inputfiles, output_filename = None, configfile=None,
         imhead = fits.getheader(inputfiles[0])
         # Shorten the filter names used:
         filter_text = imhead['FILTER']
-        filter_text = filter_text.replace('-SLOAN','')
-        filter_text = filter_text.replace('-BESSEL','')
-        filter_text = filter_text.replace('SDT_Uspec','Uspec')
+        filter_text = filter_text.replace('-SLOAN','').replace('-BESSEL','').replace('SDT_Uspec','Uspec')
         # Create final output filename
         output_filename = imhead['object']+'.'+filter_text+'.mos.fits'
 
