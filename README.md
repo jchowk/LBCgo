@@ -4,7 +4,11 @@ README GOES HERE...
 
 ## Dependencies:
 
-The codes Scamp, Swarp and Sextractor (provided by Emmanuel Bertin and collaborators; http://astromatic.iap.fr).  
+* `astropy`
+* `CCDProc`
+* ``
+
+The external C++ codes `Scamp`, `Swarp`, and `Sextractor` (provided by Emmanuel Bertin and collaborators; http://astromatic.iap.fr).
 
 ## Credit:
 
