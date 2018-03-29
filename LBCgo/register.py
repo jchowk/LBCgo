@@ -18,11 +18,11 @@ def do_sextractor(inputfile,
     # path = os.path.abspath(amodule.__file__)
 
     if configfile == None:
-        configfile = 'sextractor.conf'
+        configfile = 'sextractor.lbc.conf'
 
     # TODO: Use default if output.param file doesnt exist
     if paramfile == None:
-        paramfile = 'sextractor.output.param'
+        paramfile = 'sextractor.lbcoutput.param'
         file_exists = os.path.exists(paramfile)
         if not file_exists:
             print("Warning: SEXTRACTOR paramater file {0} "
@@ -42,9 +42,6 @@ def do_sextractor(inputfile,
         print("Warning: SEXTRACTOR convolution file {0} "
               "does not exist".format(nnwfile))
         return None
-
-
-    # import IPython; IPython.embed()
 
     # Which chips to process
     lbc_chips = [1,2,3,4]
@@ -100,7 +97,7 @@ def do_scamp(inputfile,
     # Make sure we have a configuration file:
     if configfile == None:
         # TODO: replace this with default config file for LBCgo.
-        configfile = 'scamp.conf'
+        configfile = 'scamp.lbc.conf'
 
     for iter in np.arange(num_scamp_iterations):
         if iter == 0:
@@ -167,7 +164,7 @@ def do_swarp(inputfiles, output_filename = None, configfile=None,
     # Make sure we have a configuration file:
     if configfile == None:
         # TODO: replace this with default config file for LBCgo.
-        configfile = 'swamp.conf'
+        configfile = 'swarp.lbc.conf'
 
 
     # Set up the output filename:
@@ -226,6 +223,8 @@ def do_register(filter_directories,
                 run_sextractor=True,
                 run_scamp=True,
                 run_swarp=True):
+
+    # TODO: Add the sextractor, scamp, swarp parameters for input.
 
     # If user enters just a single directory:
     if np.size(filter_directories) == 1 & ~isinstance(filter_directories,list):

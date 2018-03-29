@@ -1,1 +1,1 @@
-from .LBCgo import *
+from . import proc, register, utils

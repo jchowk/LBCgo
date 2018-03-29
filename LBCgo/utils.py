@@ -1,7 +1,7 @@
 import numpy as np
 import os
 import shlex
-from subprocess import call
+from subprocess import call, Popen
 from glob import glob
 
 import pdb
@@ -28,8 +28,6 @@ from ccdproc import  ImageFileCollection,CCDData
 # lacos_im['sigfrac']=0.3
 # lacos_im['objlim']=1.0
 # lacos_im['niter']=2
-
-
 
 # TODO FIXPIX!
 # TODO Cosmic ray cleaning
@@ -69,7 +67,6 @@ def do_overscan(image_collection, objects_only=True,
         over_files = image_collection.files
     over_files_out=[]
 
-
     # Loop through the files
     for filename in over_files:
         # Create the output filename.
@@ -96,6 +93,9 @@ def do_overscan(image_collection, objects_only=True,
                                         fits_section=ccd.header['BIASSEC'])
             # Trim the image
             ccd = ccdproc.trim_image(ccd, fits_section=ccd.header['TRIMSEC'])
+
+            # Convert to 32 bit
+            ccd.data=ccd.data.astype('float32')
 
             # Remove unneeded header keywords. Makes this consistent
             #   with IRAF treatment.
@@ -188,6 +188,9 @@ def make_bias(image_collection, bias_filename=None,
             ccd = ccdproc.trim_image(ccd,
                                      fits_section=ccd.header['TRIMSEC'])
 
+            # Convert to 32 bit
+            ccd.data=ccd.data.astype('float32')
+
             # Add the current image to the list
             zero_list[chip-1].append(ccd)
 
@@ -199,7 +202,9 @@ def make_bias(image_collection, bias_filename=None,
                                       method='median',sigma_clip=True,
                                       sigma_clip_high_thresh=3.,
                                       sigma_clip_low_thresh=3.)
-        # master_hdu[chip].data = master_zero.data
+        # Convert to 32 bit
+        master_zero.data=master_zero.data.astype('float32')
+        # Add to output
         output_hdu.append(master_zero.to_hdu()[0])
 
         # Remove unneeded header keywords. Makes this consistent
@@ -290,14 +295,16 @@ def do_bias(image_collection, bias_file=None,
             # Apply the flat
             image_zeroed = ccdproc.subtract_bias(image,zero_chips[chip-1])
 
-            # Append the flattened data into output HDU:
+            # Convert to 32 bit
+            image_zeroed.data=image_zeroed.data.astype('float32')
+
+            # Append the bias'd data into output HDU:
             output_hdu.append(image_zeroed.to_hdu()[0])
 
         # Create the output file name
         #   - Get rid of the overscan or zero labels and the .fits extension.
         #   - Add the _flat tag.
-        output_filename = file.replace('_over','')
-        output_filename = output_filename.replace('.fits','_zero.fits')
+        output_filename = file.replace('_over','').replace('.fits','_zero.fits')
 
         # Write the output flat-fielded data
         output_hdu.writeto(image_directory + output_filename, overwrite=True)
@@ -389,6 +396,9 @@ def make_flatfield(image_collection, filter_name=None, simple_masks=False,
             # Trim the image
             ccd = ccdproc.trim_image(ccd, fits_section=ccd.header['TRIMSEC'])
 
+            # Convert to 32 bit
+            ccd.data=ccd.data.astype('float32')
+
             # Check for saturation, matching filters.
             # **Individual chip headers only include 8 letter filter names**
             if (np.average(ccd.data) <= 62000.) and \
@@ -424,12 +434,13 @@ def make_flatfield(image_collection, filter_name=None, simple_masks=False,
         # TODO Weight the images to avoid adding too much noise. Prob weight by inverse sqrt.
         # Use ccdproc.combine to combine flat images
         master_flat = ccdproc.combine(chip_list,
-                                      # dtype=np.float32,
                                       scale=flat_scale,
                                       method='median',sigma_clip=True,
                                       sigma_clip_high_thresh=3.,
                                       sigma_clip_low_thresh=3.)
 
+        # Convert to 32 bit
+        master_flat.data=master_flat.data.astype('float32')
 
         # Remove unneeded header keywords. Makes this consistent
         #   with IRAF treatment.
@@ -505,9 +516,14 @@ def do_flatfield(image_collection, flat_file=None, filter_names = None,
     ##   flat_directory   -- Where to find the flat fields (default ./)
     ##   return_files     -- Return a list of files that were flattened (default False)
 
+    import warnings
+    from astropy.utils.exceptions import AstropyWarning,AstropyUserWarning
+    warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
+    warnings.filterwarnings('ignore', category=AstropyUserWarning, append=True)
+
     # The pre-flatfield images will be put in a data/ directory:
     datadir = 'data/'
-    if ~os.path.exists(datadir):
+    if not os.path.exists(datadir):
         os.makedirs(datadir)
 
     # Hardwire number of CCDs in LBC
@@ -564,6 +580,9 @@ def do_flatfield(image_collection, flat_file=None, filter_names = None,
                             flatfield_chips[chip-1],
                             min_value=0.1,
                             norm_value=np.median(flatfield_chips[chip-1]))
+
+                # Convert to 32 bit
+                image_normed.data=image_normed.data.astype('float32')
 
                 # Append the flattened data into output HDU:
                 output_hdu.append(image_normed.to_hdu()[0])
@@ -716,7 +735,7 @@ def extract_chips(filter_directories,
 
     # The pre-chip-extraction images will be put in a data/ directory:
     datadir = 'data/'
-    if ~os.path.exists(datadir):
+    if not os.path.exists(datadir):
         os.makedirs(datadir)
 
     # Hardwire the num. of LBC chips

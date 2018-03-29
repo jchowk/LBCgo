@@ -10,16 +10,15 @@ from .utils import do_overscan, do_bias, do_flatfield
 from .utils import make_targetdirectories, extract_chips
 
 
-def proclbc(raw_directory='./raw/', image_directory='./',
-            filter_names=None, bias_proc=False,
+def proclbc(raw_directory='./raw/',
+            image_directory='./',
+            filter_names=None,
+            bias_proc=False,
             verbose=True, clean=True):
     """Process a directory of LBC data.
 
     By default, all raw data are to be in the ./raw/ directory before processing (raw_directory='./raw/').
     By default, all new images are written in the CWD (image_directory='./').
-
-
-
 
     """
 
@@ -80,11 +79,13 @@ def proclbc(raw_directory='./raw/', image_directory='./',
 
         # Make master flat fields. Could be done for all filters at once, but keeping it here for now.
         make_flatfield(ic1,verbose=verbose,simple_masks=True,
-                       raw_directory=raw_directory,image_directory=image_directory)
+                       raw_directory=raw_directory,
+                       image_directory=image_directory)
 
         # Remove overscan, trim object files.
         overfiles = do_overscan(ic1,verbose=verbose,
-                                raw_directory=raw_directory,image_directory=image_directory)
+                                raw_directory=raw_directory,
+                                image_directory=image_directory)
 
         # Apply bias frames
         if bias_proc == True:
@@ -111,9 +112,8 @@ def proclbc(raw_directory='./raw/', image_directory='./',
         # Extract individual chips
         extract_chips(fltr_dirs, verbose = verbose)
 
-        # TODO: do_sextractor
-        # TODO: do_scampswarp
-
+        # Register and coadd the images
+        do_register(fltr_dirs)
 
 
     # Let's do some clean-up.
