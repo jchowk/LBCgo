@@ -7,12 +7,12 @@ from astropy.io import fits
 
 import pdb
 
-def do_sextractor(inputfile,
+def go_sextractor(inputfile,
                 configfile=None,
                 paramfile = None,
                 convfile = 'default.conv',
                 nnwfile = 'default.nnw',
-                verbose=True):
+                verbose=True, clean=True):
     """
     """
     # path = os.path.abspath(amodule.__file__)
@@ -45,7 +45,6 @@ def do_sextractor(inputfile,
 
     # Which chips to process
     lbc_chips = [1,2,3,4]
-    num_lbc_chips = np.size(lbc_chips)
 
     # Base filename:
     filebase = inputfile.replace('.fits','')
@@ -80,9 +79,9 @@ def do_sextractor(inputfile,
     sextract.wait()
 
 
-def do_scamp(inputfile,
+def go_scamp(inputfile,
                 configfile=None,astroref_catalog='GAIA-DR1',
-                verbose=True):
+                verbose=True, clean=True):
 
     """ Run Astromatic.net code SCAMP to calculate astrometric
      solution on an image.
@@ -99,8 +98,8 @@ def do_scamp(inputfile,
         # TODO: replace this with default config file for LBCgo.
         configfile = 'scamp.lbc.conf'
 
-    for iter in np.arange(num_scamp_iterations):
-        if iter == 0:
+    for scmpiter in np.arange(num_scamp_iterations):
+        if scmpiter == 0:
             degree = '3'
             mosaic_type = 'LOOSE'
             pixscale_maxerr = '1.2'
@@ -108,7 +107,7 @@ def do_scamp(inputfile,
             posangle_maxerr = '3.0'
             crossid_radius = '10.0'
             aheader_suffix = '.ahead'
-        elif iter == 1:
+        elif scmpiter == 1:
            degree = '3'
            mosaic_type = 'FIX_FOCALPLANE'
            pixscale_maxerr = '1.1'
@@ -157,7 +156,18 @@ def do_scamp(inputfile,
 
         scamp.wait()
 
-def do_swarp(inputfiles, output_filename = None, configfile=None,
+    if clean:
+        # Clean the GAIA catalog files
+        catfiles = glob('GAIA*cat')
+        for ctfls in catfiles:
+            cmd = 'rm '+ctfls
+            clean_dir = Popen(shlex.split(cmd),
+                close_fds=True)
+            clean_dir.wait()
+
+
+
+def go_swarp(inputfiles, output_filename = None, configfile=None,
                 verbose=True):
     """Do SWARP"""
 
@@ -183,12 +193,16 @@ def do_swarp(inputfiles, output_filename = None, configfile=None,
         # Create final output filename
         output_filename = imhead['object']+'.'+filter_text+'.mos.fits'
 
+    # Rename the weight image
+    weight_filename = output_filename.replace('.mos.fits','weight.fits')
+
     # Create the list of input files:
     inputfile_text = ''
     for fl in inputfiles: inputfile_text = inputfile_text+' '+fl
 
     cmd_flags = ' -c '+configfile+ \
         ' -IMAGEOUT_NAME '+ output_filename + \
+        ' -WEIGHTOUT_NAME '+ weight_filename + \
         ' -HEADER_ONLY N ' + \
         ' -WEIGHT_TYPE NONE '+ \
         ' -HEADER_SUFFIX ".head"'+ \
@@ -218,11 +232,11 @@ def do_swarp(inputfiles, output_filename = None, configfile=None,
     swarp.wait()
 
 
-def do_register(filter_directories,
+def go_register(filter_directories,
                 lbc_chips = [1,2,3,4],
-                run_sextractor=True,
-                run_scamp=True,
-                run_swarp=True):
+                do_sextractor=True,
+                do_scamp=True,
+                do_swarp=True):
 
     # TODO: Add the sextractor, scamp, swarp parameters for input.
 
@@ -242,13 +256,17 @@ def do_register(filter_directories,
                 input_filenames.append(fl)
 
         # Loop through the files
-        # do_sextractor = find sources
-        # do_scamp = calculate astrometry
+        # go_sextractor = find sources
+        # go_scamp = calculate astrometry
         for filename in input_filenames:
             # Find sources for alignment
-            if run_sextractor: do_sextractor(filename)
+            if do_sextractor:
+                go_sextractor(filename)
             # Calculate the astrometry
-            if run_scamp: do_scamp(filename)
+            if do_scamp:
+                go_scamp(filename)
 
         # Stitch together the images
-        if run_swarp: do_swarp(input_filenames)
+        # go_swarp = reproject and coadd images
+        if do_swarp:
+            go_swarp(input_filenames)
