@@ -11,7 +11,7 @@ from astropy.modeling import models
 
 from astropy.io import fits
 
-# from .register import *
+from lbcregister import *
 
 import ccdproc
 from ccdproc import  ImageFileCollection,CCDData
@@ -331,7 +331,6 @@ def make_flatfield(image_collection,
     ##   image_collection -- A ccdproc-style image collection.
     ##   filter_name      -- Filter for flat combination. Default (None) is to
     ##                       determine from image_collection.
-    ##   make_masks       -- Make image masks based on flat fields.
     ##   image_directory  -- Where to store the output images.
     ##   raw_directory    -- Where to find the raw data
 
@@ -377,9 +376,9 @@ def make_flatfield(image_collection,
             # Start output HDU list:
             output_hdu = fits.HDUList([master_hdu])
 
-            mask_hdu = fits.HDUList([master_hdu])
-            mask_list = [[] for i in range(num_lbc_chips)]
-            num_mask_images = np.zeros(num_lbc_chips)
+            # mask_hdu = fits.HDUList([master_hdu])
+            # mask_list = [[] for i in range(num_lbc_chips)]
+            # num_mask_images = np.zeros(num_lbc_chips)
 
         # Loop through the chips
         for chip in lbc_chips:
@@ -414,9 +413,9 @@ def make_flatfield(image_collection,
                 flat_list[chip-1].append(ccd)
 
                 # Now do the same for the masks
-                if num_mask_images[chip-1] <= 1:
-                    mask_list[chip-1].append(ccd)
-                    num_mask_images[chip-1] += 1
+                # if num_mask_images[chip-1] <= 1:
+                #     mask_list[chip-1].append(ccd)
+                #     num_mask_images[chip-1] += 1
 
     # Check that there are some flats!
     if num_flat_images.sum() == 0:
@@ -503,8 +502,8 @@ def make_flatfield(image_collection,
     if verbose:
         print("\nCreated {0} flatfield frame {1}.".format(
             filter_name, flat_output_name))
-        print("Created {0} mask base {1}.\n".format(
-            filter_name, mask_output_name))
+        # print("Created {0} mask base {1}.\n".format(
+        #     filter_name, mask_output_name))
 
 
 def go_flatfield(image_collection, flat_file=None, filter_names = None,
@@ -884,8 +883,10 @@ def lbcgo(raw_directory='./raw/',
                         keywords=keywds,
                         filenames=(ic0.files_filtered(filter=filter)).tolist())
 
-        # Make master flat fields. Could be done for all filters at once, but keeping it here for now.
-        make_flatfield(ic1,verbose=verbose,#simple_masks=True,
+        # Make master flat fields.
+        # Could be done for all filters at once, but keeping it here for now.
+        # TODO: Check to see if flats exist. If so, ask if they need to be remade.
+        make_flatfield(ic1,verbose=verbose,
                        raw_directory=raw_directory,
                        image_directory=image_directory)
 
