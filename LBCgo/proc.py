@@ -825,11 +825,11 @@ def lbcgo(raw_directory='./raw/',
     ########## Collect basic image information
     # Find the raw files we'll use
     if lbcb & lbcr:
-        lbc_file_base = 'lbc?.*.*.fits'
+        lbc_file_base = 'lbc?.*.*.fits*'
     elif lbcb:
-        lbc_file_base = 'lbcb.*.*.fits'
+        lbc_file_base = 'lbcb.*.*.fits*'
     elif lbcr:
-        lbc_file_base = 'lbcr.*.*.fits'
+        lbc_file_base = 'lbcr.*.*.fits*'
 
     # What information do we want from the headers?
     keywds = ['object', 'filter', 'exptime', 'imagetyp', 'propid', 'lbcobnam',
@@ -839,10 +839,19 @@ def lbcgo(raw_directory='./raw/',
     if np.int(ccdproc.__version__[0]) == 2:
         ic0 = ImageFileCollection(raw_directory, keywords=keywds,
                                   glob_include=lbc_file_base)
+        num_images = np.size(ic0.summary['object'])
+        # Exit if (for some reason) no images are found in the raw_directory.
+        if num_images == 0:
+            print('WARNING: No images found.')
+            return None
     else:
         raw_lbc_files = glob(raw_directory+lbc_file_base)
         ic0 = ImageFileCollection(raw_directory, keywords=keywds,
                                   filenames=raw_lbc_files)
+        # Exit if (for some reason) no images are found in the raw_directory.
+        if num_images == 0:
+            print('WARNING: No images found.')
+            return None
 
     ######### Create the master bias frame (if requested)
     if bias_proc == True:
@@ -857,6 +866,7 @@ def lbcgo(raw_directory='./raw/',
 
     # The filters to go through are all those in the IC file unless otherwise specified.
     # TODO: Loop B/R to avoid issues w/V-band from LBCB/LBCR?
+    # TODO: Check for co-pointing files
     if filter_names == None:
         icX = ImageFileCollection(raw_directory,
                         keywords=keywds,
