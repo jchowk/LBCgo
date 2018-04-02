@@ -140,7 +140,6 @@ def make_bias(image_collection, bias_filename=None,
     if verbose:
         print('----- MAKE_BIAS: making master zero file. -----')
 
-
     # Pull out the bias images from our collection
     zero_files = image_collection.files_filtered(imagetyp='zero')
     # Create the output file name
@@ -420,7 +419,7 @@ def make_flatfield(image_collection,
                     num_mask_images[chip-1] += 1
 
     # Check that there are some flats!
-    if flat_list.sum() == 0:
+    if num_flat_images.sum() == 0:
         print('Warning: no flat images.')
         return None
 
@@ -462,7 +461,7 @@ def make_flatfield(image_collection,
 
         # Create the ratio image
         #   **Don't calculate the masks unless directed to do so! too long...**
-        ratio = mask_list[chip - 1][0].divide(mask_list[chip - 1][1])
+        # ratio = mask_list[chip - 1][0].divide(mask_list[chip - 1][1])
 
         # TODO: Work out whether it's worth doing any masks
         # Calculate mask for this chip.
@@ -498,7 +497,7 @@ def make_flatfield(image_collection,
     output_hdu.writeto(image_directory+flat_output_name, overwrite=True)
 
     # Write the mask
-    mask_hdu.writeto(image_directory+mask_output_name, overwrite=True)
+    # mask_hdu.writeto(image_directory+mask_output_name, overwrite=True)
 
     # Report:
     if verbose:
@@ -673,7 +672,6 @@ def make_targetdirectories(image_collection, image_directory='./',
             if verbose == True:
                 print('Directory exists for object {0}.'.format(obj))
 
-
         # Move the data for each object into its directory.
         object_files = image_collection.files_filtered(object=obj)
         for fl in object_files:
@@ -696,11 +694,11 @@ def make_targetdirectories(image_collection, image_directory='./',
         # Step through each filter, creating directories and moving files.
         for filter in filters:
             filter_dirname = dirname+filter+'/'
+            filter_directories.append(filter_dirname)
 
             # Test that the directory doesn't already exist
             if not os.path.lexists(filter_dirname):
                 os.makedirs(filter_dirname)
-                filter_directories.append(filter_dirname)
 
                 if verbose == True:
                     print('Creating {1} directory for object {0}.'.format(obj,filter))
@@ -801,9 +799,11 @@ def go_extractchips(filter_directories, lbc_chips = [1,2,3,4],
         return chip_files
 
 
-def proclbc(raw_directory='./raw/',
+def lbcgo(raw_directory='./raw/',
             image_directory='./',
             lbc_chips=[1,2,3,4],
+            lbcr=True,
+            lbcb=True,
             filter_names=None,
             bias_proc=False,
             verbose=True, clean=True):
@@ -822,11 +822,14 @@ def proclbc(raw_directory='./raw/',
     if image_directory[-1] != '/':
         image_directory += '/'
 
-    # TODO: Loop B/R to avoid issues w/V-band from LBCB/LBCR?
     ########## Collect basic image information
     # Find the raw files we'll use
-    lbc_file_base = 'lbc?.????????.??????.fits'
-    raw_lbc_files = glob(raw_directory+lbc_file_base)
+    if lbcb & lbcr:
+        lbc_file_base = 'lbc?.*.*.fits'
+    elif lbcb:
+        lbc_file_base = 'lbcb.*.*.fits'
+    elif lbcr:
+        lbc_file_base = 'lbcr.*.*.fits'
 
     # What information do we want from the headers?
     keywds = ['object', 'filter', 'exptime', 'imagetyp', 'propid', 'lbcobnam',
@@ -837,6 +840,7 @@ def proclbc(raw_directory='./raw/',
         ic0 = ImageFileCollection(raw_directory, keywords=keywds,
                                   glob_include=lbc_file_base)
     else:
+        raw_lbc_files = glob(raw_directory+lbc_file_base)
         ic0 = ImageFileCollection(raw_directory, keywords=keywds,
                                   filenames=raw_lbc_files)
 
@@ -852,6 +856,7 @@ def proclbc(raw_directory='./raw/',
     # out where to go.
 
     # The filters to go through are all those in the IC file unless otherwise specified.
+    # TODO: Loop B/R to avoid issues w/V-band from LBCB/LBCR?
     if filter_names == None:
         icX = ImageFileCollection(raw_directory,
                         keywords=keywds,
@@ -905,7 +910,7 @@ def proclbc(raw_directory='./raw/',
         go_extractchips(fltr_dirs, lbc_chips, verbose = verbose)
 
         # Register and coadd the images
-        go_register(fltr_dirs, lbc_chips)
+        go_register(fltr_dirs, lbc_chips=lbc_chips)
 
 
     # Let's do some clean-up.
