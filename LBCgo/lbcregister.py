@@ -43,9 +43,6 @@ def go_sextractor(inputfile,
               "does not exist".format(nnwfile))
         return None
 
-    # Which chips to process
-    lbc_chips = [1,2,3,4]
-
     # Base filename:
     filebase = inputfile.replace('.fits','')
 
@@ -80,15 +77,13 @@ def go_sextractor(inputfile,
 
 
 def go_scamp(inputfile,
+                num_iterations = 3,
                 configfile=None,astroref_catalog='GAIA-DR1',
                 verbose=True, clean=True):
 
     """ Run Astromatic.net code SCAMP to calculate astrometric
      solution on an image.
     """
-
-    # Fix the number of SCAMP iterations:
-    num_scamp_iterations = 2
 
     # Make sure the input file is a SEXTRACTOR catalog:
     inputfile = inputfile.replace('.fits','.cat')
@@ -98,7 +93,7 @@ def go_scamp(inputfile,
         # TODO: replace this with default config file for LBCgo.
         configfile = 'scamp.lbc.conf'
 
-    for scmpiter in np.arange(num_scamp_iterations):
+    for scmpiter in np.arange(num_iterations):
         if scmpiter == 0:
             degree = '3'
             mosaic_type = 'LOOSE'
@@ -231,12 +226,25 @@ def go_swarp(inputfiles, output_filename = None, configfile=None,
 
     swarp.wait()
 
+# def go_imagequality(inputfile,
+#                 configfile=None,
+#                 paramfile = None,
+#                 convfile = 'default.conv',
+#                 nnwfile = 'default.nnw',
+#                 verbose=True, clean=True):
+#     """
+#     """
+#
+
+
+
 
 def go_register(filter_directories,
                 lbc_chips = [1,2,3,4],
                 do_sextractor=True,
                 do_scamp=True,
-                do_swarp=True):
+                do_swarp=True,
+                scamp_iterations = 3):
 
     # TODO: Add the sextractor, scamp, swarp parameters for input.
 
@@ -264,7 +272,7 @@ def go_register(filter_directories,
                 go_sextractor(filename)
             # Calculate the astrometry
             if do_scamp:
-                go_scamp(filename)
+                go_scamp(filename, num_iterations = scamp_iterations)
 
         # Stitch together the images
         # go_swarp = reproject and coadd images
