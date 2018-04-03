@@ -1,2 +1,2 @@
-from .proc import *
-from .register import *
+from .lbcproc import *
+from .lbcregister import *

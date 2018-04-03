@@ -88,7 +88,7 @@ def go_scamp(inputfile,
     """
 
     # Fix the number of SCAMP iterations:
-    num_scamp_iterations = 3
+    num_scamp_iterations = 2
 
     # Make sure the input file is a SEXTRACTOR catalog:
     inputfile = inputfile.replace('.fits','.cat')

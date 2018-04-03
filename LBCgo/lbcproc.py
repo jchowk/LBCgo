@@ -210,7 +210,6 @@ def make_bias(image_collection, bias_filename=None,
 
         # Remove unneeded header keywords. Makes this consistent
         #   with IRAF treatment.
-        # import IPython; IPython.embed()
         temp_header = output_hdu[chip].header
         del temp_header['trimsec']
         del temp_header['biassec']
