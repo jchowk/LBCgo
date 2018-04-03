@@ -772,7 +772,7 @@ def go_extractchips(filter_directories, lbc_chips = [1,2,3,4],
 
             # Read the CCDData version of this chip
             ccd = CCDData.read(filename, chip,
-                               unit=u.adu)
+                               unit=None)
             # Create the new HDU
             output_hdu.append(ccd.to_hdu()[0])
 
@@ -804,6 +804,7 @@ def lbcgo(raw_directory='./raw/',
             lbcb=True,
             filter_names=None,
             bias_proc=False,
+            do_astrometry=True,
             verbose=True, clean=True):
     """Process a directory of LBC data.
 
@@ -859,10 +860,14 @@ def lbcgo(raw_directory='./raw/',
 
 
     ###### Per filter:
-    # Do this on a per filter basis. Right now I'm just laying
-    # out where to go.
+    #
+    # Step through the filters in the ImageCollection unless user gives filter
+    # list.
+    #
+    # For now nights with V-band filters in both LBCB and LBCR require running
+    # the code with 'lbcr=False' then 'lbcb=False' to avoid coadding the two
+    # images.
 
-    # The filters to go through are all those in the IC file unless otherwise specified.
     # TODO: Loop B/R to avoid issues w/V-band from LBCB/LBCR?
     # TODO: Check for co-pointing files
     if filter_names == None:
@@ -883,11 +888,15 @@ def lbcgo(raw_directory='./raw/',
                         filenames=(ic0.files_filtered(filter=filter)).tolist())
 
         # Make master flat fields.
-        # Could be done for all filters at once, but keeping it here for now.
-        # TODO: Check to see if flats exist. If so, ask if they need to be remade.
-        make_flatfield(ic1,verbose=verbose,
-                       raw_directory=raw_directory,
-                       image_directory=image_directory)
+        # Check to see if flat exists; if so, skip making the flat (time
+        # consuming)
+        flatname = 'flat.'+filter+'.fits'
+        if not os.path.lexists(flatname):
+            make_flatfield(ic1,verbose=verbose,
+                           raw_directory=raw_directory,
+                           image_directory=image_directory)
+        else:
+            print('Using existing flat {0}'.format(flatname))
 
         # Remove overscan, trim object files.
         overfiles = go_overscan(ic1,verbose=verbose,
@@ -920,7 +929,8 @@ def lbcgo(raw_directory='./raw/',
         go_extractchips(fltr_dirs, lbc_chips, verbose = verbose)
 
         # Register and coadd the images
-        go_register(fltr_dirs, lbc_chips=lbc_chips)
+        if do_astrometry:
+            go_register(fltr_dirs, lbc_chips=lbc_chips)
 
 
     # Let's do some clean-up.
