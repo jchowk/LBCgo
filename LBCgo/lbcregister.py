@@ -194,7 +194,7 @@ def go_swarp(inputfiles, output_filename = None, configfile=None,
         output_filename = imhead['object']+'.'+filter_text+'.mos.fits'
 
     # Rename the weight image
-    weight_filename = output_filename.replace('.mos.fits','weight.fits')
+    weight_filename = output_filename.replace('.mos.fits','.mos.weight.fits')
 
     # Create the list of input files:
     inputfile_text = ''
