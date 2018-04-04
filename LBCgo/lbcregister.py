@@ -77,8 +77,9 @@ def go_sextractor(inputfile,
 
 
 def go_scamp(inputfile,
+                astroref_catalog='GAIA-DR1',
                 num_iterations = 3,
-                configfile=None,astroref_catalog='GAIA-DR1',
+                configfile=None,
                 verbose=True, clean=True):
 
     """ Run Astromatic.net code SCAMP to calculate astrometric
@@ -114,7 +115,7 @@ def go_scamp(inputfile,
            degree = '3'
            mosaic_type = 'FIX_FOCALPLANE'
            pixscale_maxerr = '1.05'
-           position_maxerr = '0.5'
+           position_maxerr = '1.0'
            posangle_maxerr = '1.0'
            crossid_radius = '2.5'
            aheader_suffix = '.head'
@@ -123,14 +124,12 @@ def go_scamp(inputfile,
             ' -PIXSCALE_MAXERR '+pixscale_maxerr+ \
             ' -POSANGLE_MAXERR '+posangle_maxerr+ \
             ' -POSITION_MAXERR '+position_maxerr+ \
-            ' -MOSAIC_TYPE '+mosaic_type+ \
             ' -DISTORT_DEGREES '+degree+ \
+            ' -MOSAIC_TYPE '+mosaic_type+ \
             ' -ASTREF_CATALOG '+astroref_catalog+ \
-            ' -ASTREF_BAND DEFAULT '+\
             ' -AHEADER_SUFFIX '+aheader_suffix+ \
             ' -CROSSID_RADIUS '+crossid_radius+\
-            ' -STABILITY_TYPE EXPOSURE'+  \
-            ' -ASTRINSTRU_KEY FILTER'
+            ' -STABILITY_TYPE EXPOSURE'
 
         # Create the final command:
         cmd = 'scamp '+inputfile+cmd_flags
@@ -138,6 +137,10 @@ def go_scamp(inputfile,
 
         try:
             if verbose:
+                print('################ SCAMP iteration {0} for {1} '
+                '################ '.format(scmpiter+1,
+                inputfile.replace('.cat','')))
+
                 scamp = Popen(shlex.split(cmd),
                                    close_fds=True)
             else:
@@ -209,8 +212,6 @@ def go_swarp(inputfiles, output_filename = None, configfile=None,
 
     # Create the final command:
     cmd = 'swarp ' + inputfile_text + cmd_flags
-    print(cmd)
-
     try:
         if verbose:
             swarp = Popen(shlex.split(cmd),
@@ -221,7 +222,7 @@ def go_swarp(inputfiles, output_filename = None, configfile=None,
                           stderr=DEVNULL,
                           close_fds=True)
     except Exception as e:
-        print('Whoops: source Extractor call:', (e))
+        print('Whoops: SWARP call:', (e))
         return None
 
     swarp.wait()

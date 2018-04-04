@@ -32,7 +32,6 @@ warnings.filterwarnings('ignore', category=AstropyUserWarning, append=True)
 # lacos_im['objlim']=1.0
 # lacos_im['niter']=2
 
-# TODO FIXPIX!
 # TODO Cosmic ray cleaning
 
 # TODO Create option for cleaning intermediate steps (_over, _zero, _flat)
@@ -44,6 +43,28 @@ warnings.filterwarnings('ignore', category=AstropyUserWarning, append=True)
 # TODO image weights
 # TODO clean up
 
+# TODO FIXPIX!
+def go_fixpix(data, chip):
+    # Read bad pixel file:
+
+    # The "fix" is to replace bad-column pixels by the median of
+    # pixels +/-numAvg either side of the bad column(s).
+
+    # xsl=xstart-numAvg
+    # xel=xstart-1
+    # xsr=xend+1
+    # xer=xend+numAvg
+    #
+    # for y in range(ystart,yend,1):
+    #   medLeft = np.median(data[y,xsl:xel])
+    #   medRight= np.median(data[y,xsr:xer])
+    #   corrVal = (medLeft+medRight)/2.0
+    #   if (nx>1):
+    #     data[y,xstart:xend] = corrVal
+    #   else:
+    #     data[y,xstart] = corrVal
+
+    return newdata
 
 def go_overscan(image_collection, objects_only=True,
                 image_directory='./',raw_directory='./raw/',
@@ -351,7 +372,7 @@ def make_flatfield(image_collection,
 
     # Create output file name:
     flat_output_name = 'flat.' + filter_name + '.fits'
-    mask_output_name = 'mask.' + filter_name + '.fits'
+    mask_output_name = 'mask.' + filter_name + '.fits' # Masks not used.
 
     # Pull out the flat field images from our collection
     flt_files = \
@@ -462,6 +483,7 @@ def make_flatfield(image_collection,
         # ratio = mask_list[chip - 1][0].divide(mask_list[chip - 1][1])
 
         # TODO: Work out whether it's worth doing any masks
+
         # Calculate mask for this chip.
         # if not simple_masks:
         #     print('Calculating base pixel mask for {0} chip {1}'.format(
@@ -554,7 +576,7 @@ def go_flatfield(image_collection, flat_file=None, filter_names = None,
         flatfield_chips = []
         for chip in lbc_chips:
              flatchip = CCDData.read(flat_directory+flat_filename, chip,
-                                     unit=u.adu)
+                                     unit=None)
              flatfield_chips.append(flatchip)
         if verbose:
              print('Reading flatfield {0}'.format(flat_filename))
@@ -574,7 +596,7 @@ def go_flatfield(image_collection, flat_file=None, filter_names = None,
             for chip in lbc_chips:
                 # Create the CCDData version of this chip
                 image = CCDData.read(input_directory+file, chip,
-                                     unit=u.adu)
+                                     unit=None)
                 # Apply the flat
                 image_normed = ccdproc.flat_correct(image,
                             flatfield_chips[chip-1],
@@ -796,6 +818,21 @@ def go_extractchips(filter_directories, lbc_chips = [1,2,3,4],
     if return_files == True:
         return chip_files
 
+def go_clean():
+
+    # Remove data/ directory holding _over, _flat files.
+    cmd = 'rm data/'
+    go_cmd = Popen(shlex.split(cmd),
+          close_fds=True)
+    go_cmd.wait()
+
+    # Remove astrometric diagnostic files
+    cmd = 'rm astro*pdf'
+    go_cmd = Popen(shlex.split(cmd),
+          close_fds=True)
+    go_cmd.wait()
+
+
 
 def lbcgo(raw_directory='./raw/',
             image_directory='./',
@@ -805,6 +842,7 @@ def lbcgo(raw_directory='./raw/',
             filter_names=None,
             bias_proc=False,
             do_astrometry=True,
+            scamp_iterations=3,
             verbose=True, clean=True):
     """Process a directory of LBC data.
 
@@ -896,7 +934,7 @@ def lbcgo(raw_directory='./raw/',
                            raw_directory=raw_directory,
                            image_directory=image_directory)
         else:
-            print('Using existing flat {0}'.format(flatname))
+            print('Using existing {0}'.format(flatname))
 
         # Remove overscan, trim object files.
         overfiles = go_overscan(ic1,verbose=verbose,
@@ -930,8 +968,8 @@ def lbcgo(raw_directory='./raw/',
 
         # Register and coadd the images
         if do_astrometry:
-            go_register(fltr_dirs, lbc_chips=lbc_chips)
-
+            go_register(fltr_dirs, lbc_chips=lbc_chips,
+                        scamp_iterations = scamp_iterations)
 
     # Let's do some clean-up.
     if clean:
