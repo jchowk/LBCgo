@@ -267,6 +267,12 @@ def go_register(filter_directories,
     if np.size(filter_directories) == 1 & ~isinstance(filter_directories,list):
         filter_directories = [filter_directories]
 
+    for j in np.arange(np.size(filter_directories)):
+        # Make sure the input directories have trailing slashes:
+        drctry = filter_directories[j]
+        if filter_directories[j][-1] != '/':
+            filter_directories[j] += '/'
+
 
     # Loop through each of the filter directories:
     for fltdr in filter_directories:
