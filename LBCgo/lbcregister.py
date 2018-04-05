@@ -137,8 +137,8 @@ def go_scamp(inputfile,
 
         try:
             if verbose:
-                print('################ SCAMP iteration {0} for {1} '
-                '################ '.format(scmpiter+1,
+                print('########### SCAMP iteration {0} for {1} '
+                '########### '.format(scmpiter+1,
                 inputfile.replace('.cat','')))
 
                 scamp = Popen(shlex.split(cmd),
