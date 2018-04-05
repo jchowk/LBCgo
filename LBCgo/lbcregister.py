@@ -5,8 +5,6 @@ import shlex
 from glob import glob
 from astropy.io import fits
 
-import pdb
-
 def go_sextractor(inputfile,
                 configfile=None,
                 paramfile = None,
@@ -54,7 +52,7 @@ def go_sextractor(inputfile,
     cmd_flags = ' -c '+ configfile + \
         ' -CATALOG_NAME '+outputcatalog + \
         ' -CATALOG_TYPE FITS_LDAC'+ \
-        ' -DETECT_THRESH 2.0 -ANALYSIS_THRESH 3.0'+ \
+        ' -DETECT_THRESH 3.0 -ANALYSIS_THRESH 5.0'+ \
         ' -PARAMETERS_NAME '+paramfile
 
     cmd = 'sex '+inputfile+cmd_flags
@@ -94,12 +92,18 @@ def go_scamp(inputfile,
         # TODO: replace this with default config file for LBCgo.
         configfile = 'scamp.lbc.conf'
 
+    # Using only a single iteration of SCAMP doesn't do well enough. Force at
+    # least two iterations:
+    if num_iterations < 2:
+        print('WARNING: Use at least 2 SCAMP iterations. Setting num_iterations = 2...')
+        num_iterations = 2
+
     for scmpiter in np.arange(num_iterations):
         if scmpiter == 0:
             degree = '3'
             mosaic_type = 'LOOSE'
             pixscale_maxerr = '1.2'
-            position_maxerr = '2.0'
+            position_maxerr = '1.0'
             posangle_maxerr = '3.0'
             crossid_radius = '10.0'
             aheader_suffix = '.ahead'
@@ -109,13 +113,21 @@ def go_scamp(inputfile,
            pixscale_maxerr = '1.1'
            position_maxerr = '1.0'
            posangle_maxerr = '1.0'
+           crossid_radius = '10.0'
+           aheader_suffix = '.head'
+        elif scmpiter == 2:
+           degree = '3'
+           mosaic_type = 'FIX_FOCALPLANE'
+           pixscale_maxerr = '1.05'
+           position_maxerr = '1.0'
+           posangle_maxerr = '1.0'
            crossid_radius = '5.0'
            aheader_suffix = '.head'
         else:
            degree = '3'
            mosaic_type = 'FIX_FOCALPLANE'
-           pixscale_maxerr = '1.05'
-           position_maxerr = '1.0'
+           pixscale_maxerr = '1.025'
+           position_maxerr = '0.5'
            posangle_maxerr = '1.0'
            crossid_radius = '2.5'
            aheader_suffix = '.head'
@@ -133,13 +145,14 @@ def go_scamp(inputfile,
 
         # Create the final command:
         cmd = 'scamp '+inputfile+cmd_flags
-        # print(cmd)
 
         try:
             if verbose:
                 print('########### SCAMP iteration {0} for {1} '
-                '########### '.format(scmpiter+1,
+                '########### \n'.format(scmpiter+1,
                 inputfile.replace('.cat','')))
+                # Diagnostics
+                print(cmd)
 
                 scamp = Popen(shlex.split(cmd),
                                    close_fds=True)
