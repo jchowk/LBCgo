@@ -32,8 +32,6 @@ warnings.filterwarnings('ignore', category=AstropyUserWarning, append=True)
 # lacos_im['objlim']=1.0
 # lacos_im['niter']=2
 
-# TODO Cosmic ray cleaning
-
 # TODO Create option for cleaning intermediate steps (_over, _zero, _flat)
 # TODO Do gain correction, uncertainty system?
 # TODO More general MEF flat fielding?
@@ -342,7 +340,7 @@ def make_flatfield(image_collection,
                    lbc_chips = [1,2,3,4],
                    image_directory='./',
                    raw_directory='./raw/',
-                   verbose=True):
+                   cosmiccorrect=True, verbose=True):
     """Make a flat field image for a collection of images."""
     ##
     ## Create master flat field image for a specific flat
@@ -421,16 +419,21 @@ def make_flatfield(image_collection,
 
             # Check for saturation, matching filters.
             # **Individual chip headers only include 8 letter filter names**
-            if (np.average(ccd.data) <= 62000.) and \
+            if (np.average(ccd.data) <= 55000.) and \
                     (ccd_filter == filter_name[:len(ccd_filter)]):
                 # If appropriate, add the flat to our list
                 if (chip == 1) & (verbose == True):
                     print('Adding {0} to {1} flatfield'.format(
                             filename,filter_name))
-                # Cycle counter
-                num_flat_images[chip-1] += 1
+
+                # Fix cosmic rays for unsaturated images:
+                if cosmiccorrect:
+                    go_cleancosmic(ccd)
+
                 # Add image to list
                 flat_list[chip-1].append(ccd)
+                # Cycle counter
+                num_flat_images[chip-1] += 1
 
                 # Now do the same for the masks
                 # if num_mask_images[chip-1] <= 1:
@@ -530,6 +533,7 @@ def make_flatfield(image_collection,
 def go_flatfield(image_collection, flat_file=None, filter_names = None,
                  image_directory='./',input_directory = './',
                  flat_directory='./',
+                 cosmiccorrect=True,
                  verbose=True, return_files=False):
     """Apply flat fields to MEF data."""
     ##
@@ -597,6 +601,11 @@ def go_flatfield(image_collection, flat_file=None, filter_names = None,
                 # Create the CCDData version of this chip
                 image = CCDData.read(input_directory+file, chip,
                                      unit=None)
+
+                # Fix cosmic rays
+                if cosmiccorrect:
+                    go_cleancosmic(image)
+
                 # Apply the flat
                 image_normed = ccdproc.flat_correct(image,
                             flatfield_chips[chip-1],
@@ -633,26 +642,57 @@ def go_flatfield(image_collection, flat_file=None, filter_names = None,
     if return_files == True:
         return flattened_files
 
-def clean_cosmic(ccd, mbox=15, rbox=15, gbox=11, sigclip=5,
+def go_cleancosmic(ccd, mbox=15, rbox=15, gbox=11, sigclip=5,
                  cleantype="medmask", cosmic_method='lacosmic'):
-    # From ReduceCCD, cleanCOSMIC of R. Garcia-Benito
-    #  (https://github.com/rgbIAA/reduceccd)
+    #
+    # Based on ReduceCCD, cleanCOSMIC of R. Garcia-Benito
+    # (https://github.com/rgbIAA/reduceccd)
+    #
+    # Copyright (c) 2017, Ruben Garcia-Benito (RGB) All rights reserved.
+    #
+    # Redistribution and use in source and binary forms, with or without
+    # modification, are permitted provided that the following conditions are
+    # met:
+    #
+    # -Redistributions of source code must retain the above copyright notice,
+    # this list of conditions and the following disclaimer.
+    #
+    # -Redistributions in binary form must reproduce the above copyright notice,
+    # this list of conditions and the following disclaimer in the documentation
+    # and/or other materials provided with the distribution.
+    #
+    # -Neither the name of the copyright holder nor the names of its
+    # contributors may be used to endorse or promote products derived from this
+    # software without specific prior written permission.
 
-    ##
-    ## Currently not enabled
-    ##
+    if isinstance(ccd, CCDData):
+        data=ccd.data
+    else:
+        data=ccd
 
+    # Check that we've made a proper choice.
     ctype = cosmic_method.lower().strip()
     ctypes = ['lacosmic', 'median']
     if not ctype in ctypes:
         print ('>>> Cosmic ray type "%s" NOT available [%s]' % (ctype, ' | '.join(ctypes)))
         return
+
+    # Correct for cosmic rays using one of the allowed methods
     if ctype == 'lacosmic':
-        ccd = ccdproc.cosmicray_lacosmic(ccd, sigclip=sigclip, cleantype=cleantype)
+        newdata, newmask = ccdproc.cosmicray_lacosmic(data,
+                        sigclip=sigclip, cleantype=cleantype)
     elif ctype == 'median':
-        ccd = ccdproc.cosmicray_median(ccd, mbox=mbox, rbox=rbox, gbox=gbox)
+        newdata, newmask = ccdproc.cosmicray_median(data,
+                        mbox=mbox, rbox=rbox, gbox=gbox)
+
+    # Fill the old variable with the new dataset
     if isinstance(ccd, CCDData):
+        ccd.data = newdata
         ccd.header['COSMIC'] = ctype.upper()
+    else:
+        # Not really needed, but easier to read
+        ccd = data
+
     return ccd
 
 
@@ -951,7 +991,7 @@ def lbcgo(raw_directory='./raw/',
 
         # Apply the flatfields
         flatfiles = go_flatfield(ic2, return_files=True,
-                                 image_directory=image_directory, verbose=verbose)
+                                 image_directory=image_directory, verbose=verbose, cosmiccorrect=False)
 
         # Image collection of object frames overscanned & bias subtracted + flattened
         ic3 = ImageFileCollection(image_directory,

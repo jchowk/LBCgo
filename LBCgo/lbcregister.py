@@ -52,7 +52,7 @@ def go_sextractor(inputfile,
     cmd_flags = ' -c '+ configfile + \
         ' -CATALOG_NAME '+outputcatalog + \
         ' -CATALOG_TYPE FITS_LDAC'+ \
-        ' -DETECT_THRESH 3.0 -ANALYSIS_THRESH 5.0'+ \
+        ' -DETECT_THRESH 2.0 -ANALYSIS_THRESH 4.0'+ \
         ' -PARAMETERS_NAME '+paramfile
 
     cmd = 'sex '+inputfile+cmd_flags
@@ -258,6 +258,7 @@ def go_register(filter_directories,
                 do_sextractor=True,
                 do_scamp=True,
                 do_swarp=True,
+                astroref_catalog='GAIA-DR1',
                 scamp_iterations = 3):
 
     # TODO: Add the sextractor, scamp, swarp parameters for input.
@@ -286,7 +287,8 @@ def go_register(filter_directories,
                 go_sextractor(filename)
             # Calculate the astrometry
             if do_scamp:
-                go_scamp(filename, num_iterations = scamp_iterations)
+                go_scamp(filename, astroref_catalog=astroref_catalog,
+                        num_iterations = scamp_iterations)
 
         # Stitch together the images
         # go_swarp = reproject and coadd images
