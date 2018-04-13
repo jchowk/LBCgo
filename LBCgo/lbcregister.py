@@ -75,10 +75,11 @@ def go_sextractor(inputfile,
 
 
 def go_scamp(inputfile,
-                astroref_catalog='GAIA-DR1',
-                num_iterations = 3,
-                configfile=None,
-                verbose=True, clean=True):
+             astrometric_catalog='GAIA-DR1',
+             astrometric_method = 'exposure',
+             num_iterations = 3,
+             configfile=None,
+             verbose=True, clean=True):
 
     """ Run Astromatic.net code SCAMP to calculate astrometric
      solution on an image.
@@ -138,10 +139,13 @@ def go_scamp(inputfile,
             ' -POSITION_MAXERR '+position_maxerr+ \
             ' -DISTORT_DEGREES '+degree+ \
             ' -MOSAIC_TYPE '+mosaic_type+ \
-            ' -ASTREF_CATALOG '+astroref_catalog+ \
+            ' -ASTREF_CATALOG '+astrometric_catalog+ \
             ' -AHEADER_SUFFIX '+aheader_suffix+ \
             ' -CROSSID_RADIUS '+crossid_radius+\
-            ' -STABILITY_TYPE EXPOSURE'
+            ' -STABILITY_TYPE INSTRUMENT'
+
+        if astrometric_method == 'exposure':
+            cmd_flags.replace('INSTRUMENT','EXPOSURE')
 
         # Create the final command:
         cmd = 'scamp '+inputfile+cmd_flags
@@ -250,15 +254,12 @@ def go_swarp(inputfiles, output_filename = None, configfile=None,
 #     """
 #
 
-
-
-
 def go_register(filter_directories,
                 lbc_chips = [1,2,3,4],
                 do_sextractor=True,
                 do_scamp=True,
                 do_swarp=True,
-                astroref_catalog='GAIA-DR1',
+                astrometric_catalog='GAIA-DR1',
                 scamp_iterations = 3):
 
     # TODO: Add the sextractor, scamp, swarp parameters for input.
@@ -293,8 +294,8 @@ def go_register(filter_directories,
                 go_sextractor(filename)
             # Calculate the astrometry
             if do_scamp:
-                go_scamp(filename, astroref_catalog=astroref_catalog,
-                        num_iterations = scamp_iterations)
+                go_scamp(filename, astrometric_catalog=astrometric_catalog,
+                         num_iterations = scamp_iterations)
 
         # Stitch together the images
         # go_swarp = reproject and coadd images
