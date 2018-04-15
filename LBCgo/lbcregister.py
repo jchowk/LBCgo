@@ -206,7 +206,8 @@ def go_swarp(inputfiles, output_filename = None, configfile=None,
         filter_text = imhead['FILTER']
         filter_text = filter_text.replace('-SLOAN','').replace('-BESSEL','').replace('SDT_Uspec','Uspec')
         # Create final output filename
-        output_filename = imhead['object']+'.'+filter_text+'.mos.fits'
+        output_filename = (imhead['object']).\
+            replace(' ','')+'.'+filter_text+'.mos.fits'
 
     # Rename the weight image
     weight_filename = output_filename.replace('.mos.fits','.mos.weight.fits')
