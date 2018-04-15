@@ -340,7 +340,7 @@ def make_flatfield(image_collection,
                    lbc_chips = [1,2,3,4],
                    image_directory='./',
                    raw_directory='./raw/',
-                   cosmiccorrect=True, verbose=True):
+                   cosmiccorrect=False, verbose=True):
     """Make a flat field image for a collection of images."""
     ##
     ## Create master flat field image for a specific flat
@@ -711,7 +711,6 @@ def make_targetdirectories(image_collection, image_directory='./',
     if object_names == None:
         object_names = np.unique(image_collection.summary['object'])
 
-
     # Return a list of the directories
     object_directories = []
     filter_directories = []
@@ -719,7 +718,7 @@ def make_targetdirectories(image_collection, image_directory='./',
     # Loop through the objects
     for obj in object_names:
         # Name of the target directory to be created
-        dirname= image_directory+obj+'/'
+        dirname = image_directory+obj.replace(' ','')+'/'
         object_directories.append(dirname)
 
         # Test that the directory doesn't already exist
@@ -747,7 +746,8 @@ def make_targetdirectories(image_collection, image_directory='./',
         # The following should select only the filters appropriate for this object:
         keywds = ['object','filter']
         image_collectionObj = ImageFileCollection(dirname, keywords=keywds,
-                                    filenames = (image_collection.files_filtered(object=obj)).tolist())
+                            filenames = \
+                            (image_collection.files_filtered(object=obj)).tolist())
         # Now select the unique filters for this objects
         filters = image_collectionObj.values('filter',unique=True)
 
