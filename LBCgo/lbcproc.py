@@ -370,7 +370,7 @@ def make_flatfield(image_collection,
 
     # Create output file name:
     flat_output_name = 'flat.' + filter_name + '.fits'
-    mask_output_name = 'mask.' + filter_name + '.fits' # Masks not used.
+    #mask_output_name = 'mask.' + filter_name + '.fits' # Masks not used.
 
     # Pull out the flat field images from our collection
     flt_files = \
