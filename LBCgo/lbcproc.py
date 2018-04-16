@@ -32,9 +32,6 @@ warnings.filterwarnings('ignore', category=AstropyUserWarning, append=True)
 # lacos_im['objlim']=1.0
 # lacos_im['niter']=2
 
-# TODO FIXPIX!
-# TODO Cosmic ray cleaning
-
 # TODO Create option for cleaning intermediate steps (_over, _zero, _flat)
 # TODO Do gain correction, uncertainty system?
 # TODO More general MEF flat fielding?
@@ -44,6 +41,28 @@ warnings.filterwarnings('ignore', category=AstropyUserWarning, append=True)
 # TODO image weights
 # TODO clean up
 
+# TODO FIXPIX!
+def go_fixpix(data, chip):
+    # Read bad pixel file:
+
+    # The "fix" is to replace bad-column pixels by the median of
+    # pixels +/-numAvg either side of the bad column(s).
+
+    # xsl=xstart-numAvg
+    # xel=xstart-1
+    # xsr=xend+1
+    # xer=xend+numAvg
+    #
+    # for y in range(ystart,yend,1):
+    #   medLeft = np.median(data[y,xsl:xel])
+    #   medRight= np.median(data[y,xsr:xer])
+    #   corrVal = (medLeft+medRight)/2.0
+    #   if (nx>1):
+    #     data[y,xstart:xend] = corrVal
+    #   else:
+    #     data[y,xstart] = corrVal
+
+    return newdata
 
 def go_overscan(image_collection, objects_only=True,
                 image_directory='./',raw_directory='./raw/',
@@ -321,7 +340,7 @@ def make_flatfield(image_collection,
                    lbc_chips = [1,2,3,4],
                    image_directory='./',
                    raw_directory='./raw/',
-                   verbose=True):
+                   cosmiccorrect=False, verbose=True):
     """Make a flat field image for a collection of images."""
     ##
     ## Create master flat field image for a specific flat
@@ -351,7 +370,7 @@ def make_flatfield(image_collection,
 
     # Create output file name:
     flat_output_name = 'flat.' + filter_name + '.fits'
-    mask_output_name = 'mask.' + filter_name + '.fits'
+    #mask_output_name = 'mask.' + filter_name + '.fits' # Masks not used.
 
     # Pull out the flat field images from our collection
     flt_files = \
@@ -400,16 +419,21 @@ def make_flatfield(image_collection,
 
             # Check for saturation, matching filters.
             # **Individual chip headers only include 8 letter filter names**
-            if (np.average(ccd.data) <= 62000.) and \
+            if (np.average(ccd.data) <= 55000.) and \
                     (ccd_filter == filter_name[:len(ccd_filter)]):
                 # If appropriate, add the flat to our list
                 if (chip == 1) & (verbose == True):
                     print('Adding {0} to {1} flatfield'.format(
                             filename,filter_name))
-                # Cycle counter
-                num_flat_images[chip-1] += 1
+
+                # Fix cosmic rays for unsaturated images:
+                if cosmiccorrect:
+                    go_cleancosmic(ccd)
+
                 # Add image to list
                 flat_list[chip-1].append(ccd)
+                # Cycle counter
+                num_flat_images[chip-1] += 1
 
                 # Now do the same for the masks
                 # if num_mask_images[chip-1] <= 1:
@@ -462,6 +486,7 @@ def make_flatfield(image_collection,
         # ratio = mask_list[chip - 1][0].divide(mask_list[chip - 1][1])
 
         # TODO: Work out whether it's worth doing any masks
+
         # Calculate mask for this chip.
         # if not simple_masks:
         #     print('Calculating base pixel mask for {0} chip {1}'.format(
@@ -508,6 +533,7 @@ def make_flatfield(image_collection,
 def go_flatfield(image_collection, flat_file=None, filter_names = None,
                  image_directory='./',input_directory = './',
                  flat_directory='./',
+                 cosmiccorrect=True,
                  verbose=True, return_files=False):
     """Apply flat fields to MEF data."""
     ##
@@ -554,7 +580,7 @@ def go_flatfield(image_collection, flat_file=None, filter_names = None,
         flatfield_chips = []
         for chip in lbc_chips:
              flatchip = CCDData.read(flat_directory+flat_filename, chip,
-                                     unit=u.adu)
+                                     unit=None)
              flatfield_chips.append(flatchip)
         if verbose:
              print('Reading flatfield {0}'.format(flat_filename))
@@ -574,7 +600,12 @@ def go_flatfield(image_collection, flat_file=None, filter_names = None,
             for chip in lbc_chips:
                 # Create the CCDData version of this chip
                 image = CCDData.read(input_directory+file, chip,
-                                     unit=u.adu)
+                                     unit=None)
+
+                # Fix cosmic rays
+                if cosmiccorrect:
+                    go_cleancosmic(image)
+
                 # Apply the flat
                 image_normed = ccdproc.flat_correct(image,
                             flatfield_chips[chip-1],
@@ -611,26 +642,57 @@ def go_flatfield(image_collection, flat_file=None, filter_names = None,
     if return_files == True:
         return flattened_files
 
-def clean_cosmic(ccd, mbox=15, rbox=15, gbox=11, sigclip=5,
+def go_cleancosmic(ccd, mbox=15, rbox=15, gbox=11, sigclip=5,
                  cleantype="medmask", cosmic_method='lacosmic'):
-    # From ReduceCCD, cleanCOSMIC of R. Garcia-Benito
-    #  (https://github.com/rgbIAA/reduceccd)
+    #
+    # Based on ReduceCCD, cleanCOSMIC of R. Garcia-Benito
+    # (https://github.com/rgbIAA/reduceccd)
+    #
+    # Copyright (c) 2017, Ruben Garcia-Benito (RGB) All rights reserved.
+    #
+    # Redistribution and use in source and binary forms, with or without
+    # modification, are permitted provided that the following conditions are
+    # met:
+    #
+    # -Redistributions of source code must retain the above copyright notice,
+    # this list of conditions and the following disclaimer.
+    #
+    # -Redistributions in binary form must reproduce the above copyright notice,
+    # this list of conditions and the following disclaimer in the documentation
+    # and/or other materials provided with the distribution.
+    #
+    # -Neither the name of the copyright holder nor the names of its
+    # contributors may be used to endorse or promote products derived from this
+    # software without specific prior written permission.
 
-    ##
-    ## Currently not enabled
-    ##
+    if isinstance(ccd, CCDData):
+        data=ccd.data
+    else:
+        data=ccd
 
+    # Check that we've made a proper choice.
     ctype = cosmic_method.lower().strip()
     ctypes = ['lacosmic', 'median']
     if not ctype in ctypes:
         print ('>>> Cosmic ray type "%s" NOT available [%s]' % (ctype, ' | '.join(ctypes)))
         return
+
+    # Correct for cosmic rays using one of the allowed methods
     if ctype == 'lacosmic':
-        ccd = ccdproc.cosmicray_lacosmic(ccd, sigclip=sigclip, cleantype=cleantype)
+        newdata, newmask = ccdproc.cosmicray_lacosmic(data,
+                        sigclip=sigclip, cleantype=cleantype)
     elif ctype == 'median':
-        ccd = ccdproc.cosmicray_median(ccd, mbox=mbox, rbox=rbox, gbox=gbox)
+        newdata, newmask = ccdproc.cosmicray_median(data,
+                        mbox=mbox, rbox=rbox, gbox=gbox)
+
+    # Fill the old variable with the new dataset
     if isinstance(ccd, CCDData):
+        ccd.data = newdata
         ccd.header['COSMIC'] = ctype.upper()
+    else:
+        # Not really needed, but easier to read
+        ccd = data
+
     return ccd
 
 
@@ -649,7 +711,6 @@ def make_targetdirectories(image_collection, image_directory='./',
     if object_names == None:
         object_names = np.unique(image_collection.summary['object'])
 
-
     # Return a list of the directories
     object_directories = []
     filter_directories = []
@@ -657,7 +718,7 @@ def make_targetdirectories(image_collection, image_directory='./',
     # Loop through the objects
     for obj in object_names:
         # Name of the target directory to be created
-        dirname= image_directory+obj+'/'
+        dirname = image_directory+obj.replace(' ','')+'/'
         object_directories.append(dirname)
 
         # Test that the directory doesn't already exist
@@ -685,7 +746,8 @@ def make_targetdirectories(image_collection, image_directory='./',
         # The following should select only the filters appropriate for this object:
         keywds = ['object','filter']
         image_collectionObj = ImageFileCollection(dirname, keywords=keywds,
-                                    filenames = (image_collection.files_filtered(object=obj)).tolist())
+                            filenames = \
+                            (image_collection.files_filtered(object=obj)).tolist())
         # Now select the unique filters for this objects
         filters = image_collectionObj.values('filter',unique=True)
 
@@ -772,7 +834,7 @@ def go_extractchips(filter_directories, lbc_chips = [1,2,3,4],
 
             # Read the CCDData version of this chip
             ccd = CCDData.read(filename, chip,
-                               unit=u.adu)
+                               unit=None)
             # Create the new HDU
             output_hdu.append(ccd.to_hdu()[0])
 
@@ -796,6 +858,20 @@ def go_extractchips(filter_directories, lbc_chips = [1,2,3,4],
     if return_files == True:
         return chip_files
 
+def go_clean():
+
+    # Remove data/ directory holding _over, _flat files.
+    cmd = 'rm data/'
+    go_cmd = Popen(shlex.split(cmd),
+          close_fds=True)
+    go_cmd.wait()
+
+    # Remove astrometric diagnostic files
+    cmd = 'rm astro*pdf'
+    go_cmd = Popen(shlex.split(cmd),
+          close_fds=True)
+    go_cmd.wait()
+
 
 def lbcgo(raw_directory='./raw/',
             image_directory='./',
@@ -804,6 +880,8 @@ def lbcgo(raw_directory='./raw/',
             lbcb=True,
             filter_names=None,
             bias_proc=False,
+            do_astrometry=True,
+            scamp_iterations=3,
             verbose=True, clean=True):
     """Process a directory of LBC data.
 
@@ -859,10 +937,14 @@ def lbcgo(raw_directory='./raw/',
 
 
     ###### Per filter:
-    # Do this on a per filter basis. Right now I'm just laying
-    # out where to go.
+    #
+    # Step through the filters in the ImageCollection unless user gives filter
+    # list.
+    #
+    # For now nights with V-band filters in both LBCB and LBCR require running
+    # the code with 'lbcr=False' then 'lbcb=False' to avoid coadding the two
+    # images.
 
-    # The filters to go through are all those in the IC file unless otherwise specified.
     # TODO: Loop B/R to avoid issues w/V-band from LBCB/LBCR?
     # TODO: Check for co-pointing files
     if filter_names == None:
@@ -883,11 +965,15 @@ def lbcgo(raw_directory='./raw/',
                         filenames=(ic0.files_filtered(filter=filter)).tolist())
 
         # Make master flat fields.
-        # Could be done for all filters at once, but keeping it here for now.
-        # TODO: Check to see if flats exist. If so, ask if they need to be remade.
-        make_flatfield(ic1,verbose=verbose,
-                       raw_directory=raw_directory,
-                       image_directory=image_directory)
+        # Check to see if flat exists; if so, skip making the flat (time
+        # consuming)
+        flatname = 'flat.'+filter+'.fits'
+        if not os.path.lexists(flatname):
+            make_flatfield(ic1,verbose=verbose,
+                           raw_directory=raw_directory,
+                           image_directory=image_directory)
+        else:
+            print('Using existing {0}'.format(flatname))
 
         # Remove overscan, trim object files.
         overfiles = go_overscan(ic1,verbose=verbose,
@@ -905,7 +991,7 @@ def lbcgo(raw_directory='./raw/',
 
         # Apply the flatfields
         flatfiles = go_flatfield(ic2, return_files=True,
-                                 image_directory=image_directory, verbose=verbose)
+                                 image_directory=image_directory, verbose=verbose, cosmiccorrect=False)
 
         # Image collection of object frames overscanned & bias subtracted + flattened
         ic3 = ImageFileCollection(image_directory,
@@ -920,8 +1006,9 @@ def lbcgo(raw_directory='./raw/',
         go_extractchips(fltr_dirs, lbc_chips, verbose = verbose)
 
         # Register and coadd the images
-        go_register(fltr_dirs, lbc_chips=lbc_chips)
-
+        if do_astrometry:
+            go_register(fltr_dirs, lbc_chips=lbc_chips,
+                        scamp_iterations = scamp_iterations)
 
     # Let's do some clean-up.
     if clean:
