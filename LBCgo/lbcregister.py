@@ -200,7 +200,7 @@ def go_swarp(inputfiles, output_filename = None,
                                     filenames = inputfiles)
 
     # Check all are the same filter:
-    # TODO: Set exception if not all are same filter.
+    # TODO: Set exception if not all are same filter rather than just bail.
     fltrs = ic_swarp.values('filter',unique=True)
     if np.size(fltrs) != 1:
         print('Warning: not all files in SWARP call use the same filter.')

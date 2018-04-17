@@ -1,14 +1,20 @@
 # LBCgo: LBC data reduction pipeline
 
-README GOES HERE...
+WARNING: This code is currently under continued development. While the basic functionality exists, it should be used with some care and attention.
 
 ## Dependencies:
 
+Python dependencies:
 * `astropy`
 * `CCDProc`
 * ``
 
-The external C++ codes `Scamp`, `Swarp`, and `Sextractor` (provided by Emmanuel Bertin and collaborators; http://astromatic.iap.fr).
+External dependencies:
+* `SExtractor`
+* `SCAMP`
+* `SWarp`
+
+The external C++ codes `SCAMP`, `SWarp`, and `SExtractor` developed by  Emmanuel Bertin and collaborators are available through http://astromatic.iap.fr. `SCAMP` and `SExtractor` are also available through GitHub: https://github.com/astromatic.
 
 ## Running LBCgo:
 
@@ -30,15 +36,15 @@ The astrometric portion of the reduction can be done later using, for example re
 ```
 ipython> fltr_dirs=glob('PG1338+101/I-BESSEL/')
 ipython> go_register(fltr_dirs, do_sextractor=True,
-            do_scamp=True, do_swarp=True)
+            do_scamp=True, do_SWarp=True)
 ```
 
 ## Some things that might go wrong:
 
-Testing has revealed some occasional issues with the astrometric solution for the individual chips. This can be difficult to diagnose. The registration step using `SWARP` can warn you of some obvious cases, and these can subsequently be removed before rerunning the `SWARP` step by doing, e.g.:
+Testing has revealed some occasional issues with the astrometric solution for the individual chips. This can be difficult to diagnose. The registration step using `SWarp` can warn you of some obvious cases, and these can subsequently be removed before rerunning the `SWarp` step by doing, e.g.:
 ```
 ipython> go_register(fltr_dirs, do_sextractor=False,
-            do_scamp=False, do_swarp=True)
+            do_scamp=False, do_SWarp=True)
 ```
 
 There are several issues related to missing or inappropriate files that the current code does not deal with gracefully. The most common is missing flat fields or missing configuration files (found in `LBCgo/LBCgo/conf/`).
@@ -49,7 +55,7 @@ There are several issues related to missing or inappropriate files that the curr
 This pipeline is built on code initially developed by David Sands, and eventually incorporated into scripts made available by Ben Weiner
 (https://github.com/bjweiner/LBC-reduction).
 
-`LBCgo` was designed to simplify the process of LBC reduction, removing the need for IDL or IRAF in favor of Python. This package continues to require `SCAMP`, `SWARP`, and `SExtractor` provided by Emmanuel Bertin (http://astromatic.iap.fr). It makes extensive use of the `astropy`-affiliated package `CCDProc`.
+`LBCgo` was designed to simplify the process of LBC reduction, removing the need for IDL or IRAF in favor of Python. This package continues to require `SCAMP`, `SWarp`, and `SExtractor` provided by Emmanuel Bertin (http://astromatic.iap.fr). It makes extensive use of the `astropy`-affiliated package `CCDProc`.
 
 
 ## Known bugs / limitations:
