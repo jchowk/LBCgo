@@ -14,6 +14,9 @@ The external C++ codes `Scamp`, `Swarp`, and `Sextractor` (provided by Emmanuel 
 
 For "standard" situations, the `LBCgo` can be run in one step from the python command line. In this case, all of the data in the `raw/` directory are taken on the same night and have appropriate calibrations. In this case, running `LBCgo` from the command line is as simple as:
 ```
+ipython> from lbcproc import *
+ipython> from lbcregister import *
+
 ipython> lbcgo()
 ```
 Before doing this, copy the parameter files from `LBCgo/LBCgo/conf/` into the current working directory (an eventual fix won't require this step).
