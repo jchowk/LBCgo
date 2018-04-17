@@ -39,6 +39,14 @@ ipython> go_register(fltr_dirs, do_sextractor=True,
             do_scamp=True, do_SWarp=True)
 ```
 
+#### Missing chips:
+
+`LBCgo` can be used if the images were taken when one of the LBC CCDs was off-line. The approach to doing this is to explicitly specify the chips to include in the data reduction steps:
+```
+ipython> lbcgo(lbc_chips=[1,2,4])
+```
+This is useful, as there were several months in 2011 when LBCCHIP3 was inoperable.
+
 ## Some things that might go wrong:
 
 Testing has revealed some occasional issues with the astrometric solution for the individual chips. This can be difficult to diagnose. The registration step using `SWarp` can warn you of some obvious cases, and these can subsequently be removed before rerunning the `SWarp` step by doing, e.g.:
