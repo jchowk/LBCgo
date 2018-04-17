@@ -4,6 +4,7 @@ from subprocess import Popen, DEVNULL
 import shlex
 from glob import glob
 from astropy.io import fits
+from ccdproc import  ImageFileCollection
 
 def go_sextractor(inputfile,
                 configfile=None,
@@ -182,22 +183,33 @@ def go_scamp(inputfile,
 
 
 
-def go_swarp(inputfiles, output_filename = None, configfile=None,
-                verbose=True):
+def go_swarp(inputfiles, output_filename = None,
+                configfile = None,
+                verbose = True):
     """Do SWARP"""
 
     # Make sure we have a configuration file:
     if configfile == None:
-        # TODO: replace this with default config file for LBCgo.
+        # TODO: replace this with default config file in LBCgo directories.
         configfile = 'swarp.lbc.conf'
 
+    # Gather some information about the input files
+    keywds = ['object', 'filter', 'exptime', 'imagetyp', 'propid', 'lbcobnam',
+                  'airmass', 'HA', 'objra', 'objdec']
+    ic_swarp = ImageFileCollection('./', keywords=keywds,
+                                    filenames = inputfiles)
 
-    # Set up the output filename:
-    # TODO: Check that these are all in the same filter!
-    # keywds = ['object', 'filter', 'exptime', 'objra', 'objdec']
-    # ImageFileCollection(dirname, keywords=keywds,
-    #                     filenames=
-    #                     output_filename =
+    # Check all are the same filter:
+    # TODO: Set exception if not all are same filter.
+    fltrs = ic_swarp.values('filter',unique=True)
+    if np.size(fltrs) != 1:
+        print('Warning: not all files in SWARP call use the same filter.')
+        return None
+
+    # Calculate mean airmass (weighted by exposure time)
+    exp_airmass = np.array(ic_swarp.values('airmass'))
+    exp_time = np.array(ic_swarp.values('exptime'))
+    airmass = np.average(exp_airmass,weights=exp_time)
 
     # For now grab the information from the first header:
     if output_filename == None:
@@ -226,7 +238,8 @@ def go_swarp(inputfiles, output_filename = None, configfile=None,
         ' -CELESTIAL_TYPE EQUATORIAL -CENTER_TYPE ALL '+\
         ' -COMBINE_BUFSIZE 4096 ' +\
         ' -COPY_KEYWORDS '+\
-        ' OBJECT,FILTER,SATURATE,RDNOISE,GAIN,EXPTIME,AIRMASS,TIME-OBS'
+        ' OBJECT,OBJRA,OBJDEC,OBJEPOCH,PROPID,PI_NAME,'+\
+        'FILTER,SATURATE,RDNOISE,GAIN,EXPTIME,AIRMASS,TIME-OBS'
 
     # Create the final command:
     cmd = 'swarp ' + inputfile_text + cmd_flags
@@ -244,6 +257,9 @@ def go_swarp(inputfiles, output_filename = None, configfile=None,
         return None
 
     swarp.wait()
+
+    # Add airmass to header:
+    fits.setval(output_filename,'AIRMASS',value=airmass)
 
 # def go_imagequality(inputfile,
 #                 configfile=None,
