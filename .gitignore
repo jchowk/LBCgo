@@ -1,8 +1,7 @@
 .idea
 temp*
 __pycache__/*
-<<<<<<< HEAD
 *.pyc
-=======
-*.pyc
->>>>>>> astrom_fiddle
+.DS_Store
+*/.DS_Store
+*~
