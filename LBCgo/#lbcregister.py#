@@ -57,7 +57,7 @@ def go_sextractor(inputfile,
         ' -PARAMETERS_NAME '+paramfile
 
     cmd = 'sex '+inputfile+cmd_flags
-    # print(cmd)
+    # Print(cmd)
 
     try:
         if verbose:
