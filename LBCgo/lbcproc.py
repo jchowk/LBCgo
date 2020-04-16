@@ -374,7 +374,7 @@ def make_flatfield(image_collection,
 
     # Pull out the flat field images from our collection
     flt_files = \
-     image_collection.files_filtered(imagetyp='flat',filter=filter_name)
+     image_collection.files_filtered(imagetyp='flat',object='SkyFlat',filter=filter_name)
 
     # Create 2D list
     # (from https://stackoverflow.com/questions/7745562/appending-to-2d-lists-in-python)
@@ -915,6 +915,8 @@ def lbcgo(raw_directory='./raw/',
     if np.int(ccdproc.__version__[0]) == 2:
         ic0 = ImageFileCollection(raw_directory, keywords=keywds,
                                   glob_include=lbc_file_base)
+
+
         num_images = np.size(ic0.summary['object'])
         # Exit if (for some reason) no images are found in the raw_directory.
         if num_images == 0:
