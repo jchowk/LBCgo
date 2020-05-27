@@ -732,7 +732,9 @@ def make_targetdirectories(image_collection, image_directory='./',
                 print('Directory exists for object {0}.'.format(obj))
 
         # Move the data for each object into its directory.
-        object_files = image_collection.files_filtered(object=obj)
+        # object_files = image_collection.files_filtered(object=obj)
+        object_files = \
+          image_collection.summary['file'][(image_collection.summary['object'] == obj)]
         for fl in object_files:
             cmd = 'mv {0} {1}'.format(fl,dirname)
             crap = call(cmd,shell=1)
@@ -747,7 +749,11 @@ def make_targetdirectories(image_collection, image_directory='./',
         keywds = ['object','filter']
         image_collectionObj = ImageFileCollection(dirname, keywords=keywds,
                             filenames = \
-                            (image_collection.files_filtered(object=obj)).tolist())
+                            (image_collection.files_filtered(object=obj.replace('+','\+').replace('-','\-'))).tolist())
+
+        # debug
+        from IPython import embed ; embed()
+
         # Now select the unique filters for this objects
         filters = image_collectionObj.values('filter',unique=True)
 
@@ -766,9 +772,10 @@ def make_targetdirectories(image_collection, image_directory='./',
                 if verbose == True:
                     print('Directory exists for {1} for object {0}.'.format(obj,filter))
 
-            filter_files = image_collection.files_filtered(object=obj, filter=filter)
+            filter_files = image_collection.files_filtered(object=obj.replace('+','\+').replace('-','\-'), filter=filter)
             for fltfl in filter_files:
                 cmd = 'mv {0} {1}'.format(dirname+fltfl, filter_dirname)
+                print(cmd)
                 crap = call(cmd, shell=1)
 
     return object_directories, filter_directories
@@ -999,6 +1006,7 @@ def lbcgo(raw_directory='./raw/',
         ic3 = ImageFileCollection(image_directory,
                     keywords=keywds,filenames=flatfiles)
 
+        from IPython import embed ; embed()
         # Create directories for extracting individual chips.
         tgt_dirs, fltr_dirs = make_targetdirectories(ic3,
                          image_directory = image_directory,

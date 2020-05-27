@@ -61,6 +61,7 @@ def go_sextractor(inputfile,
 
     try:
         if verbose:
+            print(cmd)
             sextract = Popen(shlex.split(cmd),
                              close_fds=True)
         else:
@@ -210,6 +211,8 @@ def go_swarp(inputfiles, output_filename = None,
     exp_airmass = np.array(ic_swarp.values('airmass'))
     exp_time = np.array(ic_swarp.values('exptime'))
     airmass = np.average(exp_airmass,weights=exp_time)
+
+    # from IPython import embed ; embed()
 
     # For now grab the information from the first header:
     if output_filename == None:
