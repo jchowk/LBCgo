@@ -752,7 +752,7 @@ def make_targetdirectories(image_collection, image_directory='./',
                             (image_collection.files_filtered(object=obj.replace('+','\+').replace('-','\-'))).tolist())
 
         # debug
-        from IPython import embed ; embed()
+        # from IPython import embed ; embed()
 
         # Now select the unique filters for this objects
         filters = image_collectionObj.values('filter',unique=True)
@@ -1006,7 +1006,7 @@ def lbcgo(raw_directory='./raw/',
         ic3 = ImageFileCollection(image_directory,
                     keywords=keywds,filenames=flatfiles)
 
-        from IPython import embed ; embed()
+        # from IPython import embed ; embed()
         # Create directories for extracting individual chips.
         tgt_dirs, fltr_dirs = make_targetdirectories(ic3,
                          image_directory = image_directory,
