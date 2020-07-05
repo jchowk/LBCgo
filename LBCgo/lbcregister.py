@@ -52,18 +52,21 @@ def go_sextractor(inputfile,
     outputsuffix = '.cat'
     outputcatalog = filebase+outputsuffix
 
-
+    # SExtractor flags
     cmd_flags = ' -c '+ configfile + \
         ' -CATALOG_NAME '+outputcatalog + \
         ' -CATALOG_TYPE FITS_LDAC'+ \
         ' -DETECT_THRESH 5.0 -ANALYSIS_THRESH 8.0'+ \
         ' -PARAMETERS_NAME '+paramfile
 
+    # Put together the SExtractor command
     cmd = 'sex '+inputfile+cmd_flags
-    # print(cmd)
 
     try:
         if verbose:
+            print('########### SEXTRACTOR run for {0} '
+                  '########### \n'.format(scmpiter + 1,
+                                          inputfile.replace('.cat', '')))
             print(cmd)
             sextract = Popen(shlex.split(cmd),
                              close_fds=True)
@@ -73,7 +76,7 @@ def go_sextractor(inputfile,
                              stderr=DEVNULL,
                              close_fds=True)
     except Exception as e:
-        print('Whoops: source Extractor call:', (e))
+        print('Oops: source Extractor call:', (e))
         return None
 
     sextract.wait()
@@ -173,7 +176,7 @@ def go_scamp(inputfile,
                                    stderr=DEVNULL,
                                    close_fds=True)
         except Exception as e:
-            print('Whoops: source Extractor call:', (e))
+            print('Oops: source Extractor call:', (e))
             return None
 
         scamp.wait()
@@ -251,10 +254,12 @@ def go_swarp(inputfiles, output_filename = None,
 
     # Create the final command:
     cmd = 'swarp ' + inputfile_text + cmd_flags
-    # debug
-    print(cmd)
+
     try:
         if verbose:
+            print('########### SWARP image combination '
+                  '########### \n')
+            print(cmd)
             swarp = Popen(shlex.split(cmd),
                           close_fds=True)
         else:
@@ -263,7 +268,7 @@ def go_swarp(inputfiles, output_filename = None,
                           stderr=DEVNULL,
                           close_fds=True)
     except Exception as e:
-        print('Whoops: SWARP call:', (e))
+        print('Oops: SWARP call:', (e))
         return None
 
     swarp.wait()
