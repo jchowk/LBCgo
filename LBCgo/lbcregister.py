@@ -53,7 +53,7 @@ def go_sextractor(inputfile,
     cmd_flags = ' -c '+ configfile + \
         ' -CATALOG_NAME '+outputcatalog + \
         ' -CATALOG_TYPE FITS_LDAC'+ \
-        ' -DETECT_THRESH 2.0 -ANALYSIS_THRESH 4.0'+ \
+        ' -DETECT_THRESH 5.0 -ANALYSIS_THRESH 8.0'+ \
         ' -PARAMETERS_NAME '+paramfile
 
     cmd = 'sex '+inputfile+cmd_flags
@@ -77,7 +77,7 @@ def go_sextractor(inputfile,
 
 
 def go_scamp(inputfile,
-             astrometric_catalog='GAIA-DR1',
+             astrometric_catalog='GAIA-DR2',
              astrometric_method = 'exposure',
              num_iterations = 3,
              configfile=None,
@@ -101,14 +101,15 @@ def go_scamp(inputfile,
         print('WARNING: Use at least 2 SCAMP iterations. Setting num_iterations = 2...')
         num_iterations = 2
 
+    SN_thresholds = '5,50'
     for scmpiter in np.arange(num_iterations):
         if scmpiter == 0:
             degree = '3'
             mosaic_type = 'LOOSE'
             pixscale_maxerr = '1.2'
-            position_maxerr = '0.166'
+            position_maxerr = '1'
             posangle_maxerr = '5.0'
-            crossid_radius = '10.0'
+            crossid_radius = '7.5'
             aheader_suffix = '.ahead'
         elif scmpiter == 1:
            degree = '3'
@@ -116,7 +117,7 @@ def go_scamp(inputfile,
            pixscale_maxerr = '1.1'
            position_maxerr = '0.1'
            posangle_maxerr = '3.0'
-           crossid_radius = '10.0'
+           crossid_radius = '5.0'
            aheader_suffix = '.head'
         elif scmpiter == 2:
            degree = '3'
@@ -124,15 +125,15 @@ def go_scamp(inputfile,
            pixscale_maxerr = '1.05'
            position_maxerr = '0.05'
            posangle_maxerr = '1.0'
-           crossid_radius = '5.0'
+           crossid_radius = '2.5'
            aheader_suffix = '.head'
         else:
            degree = '3'
            mosaic_type = 'FIX_FOCALPLANE'
            pixscale_maxerr = '1.05'
-           position_maxerr = '0.01'
+           position_maxerr = '0.025'
            posangle_maxerr = '1.0'
-           crossid_radius = '2.5'
+           crossid_radius = '1.5'
            aheader_suffix = '.head'
 
         cmd_flags = ' -c '+ configfile + \
@@ -144,7 +145,8 @@ def go_scamp(inputfile,
             ' -ASTREF_CATALOG '+astrometric_catalog+ \
             ' -AHEADER_SUFFIX '+aheader_suffix+ \
             ' -CROSSID_RADIUS '+crossid_radius+\
-            ' -STABILITY_TYPE INSTRUMENT'
+            ' -STABILITY_TYPE INSTRUMENT'+\
+            ' -SN_THRESHOLDS '+SN_thresholds
 
         if astrometric_method == 'exposure':
             cmd_flags.replace('INSTRUMENT','EXPOSURE')
@@ -246,6 +248,8 @@ def go_swarp(inputfiles, output_filename = None,
 
     # Create the final command:
     cmd = 'swarp ' + inputfile_text + cmd_flags
+    # debug
+    print(cmd)
     try:
         if verbose:
             swarp = Popen(shlex.split(cmd),
@@ -279,7 +283,7 @@ def go_register(filter_directories,
                 do_sextractor=True,
                 do_scamp=True,
                 do_swarp=True,
-                astrometric_catalog='GAIA-DR1',
+                astrometric_catalog='GAIA-DR2',
                 scamp_iterations = 3):
 
     # TODO: Add the sextractor, scamp, swarp parameters for input.

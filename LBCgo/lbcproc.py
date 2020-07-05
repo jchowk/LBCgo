@@ -40,6 +40,7 @@ warnings.filterwarnings('ignore', category=AstropyUserWarning, append=True)
 # TODO Saturation correction?
 # TODO image weights
 # TODO clean up
+# TODO Check for existing _over, _zero files.
 
 # TODO FIXPIX!
 def go_fixpix(data, chip):
@@ -119,11 +120,30 @@ def go_overscan(image_collection, objects_only=True,
             ccd.data=ccd.data.astype('float32')
 
             # Remove unneeded header keywords. Makes this consistent
-            #   with IRAF treatment.
+            #   with IRAF treatment. Also take out potentially confusing
+            #   LBC keywords
             temp_header = ccd.header
-            del temp_header['trimsec']
-            del temp_header['biassec']
-            del temp_header['datasec']
+
+            bd_keywords=['TRIMSEC','BIASSEC','DATASEC','ROTANGLE','PARANGLE']
+            for ky in bd_keywords:
+                try:
+                    temp_header.pop(ky)
+                except:
+                    pass
+
+
+            # The LBC includes duplicate astrometric keywords that confuse SCAMP/SWARP.
+            #  These all end in "A" and must be removed in order for the astrometric
+            #  solution to work.
+            xxx = temp_header['C*A']
+            for ky in xxx.keys():
+                try:
+                    temp_header.pop(ky)
+                except:
+                    pass
+
+            # Replace the header with the edited version
+            ccd.header = temp_header
 
             # Append the current chip into the hdu:
             output_hdu.append(ccd.to_hdu()[0])
