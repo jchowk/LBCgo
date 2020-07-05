@@ -6,6 +6,9 @@ from glob import glob
 from astropy.io import fits
 from ccdproc import  ImageFileCollection
 
+# TODO: Capture SCAMP output to assess bad solutions.
+# TODO: Photometric calibration / selection of filters
+
 def go_sextractor(inputfile,
                 configfile=None,
                 paramfile = None,
