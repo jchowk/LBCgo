@@ -15,8 +15,8 @@ from astropy.io import fits
 import ccdproc
 from ccdproc import  ImageFileCollection,CCDData
 
-from LBCgo.lbcregister import *
-# from lbcregister import *
+# from LBCgo.lbcregister import *
+from lbcregister import *
 
 
 # Suppress some of the WCS warnings
