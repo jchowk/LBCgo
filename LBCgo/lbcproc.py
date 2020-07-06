@@ -1,24 +1,30 @@
 import numpy as np
 import os
 import shlex
-from subprocess import call, Popen
 from glob import glob
 
-import pdb
+import subprocess
+from subprocess import call, Popen
 
 import astropy.units as u
 from astropy.modeling import models
 
 from astropy.io import fits
 
-from lbcregister import *
-
+# CCDproc imports
 import ccdproc
 from ccdproc import  ImageFileCollection,CCDData
+
+from LBCgo.lbcregister import *
+# from lbcregister import *
+
 
 # Suppress some of the WCS warnings
 import warnings
 from astropy.utils.exceptions import AstropyWarning,AstropyUserWarning
+
+
+
 warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
 warnings.filterwarnings('ignore', category=AstropyUserWarning, append=True)
 
@@ -32,6 +38,9 @@ warnings.filterwarnings('ignore', category=AstropyUserWarning, append=True)
 # lacos_im['objlim']=1.0
 # lacos_im['niter']=2
 
+# TODO Fix processing bails if first directory doesn't have files.
+# TODO: Convert call() use to 'Popen'
+
 # TODO Create option for cleaning intermediate steps (_over, _zero, _flat)
 # TODO Do gain correction, uncertainty system?
 # TODO More general MEF flat fielding?
@@ -42,8 +51,10 @@ warnings.filterwarnings('ignore', category=AstropyUserWarning, append=True)
 # TODO clean up
 # TODO Check for existing _over, _zero files.
 
+
+
 # TODO FIXPIX!
-def go_fixpix(data, chip):
+# def go_fixpix(data, chip):
     # Read bad pixel file:
 
     # The "fix" is to replace bad-column pixels by the median of
@@ -63,11 +74,15 @@ def go_fixpix(data, chip):
     #   else:
     #     data[y,xstart] = corrVal
 
-    return newdata
+    # return newdata
 
-def go_overscan(image_collection, objects_only=True,
-                image_directory='./',raw_directory='./raw/',
-                verbose=True, return_files = True):
+def go_overscan(image_collection,
+                lbc_chips = True,
+                objects_only=True,
+                image_directory='./',
+                raw_directory='./raw/',
+                verbose=True,
+                return_files = True):
     """Remove overscan and trim images."""
     ##
     ## Fit, subtract overscan
@@ -78,8 +93,9 @@ def go_overscan(image_collection, objects_only=True,
     ##   raw_directory    -- Where to find the raw data
     ##   return_files     -- Return a list of subtracted files (default: True)
 
-    # Hardwire the num. of LBC chips
-    lbc_chips = [1,2,3,4]
+    ###### Define which chips to extract if default is chosen:
+    if lbc_chips == True:
+        lbc_chips = [1,2,3,4]
 
     # By default we're only doing this to the object files.
     # Flats and biases are corrected when producing the master calibration images.
@@ -270,8 +286,10 @@ def make_bias(image_collection, bias_filename=None,
         print("Created {0} master bias frame.".format(zero_output_name))
 
 def go_bias(image_collection, bias_file=None,
-                 image_directory='./',input_directory = './',bias_directory='./',
-                 verbose=True, return_files=False):
+            image_directory='./',
+            input_directory = './',
+            bias_directory='./',
+            verbose=True, return_files=False):
     """Apply master bias to MEF data."""
     ##
     ## Apply MEF master bias to a set of object data.
@@ -357,7 +375,7 @@ def go_bias(image_collection, bias_file=None,
 
 def make_flatfield(image_collection,
                    filter_name=None,
-                   lbc_chips = [1,2,3,4],
+                   lbc_chips = True,
                    image_directory='./',
                    raw_directory='./raw/',
                    cosmiccorrect=False, verbose=True):
@@ -376,6 +394,10 @@ def make_flatfield(image_collection,
     # TODO Update make_flatfield to allow for _zero suffix if we've done bias subtraction.
     # TODO Update to step through all the filters in a list.
     # TODO Implement bias subtraction in flatfields.
+
+    ###### Define which chips to extract if default is chosen:
+    if lbc_chips == True:
+        lbc_chips = [1,2,3,4]
 
     # If the filter_name variable is passed, use only that filter. Otherwise,
     # use the first in the list. That is, select the filter beforehand by in
@@ -550,11 +572,15 @@ def make_flatfield(image_collection,
         #     filter_name, mask_output_name))
 
 
-def go_flatfield(image_collection, flat_file=None, filter_names = None,
-                 image_directory='./',input_directory = './',
+def go_flatfield(image_collection,
+                 flat_file=None,
+                 filter_names = None,
+                 image_directory='./',
+                 input_directory = './',
                  flat_directory='./',
                  cosmiccorrect=True,
-                 verbose=True, return_files=False):
+                 verbose=True,
+                 return_files=False):
     """Apply flat fields to MEF data."""
     ##
     ## Apply MEF flat fields to a set of object data.
@@ -716,8 +742,10 @@ def go_cleancosmic(ccd, mbox=15, rbox=15, gbox=11, sigclip=5,
     return ccd
 
 
-def make_targetdirectories(image_collection, image_directory='./',
-                           object_names=None, verbose=True):
+def make_targetdirectories(image_collection,
+                           image_directory='./',
+                           object_names=None,
+                           verbose=True):
     """ Make directories to store data from individual targets and move the data for those targets into the directories.
 
     :param image_collection:
@@ -757,7 +785,7 @@ def make_targetdirectories(image_collection, image_directory='./',
           image_collection.summary['file'][(image_collection.summary['object'] == obj)]
         for fl in object_files:
             cmd = 'mv {0} {1}'.format(fl,dirname)
-            crap = call(cmd,shell=1)
+            crap = call(cmd,shell=True)
 
 
         # Create filter-specific directories and fill them. For now this just
@@ -796,13 +824,15 @@ def make_targetdirectories(image_collection, image_directory='./',
             for fltfl in filter_files:
                 cmd = 'mv {0} {1}'.format(dirname+fltfl, filter_dirname)
                 print(cmd)
-                crap = call(cmd, shell=1)
+                crap = call(cmd, shell=True)
 
     return object_directories, filter_directories
 
 
-def go_extractchips(filter_directories, lbc_chips = [1,2,3,4],
-                  verbose=True, return_files = False):
+def go_extractchips(filter_directories,
+                    lbc_chips = True,
+                    verbose=True,
+                    return_files = False):
     """Extract individual chips from flat-fielded data in preparation for
     combination using sextractor/scamp/swarp.
 
@@ -811,6 +841,11 @@ def go_extractchips(filter_directories, lbc_chips = [1,2,3,4],
     :param return_files:
     :return:
     """
+
+    ###### Define which chips to extract if default is chosen:
+    if lbc_chips == True:
+        lbc_chips = [1,2,3,4]
+
     # If user enters just a single directory:
     if np.size(filter_directories) == 1 & ~isinstance(filter_directories,list):
         filter_directories = [filter_directories]
@@ -902,7 +937,7 @@ def go_clean():
 
 def lbcgo(raw_directory='./raw/',
             image_directory='./',
-            lbc_chips=[1,2,3,4],
+            lbc_chips=True,
             lbcr=True,
             lbcb=True,
             filter_names=None,
@@ -953,6 +988,8 @@ def lbcgo(raw_directory='./raw/',
         raw_lbc_files = glob(raw_directory+lbc_file_base)
         ic0 = ImageFileCollection(raw_directory, keywords=keywds,
                                   filenames=raw_lbc_files)
+        num_images = np.size(ic0.summary['object'])
+
         # Exit if (for some reason) no images are found in the raw_directory.
         if num_images == 0:
             print('WARNING: No images found.')
@@ -964,6 +1001,9 @@ def lbcgo(raw_directory='./raw/',
                   image_directory=image_directory,
                   raw_directory=raw_directory)
 
+    ###### Define which chips to extract if default is chosen:
+    if lbc_chips == True:
+        lbc_chips = [1,2,3,4]
 
     ###### Per filter:
     #
@@ -1005,7 +1045,9 @@ def lbcgo(raw_directory='./raw/',
             print('Using existing {0}'.format(flatname))
 
         # Remove overscan, trim object files.
-        overfiles = go_overscan(ic1,verbose=verbose,
+        overfiles = go_overscan(ic1,
+                                lbc_chips=lbc_chips,
+                                verbose=verbose,
                                 raw_directory=raw_directory,
                                 image_directory=image_directory)
 

@@ -5,8 +5,10 @@ import shlex
 from glob import glob
 from astropy.io import fits
 from ccdproc import  ImageFileCollection
+import astropy.io.votable as votable
 
-# TODO: Capture SCAMP output to assess bad solutions.
+
+# TODO: Offer an iterative treatment of SCAMP to get desired precision
 # TODO: Photometric calibration / selection of filters
 
 def go_sextractor(inputfile,
@@ -95,10 +97,11 @@ def go_scamp(inputfile,
 
     # Make sure the input file is a SEXTRACTOR catalog:
     inputfile = inputfile.replace('.fits','.cat')
+    xmlfile = inputfile.replace('.cat','.xml')
 
     # Make sure we have a configuration file:
     if configfile == None:
-        # TODO: replace this with default config file for LBCgo.
+        # TODO: replace SCAMP config file with default config file for LBCgo.
         configfile = 'scamp.lbc.conf'
 
     # Using only a single iteration of SCAMP doesn't do well enough. Force at
@@ -107,7 +110,10 @@ def go_scamp(inputfile,
         print('WARNING: Use at least 2 SCAMP iterations. Setting num_iterations = 2...')
         num_iterations = 2
 
+    # What threshold of S/N do we use in SCAMP analysis
     SN_thresholds = '5,50'
+
+    # Perform the iterations
     for scmpiter in np.arange(num_iterations):
         if scmpiter == 0:
             degree = '3'
@@ -152,6 +158,7 @@ def go_scamp(inputfile,
             ' -AHEADER_SUFFIX '+aheader_suffix+ \
             ' -CROSSID_RADIUS '+crossid_radius+\
             ' -STABILITY_TYPE INSTRUMENT'+\
+            ' -XML_NAME '+xmlfile+\
             ' -SN_THRESHOLDS '+SN_thresholds
 
         if astrometric_method == 'exposure':
@@ -181,6 +188,14 @@ def go_scamp(inputfile,
 
         scamp.wait()
 
+
+    # Read XML file after last iteration
+    scamp_diagnostic = (votable.parse(xmlfile)).get_first_table().array
+    xy_dispersion = scamp_diagnostic['AstromSigma_Reference'].data
+    astrometric_dispersion = np.sqrt(np.sum(xy_dispersion**2))
+
+    # TODO: Do something with the astrometric dispersion
+
     if clean:
         # Clean the GAIA catalog files
         catfiles = glob('GAIA*cat')
@@ -192,9 +207,10 @@ def go_scamp(inputfile,
 
 
 
-def go_swarp(inputfiles, output_filename = None,
-                configfile = None,
-                verbose = True):
+def go_swarp(inputfiles,
+             output_filename = None,
+             configfile = None,
+             verbose = True):
     """Do SWARP"""
 
     # Make sure we have a configuration file:
@@ -287,7 +303,7 @@ def go_swarp(inputfiles, output_filename = None,
 #
 
 def go_register(filter_directories,
-                lbc_chips = [1,2,3,4],
+                lbc_chips = True,
                 do_sextractor=True,
                 do_scamp=True,
                 do_swarp=True,
@@ -295,6 +311,10 @@ def go_register(filter_directories,
                 scamp_iterations = 3):
 
     # TODO: Add the sextractor, scamp, swarp parameters for input.
+
+    ###### Define which chips to extract if default is chosen:
+    if lbc_chips == True:
+        lbc_chips = [1,2,3,4]
 
     # If user enters just a single directory:
     if np.size(filter_directories) == 1 & ~isinstance(filter_directories,list):
