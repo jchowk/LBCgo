@@ -67,8 +67,7 @@ def go_sextractor(inputfile,
     try:
         if verbose:
             print('########### SEXTRACTOR run for {0} '
-                  '########### \n'.format(scmpiter + 1,
-                                          inputfile.replace('.cat', '')))
+                  '########### \n'.format(inputfile.replace('.cat', '')))
             print(cmd)
             sextract = Popen(shlex.split(cmd),
                              close_fds=True)
@@ -78,7 +77,7 @@ def go_sextractor(inputfile,
                              stderr=DEVNULL,
                              close_fds=True)
     except Exception as e:
-        print('Oops: source Extractor call:', (e))
+        print('Oops: source extractor call:', (e))
         return None
 
     sextract.wait()
@@ -110,13 +109,9 @@ def go_scamp(inputfile,
         print('WARNING: Use at least 2 SCAMP iterations. Setting num_iterations = 2...')
         num_iterations = 2
 
-    # What threshold of S/N do we use in SCAMP analysis
-    SN_thresholds = '5,50'
-
     # Perform the iterations
     for scmpiter in np.arange(num_iterations):
         if scmpiter == 0:
-            degree = '3'
             mosaic_type = 'LOOSE'
             pixscale_maxerr = '1.2'
             position_maxerr = '1'
@@ -124,7 +119,6 @@ def go_scamp(inputfile,
             crossid_radius = '7.5'
             aheader_suffix = '.ahead'
         elif scmpiter == 1:
-           degree = '3'
            mosaic_type = 'FIX_FOCALPLANE'
            pixscale_maxerr = '1.1'
            position_maxerr = '0.1'
@@ -132,34 +126,29 @@ def go_scamp(inputfile,
            crossid_radius = '5.0'
            aheader_suffix = '.head'
         elif scmpiter == 2:
-           degree = '3'
            mosaic_type = 'FIX_FOCALPLANE'
            pixscale_maxerr = '1.05'
            position_maxerr = '0.05'
            posangle_maxerr = '1.0'
-           crossid_radius = '2.5'
+           crossid_radius = '5'
            aheader_suffix = '.head'
         else:
-           degree = '3'
            mosaic_type = 'FIX_FOCALPLANE'
            pixscale_maxerr = '1.05'
            position_maxerr = '0.025'
            posangle_maxerr = '1.0'
-           crossid_radius = '1.5'
+           crossid_radius = '2.5'
            aheader_suffix = '.head'
 
         cmd_flags = ' -c '+ configfile + \
             ' -PIXSCALE_MAXERR '+pixscale_maxerr+ \
             ' -POSANGLE_MAXERR '+posangle_maxerr+ \
             ' -POSITION_MAXERR '+position_maxerr+ \
-            ' -DISTORT_DEGREES '+degree+ \
-            ' -MOSAIC_TYPE '+mosaic_type+ \
             ' -ASTREF_CATALOG '+astrometric_catalog+ \
             ' -AHEADER_SUFFIX '+aheader_suffix+ \
             ' -CROSSID_RADIUS '+crossid_radius+\
-            ' -STABILITY_TYPE INSTRUMENT'+\
-            ' -XML_NAME '+xmlfile+\
-            ' -SN_THRESHOLDS '+SN_thresholds
+            ' -XML_NAME '+xmlfile
+        # ' -MOSAIC_TYPE '+mosaic_type+ \
 
         if astrometric_method == 'exposure':
             cmd_flags.replace('INSTRUMENT','EXPOSURE')
