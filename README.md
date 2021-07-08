@@ -7,7 +7,7 @@ WARNING: This code is currently under continued development. While the basic fun
 Python dependencies:
 * `astropy`
 * `CCDProc`
-* ``
+* `numpy`
 
 External dependencies:
 * `SExtractor`
