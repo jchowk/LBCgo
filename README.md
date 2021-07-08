@@ -16,6 +16,14 @@ External dependencies:
 
 The external C++ codes `SCAMP`, `SWarp`, and `SExtractor` developed by  Emmanuel Bertin and collaborators are available through http://astromatic.iap.fr. `SCAMP` and `SExtractor` are also available through GitHub: https://github.com/astromatic.
 
+## Installing:
+
+`LBCgo` is available through `pip`. The easiest path to installation is:
+
+```
+pip install lbcgo
+```
+
 ## Running LBCgo:
 
 For "standard" situations, the `LBCgo` can be run in one step from the python command line. In this case, all of the data in the `raw/` directory are taken on the same night and have appropriate calibrations. In this case, running `LBCgo` from the command line is as simple as:
