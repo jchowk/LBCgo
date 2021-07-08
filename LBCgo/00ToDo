@@ -3,5 +3,9 @@
 
 [ ] Work out how to handle only saturated flats. (Right now this just kills the process, even if there are remaining filters w/o saturated flats.)
 
+[ ] Identify high background images?
+
 [ ] FIXPIX
 [ ] Auto-identify bad astrometric fits.
+
+[ ] DOCUMENTATION: co-pointing files (with one chip) will cause issues. Code assumes all files have same number of chips when processing. (ERROR: IndexError: list index out of range).
