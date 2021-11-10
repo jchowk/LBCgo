@@ -10,3 +10,4 @@ LBCgo/examples/
 development/
 dist/
 build/
+_*
