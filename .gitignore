@@ -11,3 +11,4 @@ development/
 dist/
 build/
 _*
+references/*
