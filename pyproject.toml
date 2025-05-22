@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "LBCgo"
-version = "0.1.4"
+version = "0.1.5"
 description = "Data reduction for the LBT's Large Binocular Camera"
 authors = ["Chris Howk <jhowk@nd.edu>"]
 license = "MIT"
