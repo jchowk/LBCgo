@@ -422,7 +422,7 @@ def make_flatfield(image_collection,
     # (from https://stackoverflow.com/questions/7745562/appending-to-2d-lists-in-python)
     num_lbc_chips = np.size(lbc_chips)
     flat_list = [[] for i in range(num_lbc_chips)]
-    num_flat_images = np.zeros(num_lbc_chips,dtype=np.int)
+    num_flat_images = np.zeros(num_lbc_chips,dtype=int)
 
     # Loop through the files
     for filename in flt_files:
@@ -974,7 +974,7 @@ def lbcgo(raw_directory='./raw/',
               'airmass', 'HA', 'objra', 'objdec']
 
     ##### Create an ImageFileCollection object to hold the raw data list.
-    if np.int(ccdproc.__version__[0]) == 2:
+    if int(ccdproc.__version__[0]) == 2:
         ic0 = ImageFileCollection(raw_directory, keywords=keywds,
                                   glob_include=lbc_file_base)
 
