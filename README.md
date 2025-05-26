@@ -9,12 +9,23 @@ Python dependencies:
 * `CCDProc`
 * `numpy`
 
-External dependencies:
-* `SExtractor`
-* `SCAMP`
-* `SWarp`
 
-The external C++ codes `SCAMP`, `SWarp`, and `SExtractor` developed by  Emmanuel Bertin and collaborators are available through http://astromatic.iap.fr. `SCAMP` and `SExtractor` are also available through GitHub: https://github.com/astromatic.
+## External Dependencies:
+* `SExtractor` - Source extraction software
+* `SCAMP` - Astrometric calibration software  
+* `SWarp` - Image resampling and co-addition software
+
+These can be installed via:
+- **macOS**: `brew install sextractor scamp swarp`
+- **Ubuntu/Debian**: `apt-get install sextractor scamp swarp`
+- **From source**: Available at http://astromatic.iap.fr
+
+These can also be installed using `conda-forge`:
+```
+conda install astromatic-scamp
+conda install astromatic-swarp
+conda install sextractor
+```
 
 ## Installing:
 
