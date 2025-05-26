@@ -191,8 +191,11 @@ def go_overscan(image_collection,
     if return_files == True:
         return over_files_out
 
-def make_bias(image_collection, bias_filename=None,
-              image_directory='./', raw_directory='./raw/',
+
+def make_bias(image_collection, 
+              bias_filename=None,
+              image_directory='./', 
+              raw_directory='./raw/',
               verbose=True):
     """Make a master bias image for a collection of images."""
     ##
@@ -216,8 +219,10 @@ def make_bias(image_collection, bias_filename=None,
     else:
         zero_output_name = bias_filename
 
-    # Hardwire the number of CCDs in LBC
-    lbc_chips = [1,2,3,4]
+    ###### Define which chips to extract if default is chosen:
+    if lbc_chips == True:
+        lbc_chips = [1,2,3,4]
+
     num_lbc_chips = np.size(lbc_chips)
 
     # Create 2D list
@@ -302,6 +307,7 @@ def go_bias(image_collection, bias_file=None,
             image_directory='./',
             input_directory = './',
             bias_directory='./',
+            lbc_chips = True,
             verbose=True, return_files=False):
     """Apply master bias to MEF data."""
     ##
@@ -316,8 +322,9 @@ def go_bias(image_collection, bias_file=None,
     ##   return_files     -- Return a list of files that were flattened (default False)
 
 
-    # Hardwire number of CCDs in LBC
-    lbc_chips = [1,2,3,4]
+    ###### Define which chips to extract if default is chosen:
+    if lbc_chips == True:
+        lbc_chips = [1,2,3,4]
 
     # Process the input data list
     if isinstance(image_collection,ImageFileCollection):
@@ -391,7 +398,8 @@ def make_flatfield(image_collection,
                    lbc_chips = True,
                    image_directory='./',
                    raw_directory='./raw/',
-                   cosmiccorrect=False, verbose=True):
+                   cosmiccorrect=False, 
+                   verbose=True):
     """Make a flat field image for a collection of images."""
     ##
     ## Create master flat field image for a specific flat
@@ -591,6 +599,7 @@ def go_flatfield(image_collection,
                  image_directory='./',
                  input_directory = './',
                  flat_directory='./',
+                 lbc_chips = True,
                  cosmiccorrect=True,
                  verbose=True,
                  return_files=False):
@@ -612,8 +621,9 @@ def go_flatfield(image_collection,
     if not os.path.exists(datadir):
         os.makedirs(datadir)
 
-    # Hardwire number of CCDs in LBC
-    lbc_chips = [1,2,3,4]
+    ###### Define which chips to extract if default is chosen:
+    if lbc_chips == True:
+        lbc_chips = [1,2,3,4]
 
     # Identify the filters for which to do flats:
     if filter_names == None:
@@ -1061,6 +1071,7 @@ def lbcgo(raw_directory='./raw/',
         flatname = 'flat.'+filter+'.fits'
         if not os.path.lexists(flatname):
             make_flatfield(ic1,verbose=verbose,
+                           lbc_chips=lbc_chips,
                            raw_directory=raw_directory,
                            image_directory=image_directory)
         else:
@@ -1083,7 +1094,7 @@ def lbcgo(raw_directory='./raw/',
                     keywords=keywds,filenames=overfiles)
 
         # Apply the flatfields
-        flatfiles = go_flatfield(ic2, return_files=True,
+        flatfiles = go_flatfield(ic2, return_files=True, lbc_chips=lbc_chips,
                                  image_directory=image_directory, verbose=verbose, 
                                  cosmiccorrect=False)
 
