@@ -1,3 +1,4 @@
+[tool.poetry]
 name = "LBCgo"
 version = "0.1.5"
 description = "Data reduction for the LBT's Large Binocular Camera"
@@ -8,7 +9,7 @@ homepage = "https://github.com/jchowk/LBCgo"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-numpy = "^2.0"
+numpy = "^1.21"
 astropy = "^5.3.3"
 ccdproc = "^2.2.0"
 
