@@ -1,6 +1,6 @@
 [project]
 name = "LBCgo"
-version = "0.1.5"
+version = "0.1.6"
 description = "Data reduction for the LBT's Large Binocular Camera"
 authors = [
     {name = "Chris Howk", email = "jhowk@nd.edu"}
