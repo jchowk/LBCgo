@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import shutil
 from subprocess import Popen, DEVNULL
 import shlex
 from glob import glob
@@ -19,6 +20,10 @@ def go_sextractor(inputfile,
                 verbose=True, clean=True):
     """
     """
+    # Check if SExtractor is available
+    if not shutil.which('sex'):
+        raise RuntimeError("SExtractor (sex) is not available. Please install it.")
+    
     # path = os.path.abspath(amodule.__file__)
 
     if configfile == None:
@@ -84,7 +89,7 @@ def go_sextractor(inputfile,
 
 
 def go_scamp(inputfile,
-             astrometric_catalog='GAIA-DR2',
+             astrometric_catalog='GAIA-DR3',
              astrometric_method = 'exposure',
              num_iterations = 3,
              configfile=None,
@@ -93,6 +98,10 @@ def go_scamp(inputfile,
     """ Run Astromatic.net code SCAMP to calculate astrometric
      solution on an image.
     """
+
+    # Check if SCAMP is available
+    if not shutil.which('scamp'):
+        raise RuntimeError("SCAMP is not available. Please install it.")
 
     # Make sure the input file is a SEXTRACTOR catalog:
     inputfile = inputfile.replace('.fits','.cat')
@@ -202,6 +211,10 @@ def go_swarp(inputfiles,
              verbose = True):
     """Do SWARP"""
 
+    # Check if SWarp is available
+    if not shutil.which('swarp'):
+        raise RuntimeError("SWarp is not available. Please install it.")
+
     # Make sure we have a configuration file:
     if configfile == None:
         # TODO: replace this with default config file in LBCgo directories.
@@ -224,8 +237,6 @@ def go_swarp(inputfiles,
     exp_airmass = np.array(ic_swarp.values('airmass'))
     exp_time = np.array(ic_swarp.values('exptime'))
     airmass = np.average(exp_airmass,weights=exp_time)
-
-    # from IPython import embed ; embed()
 
     # For now grab the information from the first header:
     if output_filename == None:
@@ -296,7 +307,7 @@ def go_register(filter_directories,
                 do_sextractor=True,
                 do_scamp=True,
                 do_swarp=True,
-                astrometric_catalog='GAIA-DR2',
+                astrometric_catalog='GAIA-DR3',
                 scamp_iterations = 3):
 
     # TODO: Add the sextractor, scamp, swarp parameters for input.
@@ -306,7 +317,7 @@ def go_register(filter_directories,
         lbc_chips = [1,2,3,4]
 
     # If user enters just a single directory:
-    if np.size(filter_directories) == 1 & ~isinstance(filter_directories,list):
+    if np.size(filter_directories) == 1 and not isinstance(filter_directories,list):
         filter_directories = [filter_directories]
 
     for j in np.arange(np.size(filter_directories)):
@@ -314,7 +325,6 @@ def go_register(filter_directories,
         drctry = filter_directories[j]
         if filter_directories[j][-1] != '/':
             filter_directories[j] += '/'
-
 
     # Loop through each of the filter directories:
     for fltdr in filter_directories:

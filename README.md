@@ -9,12 +9,23 @@ Python dependencies:
 * `CCDProc`
 * `numpy`
 
-External dependencies:
-* `SExtractor`
-* `SCAMP`
-* `SWarp`
 
-The external C++ codes `SCAMP`, `SWarp`, and `SExtractor` developed by  Emmanuel Bertin and collaborators are available through http://astromatic.iap.fr. `SCAMP` and `SExtractor` are also available through GitHub: https://github.com/astromatic.
+## External Dependencies:
+* `SExtractor` - Source extraction software
+* `SCAMP` - Astrometric calibration software  
+* `SWarp` - Image resampling and co-addition software
+
+These can be installed via:
+- **macOS**: `brew install sextractor scamp swarp`
+- **Ubuntu/Debian**: `apt-get install sextractor scamp swarp`
+- **From source**: Available at http://astromatic.iap.fr
+
+These can also be installed using `conda-forge`:
+```
+conda install astromatic-scamp
+conda install astromatic-swarp
+conda install sextractor
+```
 
 ## Installing:
 
@@ -27,23 +38,27 @@ pip install lbcgo
 ## Running LBCgo:
 
 For "standard" situations, the `LBCgo` can be run in one step from the python command line. In this case, all of the data in the `raw/` directory are taken on the same night and have appropriate calibrations. In this case, running `LBCgo` from the command line is as simple as:
-```
-ipython> from lbcproc import *
-ipython> from lbcregister import *
+```python
+# Modern Python import style:
+from LBCgo import lbcgo
 
-ipython> lbcgo()
+# Run the main reduction pipeline
+lbcgo()
 ```
+
 Before doing this, copy the parameter files from `LBCgo/LBCgo/conf/` into the current working directory (an eventual fix won't require this step).
 
 Alternatively, it can be useful to process each filter separately or even to avoid doing the astrometric steps until a later time. In this case, one may do:
 ```
-ipython> lbcgo(filter_names=['I-BESSEL'], do_astrometry=False)
+# Run the main reduction pipeline with just the I-band filter:
+lbcgo(filter_names=['I-BESSEL'], do_astrometry=False)
 ```
 
 The astrometric portion of the reduction can be done later using, for example reducing the I-BESSEL data for the target PG1338+101:
 ```
-ipython> fltr_dirs=glob('PG1338+101/I-BESSEL/')
-ipython> go_register(fltr_dirs, do_sextractor=True,
+from lbcgo.lbcregister import go_register
+fltr_dirs=glob('PG1338+101/I-BESSEL/')
+go_register(fltr_dirs, do_sextractor=True,
             do_scamp=True, do_SWarp=True)
 ```
 
@@ -51,7 +66,7 @@ ipython> go_register(fltr_dirs, do_sextractor=True,
 
 `LBCgo` can be used if the images were taken when one of the LBC CCDs was off-line. The approach to doing this is to explicitly specify the chips to include in the data reduction steps:
 ```
-ipython> lbcgo(lbc_chips=[1,2,4])
+lbcgo(lbc_chips=[1,2,4])
 ```
 This is useful, as there were several months in 2011 when LBCCHIP3 was inoperable.
 
@@ -59,7 +74,7 @@ This is useful, as there were several months in 2011 when LBCCHIP3 was inoperabl
 
 Testing has revealed some occasional issues with the astrometric solution for the individual chips. This can be difficult to diagnose. The registration step using `SWarp` can warn you of some obvious cases, and these can subsequently be removed before rerunning the `SWarp` step by doing, e.g.:
 ```
-ipython> go_register(fltr_dirs, do_sextractor=False,
+go_register(fltr_dirs, do_sextractor=False,
             do_scamp=False, do_SWarp=True)
 ```
 

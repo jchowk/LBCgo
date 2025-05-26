@@ -4,6 +4,7 @@ import shlex
 from glob import glob
 
 import subprocess
+import shutil
 from subprocess import call, Popen
 
 import astropy.units as u
@@ -75,6 +76,18 @@ warnings.filterwarnings('ignore', category=AstropyUserWarning, append=True)
     #     data[y,xstart] = corrVal
 
     # return newdata
+
+def check_external_dependencies():
+    """Check if required external tools are available."""
+    required_tools = ['sex', 'scamp', 'swarp']
+    missing_tools = []
+    
+    for tool in required_tools:
+        if not shutil.which(tool):
+            missing_tools.append(tool)
+    
+    if missing_tools:
+        raise RuntimeError(f"Missing required external tools: {missing_tools}")
 
 def go_overscan(image_collection,
                 lbc_chips = True,
@@ -422,7 +435,7 @@ def make_flatfield(image_collection,
     # (from https://stackoverflow.com/questions/7745562/appending-to-2d-lists-in-python)
     num_lbc_chips = np.size(lbc_chips)
     flat_list = [[] for i in range(num_lbc_chips)]
-    num_flat_images = np.zeros(num_lbc_chips,dtype=np.int)
+    num_flat_images = np.zeros(num_lbc_chips,dtype=int)
 
     # Loop through the files
     for filename in flt_files:
@@ -799,8 +812,6 @@ def make_targetdirectories(image_collection,
                             filenames = \
                             (image_collection.files_filtered(object=obj.replace('+','\+').replace('-','\-'))).tolist())
 
-        # debug
-        # from IPython import embed ; embed()
 
         # Now select the unique filters for this objects
         filters = image_collectionObj.values('filter',unique=True)
@@ -820,7 +831,9 @@ def make_targetdirectories(image_collection,
                 if verbose == True:
                     print('Directory exists for {1} for object {0}.'.format(obj,filter))
 
-            filter_files = image_collection.files_filtered(object=obj.replace('+','\+').replace('-','\-'), filter=filter)
+            # filter_files = image_collection.files_filtered(object=obj.replace('+','\+').replace('-','\-'), filter=filter)
+            filter_files = image_collection.files_filtered(object=obj,
+                                                            filter=filter)
             for fltfl in filter_files:
                 cmd = 'mv {0} {1}'.format(dirname+fltfl, filter_dirname)
                 print(cmd)
@@ -847,7 +860,7 @@ def go_extractchips(filter_directories,
         lbc_chips = [1,2,3,4]
 
     # If user enters just a single directory:
-    if np.size(filter_directories) == 1 & ~isinstance(filter_directories,list):
+    if np.size(filter_directories) == 1 and not isinstance(filter_directories,list):
         filter_directories = [filter_directories]
 
     # The pre-chip-extraction images will be put in a data/ directory:
@@ -952,6 +965,10 @@ def lbcgo(raw_directory='./raw/',
 
     """
 
+    # Check that required external tools are available before starting
+    if do_astrometry:
+        check_external_dependencies()
+
     # It will go something like this...
 
     # Make sure the input directories have trailing slashes:
@@ -970,30 +987,35 @@ def lbcgo(raw_directory='./raw/',
         lbc_file_base = 'lbcr.*.*.fits*'
 
     # What information do we want from the headers?
-    keywds = ['object', 'filter', 'exptime', 'imagetyp', 'propid', 'lbcobnam',
-              'airmass', 'HA', 'objra', 'objdec']
+    keywds = ['object', 'filter', 'exptime', 'imagetyp', 
+              'propid', 'lbcobnam',
+              'airmass', 'HA', 
+              'objra', 'objdec']
 
-    ##### Create an ImageFileCollection object to hold the raw data list.
-    if np.int(ccdproc.__version__[0]) == 2:
-        ic0 = ImageFileCollection(raw_directory, keywords=keywds,
+    ##### Create an ImageFileCollection object to hold the raw data list.    
+    ic0_all = ImageFileCollection(raw_directory, keywords=keywds,
                                   glob_include=lbc_file_base)
 
+    # Remove sky flat test images by excluding files with lbcobnam matching 'SkyFlatTest*'
 
-        num_images = np.size(ic0.summary['object'])
-        # Exit if (for some reason) no images are found in the raw_directory.
-        if num_images == 0:
-            print('WARNING: No images found.')
-            return None
-    else:
-        raw_lbc_files = glob(raw_directory+lbc_file_base)
-        ic0 = ImageFileCollection(raw_directory, keywords=keywds,
-                                  filenames=raw_lbc_files)
-        num_images = np.size(ic0.summary['object'])
+    # Get all files that do NOT match the SkyFlatTest pattern
+    non_test_files = []
+    for i, file in enumerate(ic0_all.files):
+        # Get the lbcobnam value from the summary table
+        lbcobnam_value = ic0_all.summary['lbcobnam'][i]
+        if not str(lbcobnam_value).startswith('SkyFlatTest'):
+            non_test_files.append(file)
+    
+    # Create final collection with only non-SkyFlatTest files
+    ic0 = ImageFileCollection(raw_directory,
+                              keywords=keywds, filenames=non_test_files)
 
-        # Exit if (for some reason) no images are found in the raw_directory.
-        if num_images == 0:
-            print('WARNING: No images found.')
-            return None
+
+    num_images = np.size(ic0.summary['object'])
+    # Exit if (for some reason) no images are found in the raw_directory.
+    if num_images == 0:
+        print('WARNING: No images found.')
+        return None
 
     ######### Create the master bias frame (if requested)
     if bias_proc == True:
@@ -1062,13 +1084,14 @@ def lbcgo(raw_directory='./raw/',
 
         # Apply the flatfields
         flatfiles = go_flatfield(ic2, return_files=True,
-                                 image_directory=image_directory, verbose=verbose, cosmiccorrect=False)
+                                 image_directory=image_directory, verbose=verbose, 
+                                 cosmiccorrect=False)
 
         # Image collection of object frames overscanned & bias subtracted + flattened
         ic3 = ImageFileCollection(image_directory,
                     keywords=keywds,filenames=flatfiles)
 
-        # from IPython import embed ; embed()
+
         # Create directories for extracting individual chips.
         tgt_dirs, fltr_dirs = make_targetdirectories(ic3,
                          image_directory = image_directory,
