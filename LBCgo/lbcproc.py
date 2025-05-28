@@ -42,7 +42,6 @@ warnings.filterwarnings('ignore', category=AstropyUserWarning, append=True)
 # TODO Fix processing bails if first directory doesn't have files.
 # TODO: Convert call() use to 'Popen'
 
-# TODO Create option for cleaning intermediate steps (_over, _zero, _flat)
 # TODO Do gain correction, uncertainty system?
 # TODO More general MEF flat fielding?
 # TODO Logging system
@@ -947,7 +946,7 @@ def go_extractchips(filter_directories,
     if return_files == True:
         return chip_files
 
-def go_clean():
+def go_scrub():
 
     # Remove data/ directory holding _over, _flat files.
     cmd = 'rm data/'
@@ -970,13 +969,97 @@ def lbcgo(raw_directory='./raw/',
             filter_names=None,
             bias_proc=False,
             do_astrometry=True,
+            astrometric_catalog='GAIA-DR3',
             scamp_iterations=3,
-            verbose=True, clean=True):
-    """Process a directory of LBC data.
-
-    By default, all raw data are to be in the ./raw/ directory before processing (raw_directory='./raw/').
-    By default, all new images are written in the CWD (image_directory='./').
-
+            verbose=True, 
+            clean=True):
+    """Process a directory of LBC (Large Binocular Camera) data through the complete reduction pipeline.
+    
+    This function performs comprehensive data reduction for LBT LBC
+    observations, including overscan subtraction, flat fielding, cosmic ray
+    removal, chip extraction, astrometric calibration, and final image
+    combination. The pipeline processes multi-extension FITS files from both
+    LBC-Blue and LBC-Red cameras.
+    
+    Detailed Processing Steps:
+    1. Collect and filter raw image files by camera and filter
+    2. Create master bias frames (optional)
+    3. Create master flat field frames per filter
+    4. Remove overscan regions and trim images
+    5. Apply bias correction (optional)
+    6. Apply flat field correction
+    7. Organize data by target and filter into subdirectories
+    8. Extract individual CCD chips for astrometric processing
+    9. Perform astrometric calibration using SExtractor/SCAMP (optional)
+    10. Co-add registered images using SWARP (optional)
+    
+    Parameters
+    ----------
+    raw_directory : str, optional
+        Path to directory containing raw LBC FITS files. Files should follow the 
+        naming convention 'lbc[br].YYYYMMDD.NNNNNN.fits'. Default: './raw/'
+    image_directory : str, optional
+        Output directory for processed images and intermediate files. Default: './'
+    lbc_chips : bool or list, optional
+        CCD chips to process. If True, processes all 4 chips [1,2,3,4]. 
+        Can specify subset as list (e.g., [1,3]). Default: True
+    lbcr : bool, optional
+        Process LBC-Red camera data. Default: True
+    lbcb : bool, optional  
+        Process LBC-Blue camera data. Default: True
+    filter_names : list or None, optional
+        List of filter names to process (e.g., ['g-SLOAN', 'r-SLOAN']). 
+        If None, processes all filters found in data. Default: None
+    bias_proc : bool, optional
+        Apply bias frame correction. Requires bias frames in raw data. Default: False
+    do_astrometry : bool, optional
+        Perform astrometric calibration and image registration using SExtractor, 
+        SCAMP, and SWARP. Requires external tools to be installed. Default: True
+    astrometric_catalog : str, optional
+        Astrometric reference catalog to use for SCAMP calibration. 
+        Common options include 'GAIA-DR3', 'SDSS-R12', '2MASS', etc. Default: 'GAIA-DR3'
+    scamp_iterations : int, optional
+        Number of SCAMP iterations for astrometric solution refinement. 
+        Minimum of 2 iterations recommended. Default: 3
+    verbose : bool, optional
+        Print detailed processing information and progress. Default: True
+    clean : bool, optional
+        Clean up intermediate files after processing. If True, removes intermediate
+        files and diagnostic outputs. If False, preserves catalog files in 'cat/' 
+        directory for inspection. Default: True
+        
+    Returns
+    -------
+    None
+        Function performs file operations and creates output images in specified directories.
+        Final products include flat-fielded individual chip images and (if do_astrometry=True) 
+        astrometrically-calibrated combined images.
+        
+    Notes
+    -----
+    - Raw files are expected to be multi-extension FITS with 4 CCD extensions
+    - SkyFlatTest images are automatically excluded from processing
+    - External dependencies (SExtractor, SCAMP, SWARP) are required if do_astrometry=True
+    - For nights with V-band observations from both cameras, run separately with 
+      lbcr=False then lbcb=False to avoid inappropriate co-addition
+    - Processing creates subdirectories organized by target name and filter
+    - Intermediate files are moved to a 'data/' subdirectory during processing
+    
+    Examples
+    --------
+    Basic processing with astrometry:
+    >>> lbcgo()
+    
+    Process only g-band data from LBC-Blue:
+    >>> lbcgo(lbcb=True, lbcr=False, filter_names=['g-SLOAN'])
+    
+    Process without astrometric calibration:
+    >>> lbcgo(do_astrometry=False)
+    
+    Custom directories and bias correction:
+    >>> lbcgo(raw_directory='/data/lbc/raw/', 
+    ...        image_directory='/data/lbc/reduced/',
+    ...        bias_proc=True)
     """
 
     # Check that required external tools are available before starting
@@ -1115,13 +1198,17 @@ def lbcgo(raw_directory='./raw/',
 
         # Register and coadd the images
         if do_astrometry:
-            go_register(fltr_dirs, lbc_chips=lbc_chips,
-                        scamp_iterations = scamp_iterations)
+            go_register(fltr_dirs, 
+                        lbc_chips=lbc_chips,
+                        astrometric_catalog=astrometric_catalog,
+                        scamp_iterations=scamp_iterations,
+                        verbose=verbose)
 
     # Let's do some clean-up.
     if clean:
         # We will eventually ...
         #remove _over, _zero, _flat files.
+        go_scrub()
         print('')
     else:
         # We will eventually ...

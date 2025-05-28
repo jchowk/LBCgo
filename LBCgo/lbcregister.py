@@ -7,6 +7,7 @@ from glob import glob
 from astropy.io import fits
 from ccdproc import  ImageFileCollection
 import astropy.io.votable as votable
+import LBCgo
 
 
 # TODO: Offer an iterative treatment of SCAMP to get desired precision
@@ -15,28 +16,40 @@ import astropy.io.votable as votable
 def go_sextractor(inputfile,
                 configfile=None,
                 paramfile = None,
-                convfile = 'default.conv',
-                nnwfile = 'default.nnw',
-                verbose=True, clean=True):
+                convfile = None,
+                nnwfile = None,
+                verbose=True):
     """
     """
     # Check if SExtractor is available
     if not shutil.which('sex'):
         raise RuntimeError("SExtractor (sex) is not available. Please install it.")
     
-    # path = os.path.abspath(amodule.__file__)
+    # from IPython import embed; embed()
 
     if configfile == None:
-        configfile = 'sextractor.lbc.conf'
+        # Use default config file from LBCgo package directories
+        configfile = os.path.join(LBCgo.__path__[0], 'LBCgo', 'conf', 'sextractor.lbc.conf')
+        if verbose:
+            print("Using default SExtractor configuration file: {0}".format(configfile))
+        
 
-    # TODO: Use default if output.param file doesnt exist
+    # Use default if output.param file doesnt exist
     if paramfile == None:
-        paramfile = 'sextractor.lbcoutput.param'
+        paramfile = os.path.join(LBCgo.__path__[0], 'LBCgo', 'conf', 'sextractor.lbcoutput.param')
+        if verbose:
+            print("Using default SExtractor parameter file: {0}".format(paramfile))
         file_exists = os.path.exists(paramfile)
         if not file_exists:
             print("Warning: SEXTRACTOR paramater file {0} "
                   "does not exist".format(paramfile))
             return None
+
+    # Set default convolution file if not provided
+    if convfile == None:
+        convfile = os.path.join(LBCgo.__path__[0], 'LBCgo', 'conf', 'default.conv')
+        if verbose:
+            print("Using default SExtractor convolution file: {0}".format(convfile))
 
     # Test for convolution file
     file_exists = os.path.exists(convfile)
@@ -44,6 +57,12 @@ def go_sextractor(inputfile,
         print("Warning: SEXTRACTOR convolution file {0} "
               "does not exist".format(convfile))
         return None
+
+    # Set default neural network weights file if not provided
+    if nnwfile == None:
+        nnwfile = os.path.join(LBCgo.__path__[0], 'LBCgo', 'conf', 'default.nnw')
+        if verbose:
+            print("Using default SExtractor neural network weights file: {0}".format(nnwfile))
 
     # Test for NNW file
     file_exists = os.path.exists(nnwfile)
@@ -93,7 +112,7 @@ def go_scamp(inputfile,
              astrometric_method = 'exposure',
              num_iterations = 3,
              configfile=None,
-             verbose=True, clean=True):
+             verbose=True):
 
     """ Run Astromatic.net code SCAMP to calculate astrometric
      solution on an image.
@@ -109,8 +128,10 @@ def go_scamp(inputfile,
 
     # Make sure we have a configuration file:
     if configfile == None:
-        # TODO: replace SCAMP config file with default config file for LBCgo.
-        configfile = 'scamp.lbc.conf'
+        # Use default SCAMP config file from LBCgo package directories
+        configfile = os.path.join(LBCgo.__path__[0], 'LBCgo', 'conf', 'scamp.lbc.conf')
+        if verbose:
+            print("Using default SCAMP configuration file: {0}".format(configfile))
 
     # Using only a single iteration of SCAMP doesn't do well enough. Force at
     # least two iterations:
@@ -194,16 +215,6 @@ def go_scamp(inputfile,
 
     # TODO: Do something with the astrometric dispersion
 
-    if clean:
-        # Clean the GAIA catalog files
-        catfiles = glob('GAIA*cat')
-        for ctfls in catfiles:
-            cmd = 'rm '+ctfls
-            clean_dir = Popen(shlex.split(cmd),
-                close_fds=True)
-            clean_dir.wait()
-
-
 
 def go_swarp(inputfiles,
              output_filename = None,
@@ -217,8 +228,11 @@ def go_swarp(inputfiles,
 
     # Make sure we have a configuration file:
     if configfile == None:
-        # TODO: replace this with default config file in LBCgo directories.
-        configfile = 'swarp.lbc.conf'
+        # Use default config file from LBCgo package directories
+        configfile = os.path.join(LBCgo.__path__[0], 'LBCgo', 'conf', 'swarp.lbc.conf')
+        if verbose:
+            print("Using default SWARP configuration file: {0}".format(configfile))
+
 
     # Gather some information about the input files
     keywds = ['object', 'filter', 'exptime', 'imagetyp', 'propid', 'lbcobnam',
@@ -227,11 +241,11 @@ def go_swarp(inputfiles,
                                     filenames = inputfiles)
 
     # Check all are the same filter:
-    # TODO: Set exception if not all are same filter rather than just bail.
     fltrs = ic_swarp.values('filter',unique=True)
     if np.size(fltrs) != 1:
-        print('Warning: not all files in SWARP call use the same filter.')
-        return None
+        filters_str = ', '.join(str(f) for f in fltrs)
+        raise ValueError(f"All input files must have the same filter for SWARP combination. "
+                        f"Found {np.size(fltrs)} different filters: {filters_str}")
 
     # Calculate mean airmass (weighted by exposure time)
     exp_airmass = np.array(ic_swarp.values('airmass'))
@@ -245,7 +259,6 @@ def go_swarp(inputfiles,
         filter_text = imhead['FILTER']
         filter_text = filter_text.replace('-SLOAN','').replace('-BESSEL','').replace('SDT_Uspec','Uspec')
         # Create final output filename
-        # TODO: Check if file exists.
         output_filename = (imhead['object']).\
             replace(' ','')+'.'+filter_text+'.mos.fits'
 
@@ -308,7 +321,80 @@ def go_register(filter_directories,
                 do_scamp=True,
                 do_swarp=True,
                 astrometric_catalog='GAIA-DR3',
-                scamp_iterations = 3):
+                scamp_iterations = 3,
+                verbose=True):
+    """Perform astrometric registration and image combination for LBC chip-extracted data.
+    
+    This function coordinates the complete astrometric processing pipeline for LBC data
+    that has been processed through flat fielding and chip extraction. It sequentially
+    runs source extraction (SExtractor), astrometric calibration (SCAMP), and image
+    combination (SWARP) on individual CCD chip images to produce final registered
+    and co-added mosaics.
+    
+    Processing Steps:
+    1. Source extraction on individual chip images using SExtractor
+    2. Astrometric solution calculation using SCAMP with iterative refinement
+    3. Image resampling and combination using SWARP to create final mosaics
+    
+    Parameters
+    ----------
+    filter_directories : str or list of str
+        Directory path(s) containing chip-extracted FITS files. Each directory should
+        contain individual chip images (e.g., 'object_1.fits', 'object_2.fits', etc.)
+        from the chip extraction step.
+    lbc_chips : bool or list of int, optional
+        CCD chips to process. If True, processes all 4 chips [1,2,3,4].
+        Can specify subset as list (e.g., [1,3]). Default: True
+    do_sextractor : bool, optional
+        Run SExtractor for source detection on each chip image. Creates catalogs
+        needed for astrometric calibration. Default: True
+    do_scamp : bool, optional
+        Run SCAMP for astrometric calibration. Calculates WCS solutions using
+        reference catalog cross-matching. Default: True
+    do_swarp : bool, optional
+        Run SWARP for image resampling and combination. Creates final co-added
+        mosaics with corrected astrometry. Default: True
+    astrometric_catalog : str, optional
+        Reference catalog for astrometric calibration. Common options include
+        'GAIA-DR3', 'GAIA-DR2', '2MASS', 'USNO-B1', etc. Default: 'GAIA-DR3'
+    scamp_iterations : int, optional
+        Number of SCAMP iterations for astrometric solution refinement.
+        More iterations improve precision but increase processing time.
+        Minimum of 2 recommended. Default: 3
+    verbose : bool, optional
+        Print detailed processing information and command outputs. Default: True
+        
+    Returns
+    -------
+    None
+        Function performs file operations and creates output files in the input
+        directories. Final products are astrometrically-calibrated combined
+        images with '.mos.fits' extension and corresponding weight maps.
+        
+    Notes
+    -----
+    - Input directories should contain chip-extracted FITS files from go_extractchips()
+    - Requires external tools: SExtractor, SCAMP, and SWARP from astromatic.net
+    - Creates intermediate files (.cat, .xml, .head) during processing
+    - Final mosaics are named using object name and filter (e.g., 'M31.g.mos.fits')
+    - Processing is done per filter directory to maintain filter separation
+    - SCAMP uses iterative refinement with progressively tighter tolerances
+    
+    Examples
+    --------
+    Basic astrometric processing for all chips:
+    >>> go_register(['M31/g-SLOAN/', 'M31/r-SLOAN/'])
+    
+    Process only specific chips with custom catalog:
+    >>> go_register(['NGC4321/V/'], lbc_chips=[1,2], 
+    ...              astrometric_catalog='2MASS')
+    
+    Source extraction and astrometry only (no final combination):
+    >>> go_register(['target/filter/'], do_swarp=False)
+    
+    High-precision astrometry with more iterations:
+    >>> go_register(['science/'], scamp_iterations=5)
+    """
 
     # TODO: Add the sextractor, scamp, swarp parameters for input.
 
@@ -345,10 +431,13 @@ def go_register(filter_directories,
                 go_sextractor(filename)
             # Calculate the astrometry
             if do_scamp:
-                go_scamp(filename, astrometric_catalog=astrometric_catalog,
-                         num_iterations = scamp_iterations)
+                go_scamp(filename,
+                         astrometric_catalog=astrometric_catalog,
+                         num_iterations=scamp_iterations,
+                         verbose=verbose)
 
         # Stitch together the images
         # go_swarp = reproject and coadd images
         if do_swarp:
-            go_swarp(input_filenames)
+            go_swarp(input_filenames,
+                     verbose=verbose)
