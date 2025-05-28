@@ -5,7 +5,7 @@ from glob import glob
 
 import subprocess
 import shutil
-from subprocess import call, Popen
+from subprocess import Popen
 
 import astropy.units as u
 from astropy.modeling import models
@@ -40,7 +40,6 @@ warnings.filterwarnings('ignore', category=AstropyUserWarning, append=True)
 # lacos_im['niter']=2
 
 # TODO Fix processing bails if first directory doesn't have files.
-# TODO: Convert call() use to 'Popen'
 
 # TODO Do gain correction, uncertainty system?
 # TODO More general MEF flat fielding?
@@ -48,7 +47,6 @@ warnings.filterwarnings('ignore', category=AstropyUserWarning, append=True)
 
 # TODO Saturation correction?
 # TODO image weights
-# TODO clean up
 # TODO Check for existing _over, _zero files.
 
 
@@ -811,7 +809,8 @@ def make_targetdirectories(image_collection,
           image_collection.summary['file'][(image_collection.summary['object'] == obj)]
         for fl in object_files:
             cmd = 'mv {0} {1}'.format(fl,dirname)
-            crap = call(cmd,shell=True)
+            mv_obj = Popen(shlex.split(cmd), close_fds=True)
+            mv_obj.wait()
 
 
         # Create filter-specific directories and fill them. For now this just
@@ -850,7 +849,8 @@ def make_targetdirectories(image_collection,
             for fltfl in filter_files:
                 cmd = 'mv {0} {1}'.format(dirname+fltfl, filter_dirname)
                 print(cmd)
-                crap = call(cmd, shell=True)
+                mv_flt = Popen(shlex.split(cmd), close_fds=True)
+                mv_flt.wait()
 
     return object_directories, filter_directories
 
