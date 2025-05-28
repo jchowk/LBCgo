@@ -106,6 +106,10 @@ def go_overscan(image_collection,
     ##   raw_directory    -- Where to find the raw data
     ##   return_files     -- Return a list of subtracted files (default: True)
 
+    # 
+    if verbose:
+        print('Removing overscan bias.')
+
     ###### Define which chips to extract if default is chosen:
     if lbc_chips == True:
         lbc_chips = [1,2,3,4]
@@ -587,7 +591,7 @@ def make_flatfield(image_collection,
 
     # Report:
     if verbose:
-        print("\nCreated {0} flatfield frame {1}.".format(
+        print("\nCreated {0} flatfield frame {1}.\n".format(
             filter_name, flat_output_name))
         # print("Created {0} mask base {1}.\n".format(
         #     filter_name, mask_output_name))
@@ -652,7 +656,7 @@ def go_flatfield(image_collection,
                                      unit=None)
              flatfield_chips.append(flatchip)
         if verbose:
-             print('Reading flatfield {0}'.format(flat_filename))
+             print('\nReading flatfield {0}.'.format(flat_filename))
 
         # Select the files to be normalized with the current filter
         image_files = image_collection.files_filtered(filter=filter)
@@ -1006,8 +1010,7 @@ def lbcgo(raw_directory='./raw/',
     ic0_all = ImageFileCollection(raw_directory, keywords=keywds,
                                   glob_include=lbc_file_base)
 
-    # Remove sky flat test images by excluding files with lbcobnam matching 'SkyFlatTest*'
-
+    ### Remove sky flat test images by excluding files with lbcobnam matching 'SkyFlatTest*'
     # Get all files that do NOT match the SkyFlatTest pattern
     non_test_files = []
     for i, file in enumerate(ic0_all.files):
@@ -1020,9 +1023,8 @@ def lbcgo(raw_directory='./raw/',
     ic0 = ImageFileCollection(raw_directory,
                               keywords=keywds, filenames=non_test_files)
 
-
-    num_images = np.size(ic0.summary['object'])
     # Exit if (for some reason) no images are found in the raw_directory.
+    num_images = np.size(ic0.summary['object'])
     if num_images == 0:
         print('WARNING: No images found.')
         return None

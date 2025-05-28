@@ -139,7 +139,7 @@ def go_scamp(inputfile,
            pixscale_maxerr = '1.05'
            position_maxerr = '0.05'
            posangle_maxerr = '1.0'
-           crossid_radius = '5'
+           crossid_radius = '5.0'
            aheader_suffix = '.head'
         else:
            mosaic_type = 'FIX_FOCALPLANE'
