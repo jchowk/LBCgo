@@ -1075,11 +1075,11 @@ def go_extractchips(filter_directories,
             if verbose:
                 print("Created {0}".format(output_filename))
 
-        # Move pre-flatfield file to data directory
-        cmd = 'mv '+filename+' '+datadir
-        mvflt = Popen(shlex.split(cmd),
-              close_fds=True)
-        mvflt.wait()
+        # Move pre-flatfield file to data directory (overwrite if present)
+        dest = os.path.join(datadir, os.path.basename(filename))
+        if os.path.exists(dest):
+            os.remove(dest)
+        shutil.move(filename, datadir)
 
     # Return the corrected filenames if requested (True is default).
     if return_files == True:
