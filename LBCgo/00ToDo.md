@@ -1,5 +1,3 @@
-- [ ] DOCUMENTATION
- 
 - [ ] Work out how to handle only saturated flats. (Right now this just kills the process, even if there are remaining filters w/o saturated flats.)
 
 - [ ] Identify high background images?

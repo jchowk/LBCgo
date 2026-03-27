@@ -25,6 +25,7 @@ docs = [
 ]
 
 [tool.poetry]
+packages = [{include = "LBCgo"}]
 
 [tool.poetry.group.dev.dependencies]
 
