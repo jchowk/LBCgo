@@ -193,9 +193,10 @@ def go_overscan(image_collection,
         return over_files_out
 
 
-def make_bias(image_collection, 
+def make_bias(image_collection,
               bias_filename=None,
-              image_directory='./', 
+              lbc_chips=True,
+              image_directory='./',
               raw_directory='./raw/',
               verbose=True):
     """Make a master bias image for a collection of images."""
@@ -540,7 +541,10 @@ def make_flatfield(image_collection,
         del master_flat.header['trimsec']
         del master_flat.header['biassec']
         del master_flat.header['datasec']
-        del master_flat.header['bzero']    # This is sometimes different than our value
+        try:
+            del master_flat.header['bzero']    # This is sometimes different than our value
+        except KeyError:
+            pass
 
         # Append the flat for this chip to the output HDU
         output_hdu.append(master_flat.to_hdu()[0])
@@ -808,9 +812,8 @@ def make_targetdirectories(image_collection,
         object_files = \
           image_collection.summary['file'][(image_collection.summary['object'] == obj)]
         for fl in object_files:
-            cmd = 'mv {0} {1}'.format(fl,dirname)
-            mv_obj = Popen(shlex.split(cmd), close_fds=True)
-            mv_obj.wait()
+            src = os.path.join(image_collection.location, fl)
+            shutil.move(src, dirname)
 
 
         # Create filter-specific directories and fill them. For now this just
@@ -847,10 +850,7 @@ def make_targetdirectories(image_collection,
             filter_files = image_collection.files_filtered(object=obj,
                                                             filter=filter)
             for fltfl in filter_files:
-                cmd = 'mv {0} {1}'.format(dirname+fltfl, filter_dirname)
-                print(cmd)
-                mv_flt = Popen(shlex.split(cmd), close_fds=True)
-                mv_flt.wait()
+                shutil.move(os.path.join(dirname, fltfl), filter_dirname)
 
     return object_directories, filter_directories
 

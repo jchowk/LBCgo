@@ -16,3 +16,9 @@
 - [ ] Update to use SourceExtractor++
 - [ ] Consider whether MONTAGE is better than SCAMP+SWARP
 
+
+
+- [ ] Consider Claude's notes on potential concerns:
+## Design limitations documented in tests (not bugs, but worth knowing)
+* `make_flatfield` has a hardcoded normalization section data[500:1500, 2000:2500] designed for full 2048×4612 LBC chips — returns empty on any smaller array. The 8 make_flatfield tests still pass (they check structure, not values); the 3 go_flatfield tests use a synthetic master flat to work around this.
+* `make_targetdirectories` runs mv via Popen using relative file paths from cwd, not absolute paths — tests require monkeypatch.chdir to function correctly.

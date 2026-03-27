@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"import LBCgo; print\\(LBCgo.__file__\\)\")",
+      "Bash(python -c \"from LBCgo.lbcproc import go_overscan\")",
+      "Bash(python -c \"from LBCgo.lbcproc import make_bias; import inspect; print\\(inspect.signature\\(make_bias\\)\\)\")",
+      "Bash(python -m pytest tests/conftest.py --collect-only)",
+      "Bash(python -c \"import pytest\")",
+      "Bash(conda env:*)",
+      "Bash(mamba env:*)",
+      "Bash(mamba install:*)",
+      "Bash(python -m pytest --version)",
+      "Bash(/opt/miniconda3/envs/lbcgo/bin/python -m pytest --version)",
+      "Bash(/opt/miniconda3/envs/lbcgo/bin/python -c \"import LBCgo, ccdproc, astropy; print\\(''OK''\\)\")",
+      "Bash(/opt/miniconda3/envs/lbcgo/bin/python -m pytest tests/conftest.py --collect-only)",
+      "Bash(/opt/miniconda3/envs/lbcgo/bin/python -m pytest tests/test_overscan.py -v)",
+      "Bash(/opt/miniconda3/envs/lbcgo/bin/python -m pytest tests/test_bias.py -v)",
+      "Bash(/opt/miniconda3/envs/lbcgo/bin/python -m pytest tests/test_bias.py::test_go_bias_output_filename -v -s)",
+      "Bash(/opt/miniconda3/envs/lbcgo/bin/python -m pytest tests/test_bias.py::test_go_bias_output_filename -v --tb=short)",
+      "Bash(/opt/miniconda3/envs/lbcgo/bin/python -m pytest tests/test_flatfield.py -v)",
+      "Bash(/opt/miniconda3/envs/lbcgo/bin/python -m pytest tests/test_flatfield.py::test_make_flat_creates_output_file -v --tb=short)",
+      "Bash(/opt/miniconda3/envs/lbcgo/bin/python -m pytest tests/test_flatfield.py::test_go_flat_output_filename --tb=short)",
+      "Bash(/opt/miniconda3/envs/lbcgo/bin/python -m pytest tests/test_extractchips.py -v)",
+      "Bash(/opt/miniconda3/envs/lbcgo/bin/python -m pytest tests/test_targetdirs.py -v)",
+      "Bash(/opt/miniconda3/envs/lbcgo/bin/python -m pytest tests/test_targetdirs.py::test_targetdirs_creates_object_directory --tb=short)",
+      "Bash(/opt/miniconda3/envs/lbcgo/bin/python -m pytest tests/test_register.py -v)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(mkdir -p ~/.claude/skills/astropy/references)",
+      "Bash(BASE=\"https://raw.githubusercontent.com/K-Dense-AI/claude-scientific-skills/main/scientific-skills/astropy\")",
+      "Bash(curl -s \"$BASE/references/units.md\" -o ~/.claude/skills/astropy/references/units.md)",
+      "Bash(curl -s \"$BASE/references/coordinates.md\" -o ~/.claude/skills/astropy/references/coordinates.md)",
+      "Bash(curl -s \"$BASE/references/cosmology.md\" -o ~/.claude/skills/astropy/references/cosmology.md)"
+    ]
+  }
+}

@@ -29,14 +29,14 @@ def go_sextractor(inputfile,
 
     if configfile == None:
         # Use default config file from LBCgo package directories
-        configfile = os.path.join(LBCgo.__path__[0], 'LBCgo', 'conf', 'sextractor.lbc.conf')
+        configfile = os.path.join(LBCgo.__path__[0], 'conf', 'sextractor.lbc.conf')
         if verbose:
             print("Using default SExtractor configuration file: {0}".format(configfile))
         
 
     # Use default if output.param file doesnt exist
     if paramfile == None:
-        paramfile = os.path.join(LBCgo.__path__[0], 'LBCgo', 'conf', 'sextractor.lbcoutput.param')
+        paramfile = os.path.join(LBCgo.__path__[0], 'conf', 'sextractor.lbcoutput.param')
         if verbose:
             print("Using default SExtractor parameter file: {0}".format(paramfile))
         file_exists = os.path.exists(paramfile)
@@ -47,7 +47,7 @@ def go_sextractor(inputfile,
 
     # Set default convolution file if not provided
     if convfile == None:
-        convfile = os.path.join(LBCgo.__path__[0], 'LBCgo', 'conf', 'default.conv')
+        convfile = os.path.join(LBCgo.__path__[0], 'conf', 'default.conv')
         if verbose:
             print("Using default SExtractor convolution file: {0}".format(convfile))
 
@@ -60,7 +60,7 @@ def go_sextractor(inputfile,
 
     # Set default neural network weights file if not provided
     if nnwfile == None:
-        nnwfile = os.path.join(LBCgo.__path__[0], 'LBCgo', 'conf', 'default.nnw')
+        nnwfile = os.path.join(LBCgo.__path__[0], 'conf', 'default.nnw')
         if verbose:
             print("Using default SExtractor neural network weights file: {0}".format(nnwfile))
 
@@ -129,7 +129,7 @@ def go_scamp(inputfile,
     # Make sure we have a configuration file:
     if configfile == None:
         # Use default SCAMP config file from LBCgo package directories
-        configfile = os.path.join(LBCgo.__path__[0], 'LBCgo', 'conf', 'scamp.lbc.conf')
+        configfile = os.path.join(LBCgo.__path__[0], 'conf', 'scamp.lbc.conf')
         if verbose:
             print("Using default SCAMP configuration file: {0}".format(configfile))
 
@@ -229,7 +229,7 @@ def go_swarp(inputfiles,
     # Make sure we have a configuration file:
     if configfile == None:
         # Use default config file from LBCgo package directories
-        configfile = os.path.join(LBCgo.__path__[0], 'LBCgo', 'conf', 'swarp.lbc.conf')
+        configfile = os.path.join(LBCgo.__path__[0], 'conf', 'swarp.lbc.conf')
         if verbose:
             print("Using default SWARP configuration file: {0}".format(configfile))
 
