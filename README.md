@@ -1,5 +1,8 @@
 # LBCgo: LBC data reduction pipeline
 
+[![Documentation Status](https://readthedocs.org/projects/lbcgo/badge/?version=latest)](https://lbcgo.readthedocs.io/en/latest/)
+
+
 WARNING: This code is currently under continued development. While the basic functionality exists, it should be used with some care and attention.
 
 ## Dependencies:

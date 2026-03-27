@@ -6,7 +6,8 @@
       "Bash(/opt/miniconda3/envs/lbcgo/bin/sphinx-build -b html docs docs/_build/html)",
       "Bash(/opt/miniconda3/envs/lbcgo/bin/python -c \"import LBCgo; print\\(LBCgo.__version__\\)\")",
       "Bash(/opt/miniconda3/envs/lbcgo/bin/pytest tests/test_extractchips.py -q)",
-      "Bash(/opt/miniconda3/envs/lbcgo/bin/pytest tests/test_extractchips.py::test_extractchips_creates_four_files -v --tb=long)"
+      "Bash(/opt/miniconda3/envs/lbcgo/bin/pytest tests/test_extractchips.py::test_extractchips_creates_four_files -v --tb=long)",
+      "Read(//Users/howk/Documents/**)"
     ]
   }
 }
