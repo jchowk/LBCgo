@@ -93,15 +93,40 @@ def go_overscan(image_collection,
                 raw_directory='./raw/',
                 verbose=True,
                 return_files = True):
-    """Remove overscan and trim images."""
-    ##
-    ## Fit, subtract overscan
-    ##
-    ## Notes:
-    ##   image_collection -- A ccdproc-style image collection.
-    ##   image_directory  -- Where to store the output images.
-    ##   raw_directory    -- Where to find the raw data
-    ##   return_files     -- Return a list of subtracted files (default: True)
+    """Remove overscan and trim LBC object images.
+
+    Fits a 4th-order polynomial to each chip's overscan strip (``BIASSEC``),
+    subtracts it, then trims to the science region (``TRIMSEC``). Also removes
+    LBC header keywords that confuse downstream astrometric tools
+    (``BIASSEC``, ``TRIMSEC``, ``DATASEC``, ``ROTANGLE``, ``PARANGLE``, and
+    all duplicate keywords ending in ``A``).
+
+    By default only processes frames with ``IMAGETYP=object``; calibration
+    frames are handled internally by :func:`make_bias` and :func:`make_flatfield`.
+
+    Parameters
+    ----------
+    image_collection : ccdproc.ImageFileCollection
+        Collection of raw LBC FITS files.
+    lbc_chips : bool or list of int, optional
+        Chips to process. If True, processes all 4 chips. Default: True
+    objects_only : bool, optional
+        If True, restrict to ``IMAGETYP=object`` frames. Default: True
+    image_directory : str, optional
+        Output directory for overscan-corrected files. Default: './'
+    raw_directory : str, optional
+        Directory containing raw input files. Default: './raw/'
+    verbose : bool, optional
+        Print progress messages. Default: True
+    return_files : bool, optional
+        Return a list of output filenames. Default: True
+
+    Returns
+    -------
+    list of str or None
+        Paths to overscan-corrected, trimmed FITS files (``*_over.fits``),
+        or None if ``return_files=False``.
+    """
 
     # 
     if verbose:
@@ -199,14 +224,28 @@ def make_bias(image_collection,
               image_directory='./',
               raw_directory='./raw/',
               verbose=True):
-    """Make a master bias image for a collection of images."""
-    ##
-    ## Create master bias image
-    ##
-    ## Notes:
-    ##   image_collection -- A ccdproc-style image collection.
-    ##   image_directory  -- Where to store the output images.
-    ##   raw_directory    -- Where to find the raw data
+    """Create a master bias frame from a collection of zero frames.
+
+    Overscan-subtracts and trims each bias frame, then median-combines with
+    3-sigma clipping. The result is written as a multi-extension FITS file
+    (one extension per chip). The number of combined frames is recorded in
+    each chip header as ``NCOMBINE``.
+
+    Parameters
+    ----------
+    image_collection : ccdproc.ImageFileCollection
+        Collection containing raw bias frames (``IMAGETYP=zero``).
+    bias_filename : str or None, optional
+        Output filename for the master bias. Default: ``'zero.fits'``
+    lbc_chips : bool or list of int, optional
+        Chips to process. If True, processes all 4 chips. Default: True
+    image_directory : str, optional
+        Output directory for the master bias. Default: './'
+    raw_directory : str, optional
+        Directory containing raw bias frames. Default: './raw/'
+    verbose : bool, optional
+        Print progress messages. Default: True
+    """
 
 
     # Report:
@@ -311,17 +350,33 @@ def go_bias(image_collection, bias_file=None,
             bias_directory='./',
             lbc_chips = True,
             verbose=True, return_files=False):
-    """Apply master bias to MEF data."""
-    ##
-    ## Apply MEF master bias to a set of object data.
-    ##
-    ## Notes:
-    ##   image_collection -- A ccdproc-style image collection OR file list
-    ##   bias_file        -- Filename for bias.
-    ##   image_directory  -- Where to store the output images (default ./)
-    ##   input_directory  -- Where to find the object data (default ./)
-    ##   bias_directory   -- Where to find the bias image (default ./)
-    ##   return_files     -- Return a list of files that were flattened (default False)
+    """Apply a master bias frame to multi-extension FITS object data.
+
+    Parameters
+    ----------
+    image_collection : ccdproc.ImageFileCollection or list of str
+        Collection or list of filenames for the overscan-corrected object frames.
+    bias_file : str or None, optional
+        Filename of the master bias. Default: ``'zero.fits'``
+    image_directory : str, optional
+        Output directory for bias-subtracted files. Default: './'
+    input_directory : str, optional
+        Directory containing the input object frames. Default: './'
+    bias_directory : str, optional
+        Directory containing the master bias file. Default: './'
+    lbc_chips : bool or list of int, optional
+        Chips to process. If True, processes all 4 chips. Default: True
+    verbose : bool, optional
+        Print progress messages. Default: True
+    return_files : bool, optional
+        Return a list of output filenames. Default: False
+
+    Returns
+    -------
+    list of str or None
+        Paths to bias-subtracted FITS files (``*_zero.fits``),
+        or None if ``return_files=False``.
+    """
 
 
     ###### Define which chips to extract if default is chosen:
@@ -402,16 +457,39 @@ def make_flatfield(image_collection,
                    raw_directory='./raw/',
                    cosmiccorrect=False, 
                    verbose=True):
-    """Make a flat field image for a collection of images."""
-    ##
-    ## Create master flat field image for a specific flat
-    ##
-    ## Notes:
-    ##   image_collection -- A ccdproc-style image collection.
-    ##   filter_name      -- Filter for flat combination. Default (None) is to
-    ##                       determine from image_collection.
-    ##   image_directory  -- Where to store the output images.
-    ##   raw_directory    -- Where to find the raw data
+    """Create a master sky flat field for a single filter.
+
+    Overscan-subtracts and trims each sky flat (``IMAGETYP=flat``,
+    ``OBJECT=SkyFlat``), rejects frames with mean counts above 55,000 ADU as
+    saturated, normalises the remaining frames to a common level, and
+    median-combines with 3-sigma clipping. The number of combined frames is
+    stored as ``NCOMBINE`` in the primary header.
+
+    Parameters
+    ----------
+    image_collection : ccdproc.ImageFileCollection
+        Collection containing raw sky flat frames.
+    filter_name : str or None, optional
+        Filter to process. If None, uses the first filter found in the
+        collection summary. Default: None
+    lbc_chips : bool or list of int, optional
+        Chips to process. If True, processes all 4 chips. Default: True
+    image_directory : str, optional
+        Output directory for the master flat. Default: './'
+    raw_directory : str, optional
+        Directory containing raw flat frames. Default: './raw/'
+    cosmiccorrect : bool, optional
+        Apply cosmic-ray cleaning to individual flats before combining.
+        Default: False
+    verbose : bool, optional
+        Print progress messages. Default: True
+
+    Returns
+    -------
+    None
+        Writes ``flat.<filter_name>.fits`` to ``image_directory``.
+        Returns None if no usable flat frames are found.
+    """
 
 
     # TODO Update make_flatfield to allow for _zero suffix if we've done bias subtraction.
@@ -608,18 +686,43 @@ def go_flatfield(image_collection,
                  cosmiccorrect=True,
                  verbose=True,
                  return_files=False):
-    """Apply flat fields to MEF data."""
-    ##
-    ## Apply MEF flat fields to a set of object data.
-    ##
-    ## Notes:
-    ##   image_collection -- A ccdproc-style image collection.
-    ##   flat_file        -- Filename for a specific flat to be applied.
-    ##   filter_names     -- List of filters for images to be flattened. If None, it will be generated.
-    ##   image_directory  -- Where to store the output images (default ./)
-    ##   input_directory  -- Where to find the object data (default ./)
-    ##   flat_directory   -- Where to find the flat fields (default ./)
-    ##   return_files     -- Return a list of files that were flattened (default False)
+    """Apply master flat fields to multi-extension FITS object data.
+
+    Loops over filters, reads the corresponding master flat, and divides each
+    object frame by it. Pre-flat-fielded files are moved to a ``data/``
+    subdirectory. Output files carry the ``_flat.fits`` suffix.
+
+    Parameters
+    ----------
+    image_collection : ccdproc.ImageFileCollection
+        Collection of bias-corrected (or overscan-only) object frames.
+    flat_file : str or None, optional
+        Override flat filename. If None, expects ``flat.<filter>.fits``
+        in ``flat_directory``. Default: None
+    filter_names : list of str or None, optional
+        Filters to process. If None, all filters in the collection are used.
+        Default: None
+    image_directory : str, optional
+        Output directory for flat-fielded files. Default: './'
+    input_directory : str, optional
+        Directory containing input object frames. Default: './'
+    flat_directory : str, optional
+        Directory containing master flat files. Default: './'
+    lbc_chips : bool or list of int, optional
+        Chips to process. If True, processes all 4 chips. Default: True
+    cosmiccorrect : bool, optional
+        Apply cosmic-ray cleaning before flat fielding. Default: True
+    verbose : bool, optional
+        Print progress messages. Default: True
+    return_files : bool, optional
+        Return a list of output filenames. Default: False
+
+    Returns
+    -------
+    list of str or None
+        Paths to flat-fielded FITS files (``*_flat.fits``),
+        or None if ``return_files=False``.
+    """
 
     # The pre-flatfield images will be put in a data/ directory:
     datadir = 'data/'
@@ -774,13 +877,32 @@ def make_targetdirectories(image_collection,
                            image_directory='./',
                            object_names=None,
                            verbose=True):
-    """ Make directories to store data from individual targets and move the data for those targets into the directories.
+    """Organise flat-fielded files into per-target and per-filter subdirectories.
 
-    :param image_collection:
-    :param image_directory:
-    :param object_names:
-    :param verbose:
-    :return: object_directories, filter_directories
+    Creates ``<image_directory><object>/`` and
+    ``<image_directory><object>/<filter>/`` subdirectories and moves files
+    into them. Spaces in object names are stripped (``NGC 891`` →
+    ``NGC891``). Existing directories are silently reused.
+
+    Parameters
+    ----------
+    image_collection : ccdproc.ImageFileCollection
+        Collection of flat-fielded object frames to organise.
+    image_directory : str, optional
+        Root output directory under which target subdirectories are created.
+        Default: './'
+    object_names : list of str or None, optional
+        Restrict processing to these object names. If None, all unique
+        ``OBJECT`` values in the collection are used. Default: None
+    verbose : bool, optional
+        Print progress messages. Default: True
+
+    Returns
+    -------
+    object_directories : list of str
+        Paths to the per-target directories that were created or reused.
+    filter_directories : list of str
+        Paths to the per-filter subdirectories within each target directory.
     """
 
     # If we specify objects, use only those objects
@@ -859,13 +981,30 @@ def go_extractchips(filter_directories,
                     lbc_chips = True,
                     verbose=True,
                     return_files = False):
-    """Extract individual chips from flat-fielded data in preparation for
-    combination using sextractor/scamp/swarp.
+    """Split multi-extension flat-fielded files into single-chip FITS files.
 
-    :param filter_directories:
-    :param verbose:
-    :param return_files:
-    :return:
+    For each ``*_flat.fits`` file found in the supplied filter directories,
+    writes one output file per chip named ``<base>_<chip>.fits``, each
+    containing a single image extension. The original multi-extension file
+    is moved to a ``data/`` subdirectory. Output files are the direct inputs
+    to the astrometric registration step.
+
+    Parameters
+    ----------
+    filter_directories : str or list of str
+        Directory path(s) containing ``*_flat.fits`` multi-extension files.
+    lbc_chips : bool or list of int, optional
+        Chips to extract. If True, extracts all 4 chips. Default: True
+    verbose : bool, optional
+        Print progress messages. Default: True
+    return_files : bool, optional
+        Return a list of output filenames. Default: False
+
+    Returns
+    -------
+    list of str or None
+        Paths to per-chip FITS files (e.g. ``*_1.fits`` … ``*_4.fits``),
+        or None if ``return_files=False``.
     """
 
     ###### Define which chips to extract if default is chosen:

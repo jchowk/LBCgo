@@ -19,7 +19,41 @@ def go_sextractor(inputfile,
                 convfile = None,
                 nnwfile = None,
                 verbose=True):
-    """
+    """Run SExtractor on a single chip image to produce a source catalog.
+
+    Detects sources and writes a FITS_LDAC catalog (``<base>.cat``) alongside
+    the input file. Default configuration files are read from the LBCgo
+    package ``conf/`` directory.
+
+    Parameters
+    ----------
+    inputfile : str
+        Path to the chip FITS image to process.
+    configfile : str or None, optional
+        Path to a SExtractor configuration file. If None, uses the LBCgo
+        default ``sextractor.lbc.conf``. Default: None
+    paramfile : str or None, optional
+        Path to a SExtractor output parameter file. If None, uses the LBCgo
+        default ``sextractor.lbcoutput.param``. Default: None
+    convfile : str or None, optional
+        Path to a SExtractor convolution kernel file. If None, uses the
+        LBCgo default ``default.conv``. Default: None
+    nnwfile : str or None, optional
+        Path to a SExtractor neural network weights file. If None, uses the
+        LBCgo default ``default.nnw``. Default: None
+    verbose : bool, optional
+        Print the SExtractor command and progress. Default: True
+
+    Raises
+    ------
+    RuntimeError
+        If SExtractor (``sex``) is not found on the system PATH.
+
+    Returns
+    -------
+    None
+        Writes a FITS_LDAC catalog to ``<inputfile_base>.cat``.
+        Returns None if a required configuration file is missing.
     """
     # Check if SExtractor is available
     if not shutil.which('sex'):
@@ -114,8 +148,41 @@ def go_scamp(inputfile,
              configfile=None,
              verbose=True):
 
-    """ Run Astromatic.net code SCAMP to calculate astrometric
-     solution on an image.
+    """Run SCAMP to compute an astrometric solution for a chip catalog.
+
+    Matches the SExtractor FITS_LDAC catalog against an astrometric reference
+    catalog and writes a ``.head`` WCS solution file. SCAMP is run iteratively
+    with progressively tighter tolerance parameters to refine the solution.
+    A minimum of 2 iterations is enforced.
+
+    Parameters
+    ----------
+    inputfile : str
+        Path to the chip FITS image or SExtractor catalog (``*.fits`` or
+        ``*.cat``). The function converts ``.fits`` to ``.cat`` automatically.
+    astrometric_catalog : str, optional
+        Reference catalog for cross-matching. Common options: ``'GAIA-DR3'``,
+        ``'GAIA-DR2'``, ``'2MASS'``, ``'USNO-B1'``. Default: ``'GAIA-DR3'``
+    astrometric_method : str, optional
+        Mosaic type strategy passed to SCAMP. Default: ``'exposure'``
+    num_iterations : int, optional
+        Number of SCAMP iterations. Fewer than 2 will be raised to 2.
+        Default: 3
+    configfile : str or None, optional
+        Path to a SCAMP configuration file. If None, uses the LBCgo default
+        ``scamp.lbc.conf``. Default: None
+    verbose : bool, optional
+        Print SCAMP commands and progress. Default: True
+
+    Raises
+    ------
+    RuntimeError
+        If SCAMP is not found on the system PATH.
+
+    Returns
+    -------
+    None
+        Writes a ``.head`` WCS solution file alongside the input catalog.
     """
 
     # Check if SCAMP is available
@@ -220,7 +287,43 @@ def go_swarp(inputfiles,
              output_filename = None,
              configfile = None,
              verbose = True):
-    """Do SWARP"""
+    """Resample and co-add chip images using SWarp.
+
+    Reads SCAMP-produced ``.head`` WCS solutions, reprojects all input chip
+    images onto a common astrometric grid, and co-adds them into a single
+    mosaic. The output filename is derived from the ``OBJECT`` and ``FILTER``
+    headers of the first input file if not specified.
+
+    All input files must share the same filter; a ``ValueError`` is raised
+    otherwise.
+
+    Parameters
+    ----------
+    inputfiles : list of str
+        Paths to chip FITS images to co-add. All must have the same filter.
+    output_filename : str or None, optional
+        Output mosaic filename. If None, derived from the object name and
+        filter as ``<object>.<filter>.mos.fits``. Default: None
+    configfile : str or None, optional
+        Path to a SWarp configuration file. If None, uses the LBCgo default
+        ``swarp.lbc.conf``. Default: None
+    verbose : bool, optional
+        Print the SWarp command and progress. Default: True
+
+    Raises
+    ------
+    RuntimeError
+        If SWarp is not found on the system PATH.
+    ValueError
+        If the input files span more than one filter.
+
+    Returns
+    -------
+    None
+        Writes ``<output_filename>`` and ``<output_filename>.weight.fits``
+        to the current directory. Mean exposure-time-weighted airmass is
+        written to the output header.
+    """
 
     # Check if SWarp is available
     if not shutil.which('swarp'):
