@@ -3,7 +3,12 @@
 Requires astromatic.net software sextractor, scamp, swarp.
 """
 
-__version__ = '0.1.5'
+from importlib.metadata import version, PackageNotFoundError
+try:
+    __version__ = version("LBCgo")
+except PackageNotFoundError:
+    # Package not installed (e.g., running from source without pip install)
+    __version__ = "unknown"
 
 # Re-export primary functions to make them directly available
 from .lbcproc import lbcgo

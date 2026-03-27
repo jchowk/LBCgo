@@ -3,7 +3,8 @@
     "allow": [
       "Bash(/opt/miniconda3/envs/lbcgo/bin/sphinx-build -b html docs docs/_build/html -q)",
       "Bash(python3 -c \"import os; print\\(os.path.abspath\\(''/Users/howk/KODIAQ Dropbox/Chris Howk/python/LBCgo/docs/../LBCgo''\\)\\)\")",
-      "Bash(/opt/miniconda3/envs/lbcgo/bin/sphinx-build -b html docs docs/_build/html)"
+      "Bash(/opt/miniconda3/envs/lbcgo/bin/sphinx-build -b html docs docs/_build/html)",
+      "Bash(/opt/miniconda3/envs/lbcgo/bin/python -c \"import LBCgo; print\\(LBCgo.__version__\\)\")"
     ]
   }
 }
