@@ -147,7 +147,7 @@ def test_overscan_subset_chips(ic_with_flats, work_dir, raw_dir):
                         verbose=False,
                         return_files=True)
     assert len(files) > 0
-    hdul = fits.open(files[0])
+    hdul = fits.open(work_dir / files[0])
     assert len(hdul) == 3, \
         f"Expected 3 HDUs (primary + chips 1,3), got {len(hdul)}"
     hdul.close()
