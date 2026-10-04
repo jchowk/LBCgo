@@ -373,23 +373,67 @@ Purpose: a fair benchmark and an immediate improvement for users.
 
 ### 5.4 SCAMP: one joint run per filter directory
 SCAMP's focal-plane modes need one catalog per **exposure** with one
-extension per chip.
-- [ ] `merge_ldac(chip_cats) -> exposure_cat`: concatenate the
-      (`LDAC_IMHEAD`, `LDAC_OBJECTS`) HDU pairs of the 4 chip catalogs of an
-      exposure, in chip order (astropy `fits`).
-- [ ] Run SCAMP **once** on all exposure catalogs of the filter directory:
+extension per chip. Implemented in `lbcregister.py` (`go_scamp_joint`,
+default in `go_register`; `scamp_joint=False` restores per-chip solutions).
+**Status: done and validated end to end on a simulated Gaia field with
+SCAMP 2.15.0 (conda-forge); the 2.14.1 binary in `/usr/local/bin` is broken
+(see below).**
+- [x] `merge_ldac(chip_cats, output) -> exposure_cat`: concatenates the
+      (`LDAC_IMHEAD`, `LDAC_OBJECTS`) pairs in chip order (astropy `fits`);
+      written as `<base>_exp.cat`.
+- [x] Run SCAMP **once** on all exposure catalogs of the filter directory:
       iteration 1 `MOSAIC_TYPE LOOSE`, later `FIX_FOCALPLANE`;
       `STABILITY_TYPE INSTRUMENT`; `ASTRINSTRU_KEY FILTER` (drop CFHT's
-      `QRUNID`); restore the `-MOSAIC_TYPE` flag; delete the no-op
-      `replace()`; keep `DISTORT_DEGREES 3`.
-- [ ] `split_head(exposure_head) -> chip heads`: split the multi-section
+      `QRUNID`); `-MOSAIC_TYPE` restored (also in the per-chip `go_scamp`);
+      the no-op `replace()` deleted (`astrometric_method` is ignored, kept for
+      compatibility); `DISTORT_DEGREES 3` kept. SCAMP runs with the catalog
+      directory as cwd and relative names (spaces in paths break its option
+      parser too); a non-zero exit status raises `RuntimeError` (it was
+      silently ignored before).
+- [x] `split_head(exposure_head, chip_heads)`: splits the multi-section
       `.head` (sections separated by `END`) into `<base>_<chip>.head`.
-- [ ] Parse the SCAMP XML (`AstromSigma_Internal`, `AstromSigma_Reference`,
-      `XY_Contrast`, `AstromNDets_Reference`) per exposure/chip into
-      `astrometry_qa.ecsv`; flag fits exceeding thresholds (implements the
-      "auto-identify bad astrometric fits" ToDo).
-- [ ] Check whether the installed SCAMP version applies Gaia proper motions
-      to the observation epoch; record the version in QA output.
+- [x] Parse SCAMP output into `astrometry_qa.ecsv` (one row per exposure
+      chip: internal/reference rms in arcsec, `FLXSCALE`, `XY_Contrast`,
+      reference-match dof, `bad`/`reason`; SCAMP version, reference catalog
+      and epoch mode in the table metadata). Per-chip rms comes from the
+      `.head` (`ASTIRMS`/`ASTRRMS`, deg), per-exposure numbers from the XML
+      `Fields` table — SCAMP's XML has **no per-chip rows**, and
+      `AstromSigma_*`/`AstromNDets_*` exist only per field group. Thresholds
+      (`max_ref_rms=0.2″`, `min_xy_contrast=2`) are untuned placeholders.
+- [x] Proper motions (SCAMP 2.15.0, recorded in the QA metadata):
+      `ASTREFEPOCH_TYPE FIELDS_AVERAGE` (what `go_scamp_joint` sets) applies
+      Gaia DR3 proper motions from VizieR at the header epoch. Test: 3
+      simulated exposures with real Gaia DR3 stars moved by their PM to
+      2012.0 (rms PM 12.7, max 50 mas/yr): residual vs truth with
+      `FIELDS_AVERAGE` median (−1, +2) mas, same rms as the zero-PM case
+      (23/70 mas, limited by the simulation); with `ORIGINAL` the
+      high-PM stars sit at a median (−48, −35) mas. **Still to check:** that
+      real chip headers carry `DATE-OBS` (the simulation had both it and
+      `MJD-OBS`; LBC headers have `MJD_OBS`, underscore).
+- Validation numbers (2016.0 epoch, no PM, 3 exposures × 2 chips, ~100
+  Gaia stars/chip): median residual vs truth (−1, 0) mas; rms 23 (RA) / 69
+  (Dec) mas, dominated by the simulation's centroiding of ~90 faint stars.
+  QA caveat: SCAMP reports internal rms per instrument and reference rms per
+  exposure, so the per-chip rows repeat those values; they are not
+  independent per-chip fits.
+- **Bugs found while validating:**
+  - *Merged catalogs crashed SCAMP* (SIGSEGV/SIGBUS). Cause 1: chip
+    catalogs all carry `FITSEXT = 1`, `FITSNEXT = 1`; SCAMP needs them to
+    index extensions in the merged file. Cause 2: an astropy round trip of
+    `LDAC_IMHEAD` rewrites SExtractor's space-padded 80-character cards as
+    NUL-padded, which SCAMP also faults on. `merge_ldac` now works on raw
+    FITS bytes and renumbers `FITSFILE/FITSEXT/FITSNEXT` only.
+  - Any code that rewrites an LDAC catalog with astropy must preserve the
+    space padding.
+- **Environment:** `/usr/local/bin/scamp` 2.14.1 (arm64) lacks an
+  `LC_RPATH` for `libcurl` and was unstable; it is superseded by the
+  conda-forge `astromatic-scamp` 2.15.0 (stable: 12/12 repeated runs and the
+  full joint run). See the install notes in the session report.
+- SWarp 2.41.5 accepts the SCAMP heads (`CTYPE TAN` + 20 `PV` terms); output
+  scale 0.2251″/px for a 0.5 % scale error in the simulation. `astropy.wcs`
+  ignores `PV` on `TAN`; astropy consumers must rewrite `CTYPE` to `TPV`
+  (as done in the validation script). `go_swarp` still builds its command
+  with `shlex.split` and fails on paths with spaces (to fix in §5.5).
 
 ### 5.5 SWarp improvements
 - [ ] Keep `FSCALASTRO_TYPE FIXED` (current `swarp.lbc.conf`). Sky-flat-
