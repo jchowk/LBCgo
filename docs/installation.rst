@@ -19,10 +19,11 @@ For development installation from source::
 Conda environment
 -----------------
 
-A pre-defined conda environment file is included in the repository::
+To install LBCgo into a dedicated conda environment::
 
-    conda env create -f lbcgo_environment.yaml
+    conda create -n lbcgo -c conda-forge python=3.11
     conda activate lbcgo
+    pip install lbcgo
 
 Python dependencies (``numpy``, ``scipy``, ``astropy``, ``ccdproc``) are
 installed automatically via either method above.

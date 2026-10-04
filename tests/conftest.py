@@ -109,6 +109,18 @@ def write_lbc_file(directory, filename, **kwargs):
 # ---------------------------------------------------------------------------
 # Directory fixtures
 # ---------------------------------------------------------------------------
+@pytest.fixture(autouse=True)
+def chdir_to_tmp(tmp_path, monkeypatch):
+    """Run every test with cwd = tmp_path.
+
+    Several pipeline functions write to the current directory regardless of
+    image_directory (e.g. go_overscan output, the data/ directory created by
+    go_flatfield and go_extractchips), so without this they would leave
+    files wherever pytest was launched.
+    """
+    monkeypatch.chdir(tmp_path)
+
+
 @pytest.fixture
 def raw_dir(tmp_path):
     """A tmp raw/ subdirectory."""
