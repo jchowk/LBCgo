@@ -215,6 +215,13 @@ Purpose: a fair benchmark and an immediate improvement for users.
 - [x] `pyproject.toml`: `requires-python = ">=3.11"`, `numpy>=2`,
       `astropy>=6.1.4`, `ccdproc>=2.5`; add `scipy`. (New deps added in later
       phases.) Update README/`docs/installation.rst`.
+- [ ] Accept both astromatic executable names: Ubuntu/Debian packages
+      install `source-extractor` (2.28.0) and `SWarp` (2.41.5), not `sex`
+      and `swarp` (verified with apt on Ubuntu 24.04, SCAMP 2.10.0 is
+      `scamp`). LBCgo checks/calls only `sex`, `scamp`, `swarp`
+      (`lbcproc.check_external_dependencies`, `lbcregister.go_sextractor`,
+      `go_swarp`), so an apt install is reported as missing even though the
+      README suggests `apt-get`. Check the Homebrew/conda-forge names too.
 
 ### 5.2 Weight and mask maps (shared by both back-ends)
 - [x] In `go_flatfield`/`go_extractchips`, write per-chip mask + weight
@@ -282,7 +289,7 @@ extension per chip.
 Datasets (PI to provide paths; see §10):
 | ID | Content | Purpose |
 |----|---------|---------|
-| V1 | Star-rich, galaxy-free LBCB field, several epochs/filters | distortion calibration + astrometry accuracy |
+| V1 | Many (≥ 20–50) moderately rich, galaxy-free LBCB exposures; selection criteria in §6.3.2 "Calibration data" | distortion calibration + astrometry accuracy |
 | V2 | Same for LBCR | as V1 |
 | V3 | Typical science field (e.g. J1419+4207 OB: 3 dithers × U, g / r, i) | end-to-end regression |
 | V4 | NGC 891 (LBCB, `SDT_Uspec` and others) | extended-target mode |
@@ -384,6 +391,53 @@ reference, e.g. chip 2 `CRPIX = (985, 2924)` after trimming), unit-scaled CD
 with inverse `AP/BP`. One file per channel and model version, with metadata:
 channel, filters, valid MJD range, fit rms, number of exposures, software
 version.
+
+Calibration data (V1/V2; selection criteria). The distortion is shared by
+all exposures, and each exposure adds only ~6 parameters of its own, so
+the number of exposures and how well they cover the focal plane matter
+more than the star density of any single field:
+- **Unsaturated Gaia stars on every chip, including the corners**
+  (distortion is largest at the field edge). Gaia is not the limit:
+  median proper-motion errors are ~0.5 mas/yr at G = 20 (Lindegren et al.
+  2021), i.e. a few mas when propagated back several years, well below
+  the ~15 mas reached by Bellini & Bedin (2010); use G ≈ 16–20.5 with
+  proper motions applied (§6.3.1). The bright limit is set by LBC
+  saturation (exposure time and filter dependent; not known a priori):
+  measure the usable G range per exposure from the saturation masks
+  (§5.2) and matched Gaia magnitudes.
+- **Intermediate Galactic latitude (|b| ≈ 10–30°).** High latitude gives
+  too few Gaia stars per chip; the plane and cluster cores give blending
+  (biased centroids) and Gaia crowding problems. Cluster outskirts are
+  good (Bellini & Bedin used M67). Avoid large galaxies, nebulosity and
+  very bright stars (ghosts, bleeds, halos). Rank candidate exposures by
+  an ADQL count of Gaia DR3 sources with 16 < G < 20.5, RUWE < 1.4 in each
+  exposure's footprint rather than by a rule of thumb.
+- **Many exposures, not much shorter than ~30 s.** Atmospheric turbulence
+  produces 10–30 mas astrometric errors in 30 s exposures, coherent over
+  5–10′ (Bernstein et al. 2017, DECam) — comparable to the target and
+  correlated across much of the LBC field. It is random from exposure to
+  exposure and averages down only with numbers: aim for ≥ 20–50 exposures
+  per channel (and per filter group, if filters turn out to differ).
+  Shorter exposures help with saturation but add turbulence noise.
+- **Spread in position angle and airmass.** Optical distortion is fixed to
+  the detector; refraction and turbulence are fixed to the sky. A range of
+  rotator angles separates them. Prefer low airmass; check residuals
+  against airmass and Gaia BP−RP colour (differential chromatic
+  refraction).
+- **Dithers:** with Gaia as the absolute reference, small science dithers
+  suffice. Large dithers (≳ one chip width) are a useful extra: the same
+  stars fall on different chips, an internal check of chip placement
+  independent of Gaia.
+- **Filters, channels, epochs:** each channel separately (simultaneous
+  LBCB+LBCR pointings are convenient); the most-used filters (refractive
+  corrector → possible wavelength dependence; see step 5); several epochs,
+  bracketing any known hardware interventions (§11 item 3).
+- **Archive sources:** photometric standard fields at moderate latitude
+  (Landolt/Stetson; short exposures, many filters and epochs); science
+  programs on low-latitude targets without large galaxies; cluster
+  outskirts such as M67 (also allows the step-6 comparison).
+- **Hold out a test subset** of exposures (different nights) for the
+  polynomial-order choice (step 4) and residual maps.
 
 Calibration fit (`calibrate.py`, run by the PI on V1/V2):
 1. For each calibration exposure: detect (§6.1), initial WCS from header,
@@ -597,3 +651,7 @@ note it in the README).
   (over-subtraction of extended outskirts).
 - Trujillo, I. & Fliri, J. 2016, ApJ, 823, 123 — LSB imaging/sky treatment.
 - Akhlaghi, M. & Ichikawa, T. 2015, ApJS, 220, 1 — NoiseChisel.
+- Lindegren, L. et al. 2021, A&A, 649, A2 — Gaia EDR3 astrometric solution
+  (uncertainties vs magnitude). https://www.aanda.org/10.1051/0004-6361/202039709
+- Bernstein, G. M. et al. 2017, PASP, 129, 074503 — DECam astrometric
+  calibration; atmospheric turbulence residuals. https://arxiv.org/abs/1703.01679
