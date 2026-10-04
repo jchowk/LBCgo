@@ -454,7 +454,8 @@ def merge_ldac(chip_catalogs, output_catalog):
     SCAMP's focal-plane modes need one catalog per exposure with one
     (``LDAC_IMHEAD``, ``LDAC_OBJECTS``) HDU pair per chip. The pairs are
     appended in the order the catalogs are given (chip order); the primary
-    HDU comes from the first catalog.
+    HDU comes from the first catalog. ``FITSFILE``/``FITSEXT``/``FITSNEXT``
+    in each ``LDAC_IMHEAD`` are renumbered to describe the merged file.
 
     Parameters
     ----------
@@ -468,15 +469,42 @@ def merge_ldac(chip_catalogs, output_catalog):
     str
         ``output_catalog``
     """
-    merged = None
-    for cat in chip_catalogs:
-        with fits.open(cat) as hdul:
-            if merged is None:
-                merged = fits.HDUList([hdul[0].copy()])
-            # Skip the primary; the rest are (IMHEAD, OBJECTS) pairs
-            for hdu in hdul[1:]:
-                merged.append(hdu.copy())
-    merged.writeto(output_catalog, overwrite=True)
+    # Work on the raw FITS bytes: an astropy round trip rewrites the
+    # space-padded 80-character header cards in LDAC_IMHEAD as NUL-padded,
+    # which makes SCAMP fault (SIGSEGV/SIGBUS).
+    blocks, n_imhead = [], 0
+    for icat, cat in enumerate(chip_catalogs):
+        with open(cat, 'rb') as fh:
+            raw = fh.read()
+        with fits.open(cat, memmap=False) as hdul:
+            # The primary comes from the first catalog only; the rest are
+            # (IMHEAD, OBJECTS) pairs
+            for i in range(0 if icat == 0 else 1, len(hdul)):
+                info = hdul.fileinfo(i)
+                block = bytearray(raw[info['hdrLoc']:info['datLoc'] + info['datSpan']])
+                is_imhead = hdul[i].name == 'LDAC_IMHEAD'
+                n_imhead += is_imhead
+                blocks.append((is_imhead, block, info['datLoc'] - info['hdrLoc'],
+                               hdul[i].header['NAXIS1'] if is_imhead else 0))
+
+    # SCAMP locates each extension through FITSEXT/FITSNEXT (and names the
+    # field via FITSFILE) in its LDAC_IMHEAD. Chip catalogs all say 1 of 1;
+    # renumber as SExtractor does for a native multi-extension image.
+    exposure_name = os.path.basename(output_catalog).replace('.cat', '.fits')
+    ext = 0
+    with open(output_catalog, 'wb') as out:
+        for is_imhead, block, dstart, nbytes in blocks:
+            if is_imhead:
+                ext += 1
+                new_values = {'FITSFILE': exposure_name, 'FITSEXT': ext,
+                              'FITSNEXT': n_imhead}
+                for off in range(dstart, dstart + nbytes, 80):
+                    key = block[off:off + 8].decode('ascii').strip()
+                    if key in new_values:
+                        old = fits.Card.fromstring(block[off:off + 80].decode('ascii'))
+                        block[off:off + 80] = fits.Card(
+                            key, new_values[key], old.comment).image.encode('ascii')
+            out.write(block)
     return output_catalog
 
 

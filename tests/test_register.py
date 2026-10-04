@@ -439,16 +439,30 @@ FIXTURES = Path(__file__).parent / 'fixtures' / 'scamp'
 
 
 def _write_ldac(path, n_objects, chip_marker):
-    """Minimal FITS_LDAC catalog: primary + (LDAC_IMHEAD, LDAC_OBJECTS)."""
+    """Minimal FITS_LDAC catalog: primary + (LDAC_IMHEAD, LDAC_OBJECTS).
+
+    The IMHEAD is one row holding the header as 80-character cards padded
+    with spaces, like SExtractor writes it (including FITSEXT/FITSNEXT).
+    """
     from astropy.io import fits
-    cards = np.array([[('CHIP    = %d' % chip_marker).ljust(80)]])
+    cards = [fits.Card('FITSFILE', 'chip_%d.fits' % chip_marker, 'File name').image,
+             fits.Card('FITSEXT', 1, 'FITS Extension number').image,
+             fits.Card('FITSNEXT', 1, 'Number of FITS image extensions').image,
+             fits.Card('CHIPNO', chip_marker, 'test marker').image,
+             'END'.ljust(80)]
     imhead = fits.BinTableHDU.from_columns(
-        [fits.Column(name='Field Header Card', format='80A', array=cards)],
-        name='LDAC_IMHEAD')
+        [fits.Column(name='Field Header Card', format='%dA' % (80 * len(cards)),
+                     array=np.array([''.join(cards)]))], name='LDAC_IMHEAD')
     objs = fits.BinTableHDU.from_columns(
         [fits.Column(name='NUMBER', format='J', array=np.arange(n_objects))],
         name='LDAC_OBJECTS')
     fits.HDUList([fits.PrimaryHDU(), imhead, objs]).writeto(path, overwrite=True)
+
+
+def _imhead_cards(hdu):
+    """The 80-character cards of an LDAC_IMHEAD HDU, as raw bytes."""
+    raw = hdu.data.tobytes()
+    return [raw[i:i + 80] for i in range(0, len(raw), 80)]
 
 
 def test_group_chips_by_exposure_orders_chips():
@@ -477,8 +491,22 @@ def test_merge_ldac_concatenates_pairs_in_order(tmp_path):
     with fits.open(out) as h:
         assert [x.name for x in h] == ['PRIMARY'] + ['LDAC_IMHEAD', 'LDAC_OBJECTS'] * 3
         assert [len(h[i].data) for i in (2, 4, 6)] == [3, 5, 2]
-        assert [str(h[i].data[0][0]).strip() for i in (1, 3, 5)] == \
-            ['CHIP    = 1', 'CHIP    = 2', 'CHIP    = 4']
+        for ext, i in enumerate((1, 3, 5), start=1):
+            cards = _imhead_cards(h[i])
+            keyed = {c[:8].decode().strip(): fits.Card.fromstring(c.decode())
+                     for c in cards if c[:8].strip() not in (b'END', b'')}
+            assert keyed['CHIPNO'].value == (1, 2, 4)[ext - 1]
+            # SCAMP needs FITSEXT/FITSNEXT to describe the merged file
+            assert keyed['FITSEXT'].value == ext
+            assert keyed['FITSNEXT'].value == 3
+            assert keyed['FITSFILE'].value == 'x_exp.fits'
+            # Every other byte is carried over untouched. (Re-writing the
+            # table through astropy turns SExtractor's space padding into
+            # NULs, which makes SCAMP fault.)
+            with fits.open(cats[ext - 1]) as src:
+                for new, old in zip(cards, _imhead_cards(src[1])):
+                    if new[:8].strip() not in (b'FITSFILE', b'FITSEXT', b'FITSNEXT'):
+                        assert new == old
 
 
 def test_split_head_writes_one_file_per_section(tmp_path):
