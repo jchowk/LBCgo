@@ -8,6 +8,10 @@
       "Bash(/opt/miniconda3/envs/lbcgo/bin/pytest tests/test_extractchips.py -q)",
       "Bash(/opt/miniconda3/envs/lbcgo/bin/pytest tests/test_extractchips.py::test_extractchips_creates_four_files -v --tb=long)",
       "Read(//Users/howk/Documents/**)"
+    ],
+    "additionalDirectories": [
+      "/Users/howk/Documents",
+      "/Users/howk/.claude"
     ]
   }
 }
