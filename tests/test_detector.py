@@ -97,13 +97,31 @@ def test_gain_rdnoise_default_when_nothing_available():
                                   'default')
 
 
-def test_packaged_table_is_empty_so_headers_are_used():
+# Giallongo et al. 2008, A&A 482, 349, Table 1 (LBC-Blue, 2006 commissioning)
+GIALLONGO_LBCB = {1: (1.96, 11.4), 2: (2.09, 11.6), 3: (2.06, 11.6),
+                  4: (1.98, 11.2)}
+
+
+def test_packaged_table_seeded_with_lbcb_values():
     table = detector.read_detector_table()
-    assert table is not None and len(table) == 0
     assert list(table.colnames) == detector.TABLE_COLUMNS
-    hdr = fits.Header({'INSTRUME': 'LBC_BLUE', 'MJD_OBS': 56981.3,
+    assert len(table) == 4
+    assert set(table['channel']) == {'LBCB'}
+    for chip, (gain, rn) in GIALLONGO_LBCB.items():
+        # Open-ended rows match any date, and an unknown date
+        assert detector.lookup_detector_params(table, 'LBCB', chip,
+                                               56981.3) == (gain, rn)
+        assert detector.lookup_detector_params(table, 'LBCB', chip,
+                                               None) == (gain, rn)
+
+
+def test_packaged_table_lbcr_falls_back_to_header():
+    hdr = fits.Header({'INSTRUME': 'LBC-RED ', 'MJD_OBS': 57020.56,
                        'GAIN': 1.75, 'RDNOISE': 12.0})
-    assert detector.gain_rdnoise(2, [hdr])[2] == 'header'
+    assert detector.gain_rdnoise(2, [hdr]) == (1.75, 12.0, 'header')
+    hdr_b = fits.Header({'INSTRUME': 'LBC_BLUE', 'MJD_OBS': 56981.3,
+                         'GAIN': 1.75, 'RDNOISE': 12.0})
+    assert detector.gain_rdnoise(2, [hdr_b]) == (2.09, 11.6, 'table')
 
 
 def test_missing_explicit_table_raises(tmp_path):
@@ -255,7 +273,19 @@ def test_flatfield_uses_table_then_header(raw_dir, work_dir, tmp_path):
             assert wh[ext].header['RDNOISE'] == 12.0
 
 
-def test_flatfield_default_table_uses_headers(raw_dir, work_dir):
+def test_flatfield_default_table_uses_seeded_lbcb(raw_dir, work_dir):
+    """LBCB data with the packaged table: every chip gets Table 1 values."""
     with _flatfield_with_table(raw_dir, work_dir, None) as wh:
+        for ext in range(1, N_CHIPS + 1):
+            gain, rn = GIALLONGO_LBCB[ext]
+            assert wh[ext].header['GAINSRC'] == 'table'
+            assert wh[ext].header['GAIN'] == gain
+            assert wh[ext].header['RDNOISE'] == rn
+
+
+def test_flatfield_empty_table_uses_headers(raw_dir, work_dir, tmp_path):
+    empty = detector.write_detector_table(_table()[:0],
+                                          str(tmp_path / 'empty.ecsv'))
+    with _flatfield_with_table(raw_dir, work_dir, empty) as wh:
         assert all(wh[ext].header['GAINSRC'] == 'header'
                    for ext in range(1, N_CHIPS + 1))

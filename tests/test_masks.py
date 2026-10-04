@@ -218,7 +218,16 @@ def test_flatfield_writes_mask_and_weight(raw_dir, work_dir):
         hdul[1].data[:, 30] *= 0.5          # bad column on chip 1
         hdul[3].data[:10, :10] *= 0.3       # vignetted corner on chip 3
 
-    flat_files = _run_flatfield(over, edit_flat=bad_flat)
+    # An empty detector table, so the header GAIN/RDNOISE path is tested
+    # (the packaged table has LBCB rows, and this file is named lbcb.*)
+    from astropy.table import Table
+    from LBCgo import detector
+    empty = detector.write_detector_table(
+        Table(names=detector.TABLE_COLUMNS,
+              dtype=['U4', 'i4', 'f8', 'f8', 'f8', 'f8', 'U10']),
+        str(work_dir / 'empty_detector.ecsv'))
+    flat_files = _run_flatfield(over, edit_flat=bad_flat,
+                                detector_table=empty)
     out = str(work_dir / flat_files[0])
 
     with fits.open(masks.sidecar_name(out, 'mask')) as mh, \
