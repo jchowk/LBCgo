@@ -572,8 +572,10 @@ fitted model). Therefore:
 - Required test: a synthetic star field with known fluxes and a known
   distortion, "sky-flattened" (divided by its relative pixel area), must
   come out of the coadd with fluxes independent of position to < 0.2 %.
-- Any photometry on single, unresampled frames (step 2, QA) must divide by
-  the pixel-area map (§6.3.2 step 7), or be done on the resampled images.
+- Any photometry on single, unresampled frames (step 2, QA) must
+  **multiply** the summed flux by the relative pixel area a at the source
+  position (§6.3.2 step 7): the flattened frame holds raw/a, so a star's
+  sum is S/a. Or measure on the resampled images instead.
 
 1. Output grid: TAN, north up, pixel scale 0.224″ (configurable), bounds
    from all chip footprints (`reproject.mosaicking.find_optimal_celestial_wcs`
