@@ -59,6 +59,45 @@ Each multi-extension FITS file is split into per-chip single-extension files
 named ``<base>_1.fits`` through ``<base>_4.fits``. These are the inputs to the
 astrometric pipeline. Chips can be subsetted via ``lbc_chips``.
 
+Pixel masks and weight maps
+---------------------------
+
+:mod:`LBCgo.masks`
+
+Alongside each processed image the pipeline writes two *sidecar* files with
+the same HDU layout (empty primary, one extension per chip):
+
+- ``<image>.mask.fits``: uint8 bitmask, 0 = good. Bits: ``SATURATED`` (1),
+  ``BADPIX`` (2), ``VIGNETTED`` (4), ``NONFINITE`` (8), ``COSMIC`` (16).
+- ``<image>.weight.fits``: float32 inverse variance in 1/ADU², 0 where the
+  mask is non-zero.
+
+Saturation is flagged in :func:`~LBCgo.lbcproc.go_overscan` on the raw ADU
+(``>= 0.9 * SATURATE``, grown by one pixel), because it cannot be recovered
+after overscan subtraction and flat fielding. :func:`~LBCgo.lbcproc.go_flatfield`
+adds bad pixels (flat deviating by more than 20 % from its local 5×5 median, or
+listed in an optional ``badpix_file``), vignetting (median-normalised flat
+below 0.5), non-finite values and, if cosmic-ray cleaning is on, replaced
+pixels. It then computes the weight from the normalised flat *f*, the sky
+level *S* of the flat-fielded chip, the gain *g* and the read noise *RN*::
+
+    w = f**2 / (S*f/g + (RN/g)**2)
+
+Gain and read noise come from the per-chip table ``conf/lbc_detector.ecsv``
+(see :mod:`LBCgo.detector`) when it has a row for the channel, chip and date,
+and otherwise from the ``GAIN``/``RDNOISE`` header keywords. The packaged table
+is empty, so header values are used until measured values are added
+(:func:`~LBCgo.detector.measure_gain_rdnoise_files` measures them from two
+flats and two biases). Each weight extension records the values used and their
+source in ``GAIN``, ``RDNOISE`` and ``GAINSRC``.
+
+:func:`~LBCgo.lbcproc.make_targetdirectories` and
+:func:`~LBCgo.lbcproc.go_extractchips` carry the sidecars along, so each chip
+file ``<base>_<n>.fits`` has ``<base>_<n>.mask.fits`` and
+``<base>_<n>.weight.fits`` next to it. The ``.weight.fits`` suffix is the
+SExtractor/SWarp default for ``MAP_WEIGHT`` images. Set ``make_masks=False``
+(``go_overscan``) or ``make_weights=False`` (``go_flatfield``) to skip them.
+
 Stage 6: Astrometric registration (optional)
 ---------------------------------------------
 
