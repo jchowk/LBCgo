@@ -117,7 +117,11 @@ with progressively tighter tolerance parameters to improve the astrometric fit.
 
 **SWarp** (:func:`~LBCgo.lbcregister.go_swarp`): Resamples each chip image
 onto a common grid and co-adds them into a final mosaic. Output files are named
-``<object>.<filter>.mos.fits`` with a companion weight map.
+``<object>.<filter>.mos.fits`` with a companion weight map. By default it uses
+the per-chip weight maps, the SCAMP ``FLXSCALE`` flux scaling and a
+sigma-clipped weighted mean (``combine_type='CLIPPED'``); the background mesh is
+1024 px so extended galaxy light is largely preserved. Override via
+``go_register(swarp_args=dict(combine_type='MEDIAN', subtract_back=False))``.
 
 Known limitations
 -----------------

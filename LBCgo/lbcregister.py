@@ -770,9 +770,19 @@ def go_scamp_joint(chip_files,
     return qa
 
 
+SWARP_COMBINE_TYPES = ('CLIPPED', 'MEDIAN', 'WEIGHTED', 'AVERAGE')
+
+
 def go_swarp(inputfiles,
              output_filename = None,
              configfile = None,
+             combine_type = 'CLIPPED',
+             clip_sigma = 4.0,
+             clip_ampfrac = 0.3,
+             use_weight = True,
+             use_fscale = True,
+             subtract_back = True,
+             back_size = 1024,
              verbose = True):
     """Resample and co-add chip images using SWarp.
 
@@ -794,15 +804,42 @@ def go_swarp(inputfiles,
     configfile : str or None, optional
         Path to a SWarp configuration file. If None, uses the LBCgo default
         ``swarp.lbc.conf``. Default: None
+    combine_type : {'CLIPPED', 'MEDIAN', 'WEIGHTED', 'AVERAGE'}, optional
+        SWarp ``COMBINE_TYPE``. ``CLIPPED`` is the sigma-clipped weighted
+        mean of Gruen et al. (2014); ``MEDIAN`` is the robust alternative.
+        Default: 'CLIPPED'
+    clip_sigma, clip_ampfrac : float, optional
+        ``CLIP_SIGMA`` and ``CLIP_AMPFRAC`` (used by ``CLIPPED``).
+        Default: 4.0, 0.3
+    use_weight : bool, optional
+        Use the per-chip ``<base>.weight.fits`` maps written by the mask step
+        (``WEIGHT_TYPE MAP_WEIGHT``). Applied only if *every* input has a
+        weight map; otherwise SWarp runs unweighted with a warning.
+        Default: True
+    use_fscale : bool, optional
+        Scale each input by the ``FLXSCALE`` that SCAMP writes to the ``.head``
+        file (``FSCALE_KEYWORD FLXSCALE``). Applied only if at least one
+        ``.head`` carries it; inputs without it use ``FSCALE_DEFAULT``.
+        Default: True
+    subtract_back : bool, optional
+        Let SWarp subtract a sky background from each input. SWarp's
+        background mesh removes extended light (e.g. a large galaxy) on scales
+        up to ``back_size``; set False when the sky has already been
+        subtracted or for extended targets. Default: True
+    back_size : int, optional
+        SWarp ``BACK_SIZE`` (pixels) when ``subtract_back`` is True. The
+        default (1024) is much larger than the config-file value (128) so
+        galaxy light on arcminute scales is preserved. Default: 1024
     verbose : bool, optional
         Print the SWarp command and progress. Default: True
 
     Raises
     ------
     RuntimeError
-        If SWarp is not found on the system PATH.
+        If SWarp is not found on the system PATH, or exits with an error.
     ValueError
-        If the input files span more than one filter.
+        If the input files span more than one filter, or ``combine_type``
+        is not supported.
 
     Returns
     -------
@@ -811,6 +848,11 @@ def go_swarp(inputfiles,
         to the current directory. Mean exposure-time-weighted airmass is
         written to the output header.
     """
+
+    combine_type = str(combine_type).upper()
+    if combine_type not in SWARP_COMBINE_TYPES:
+        raise ValueError("combine_type must be one of {0}, got {1!r}".format(
+            ', '.join(SWARP_COMBINE_TYPES), combine_type))
 
     # Check if SWarp is available
     swarp_exe = find_astromatic_tool('swarp')
@@ -856,42 +898,114 @@ def go_swarp(inputfiles,
     # Rename the weight image
     weight_filename = output_filename.replace('.mos.fits','.mos.weight.fits')
 
-    # Create the list of input files:
-    inputfile_text = ''
-    for fl in inputfiles: inputfile_text = inputfile_text+' '+fl
+    # Weight maps: SWarp finds them by suffix (<base>.weight.fits) and fails
+    # if only some exist, so use them only when all inputs have one.
+    weight_files = [lbcmasks.sidecar_name(fl, 'weight') for fl in inputfiles]
+    have_weights = use_weight and all(os.path.exists(w) for w in weight_files)
+    if use_weight and not have_weights and verbose:
+        print("Weight maps missing for some inputs; SWarp runs unweighted.")
 
-    cmd_flags = ' -c '+configfile+ \
-        ' -IMAGEOUT_NAME '+ output_filename + \
-        ' -WEIGHTOUT_NAME '+ weight_filename + \
-        ' -WEIGHT_TYPE NONE '+ \
-        ' -HEADER_SUFFIX ".head"'+ \
-        ' -FSCALE_KEYWORD NONE -FSCALE_DEFAULT 1.0 '+\
-        ' -CELESTIAL_TYPE EQUATORIAL -CENTER_TYPE ALL '+\
-        ' -COMBINE_BUFSIZE 4096 ' +\
-        ' -COPY_KEYWORDS '+\
-        ' OBJECT,OBJRA,OBJDEC,OBJEPOCH,PROPID,PI_NAME,'+\
-        'FILTER,SATURATE,RDNOISE,GAIN,EXPTIME,AIRMASS,TIME-OBS'
+    # Flux scaling from SCAMP: FLXSCALE lives in the .head side-car, which
+    # SWarp merges into each input header before reading FSCALE_KEYWORD.
+    head_files = [os.path.splitext(fl)[0] + '.head' for fl in inputfiles]
+    have_fscale = False
+    if use_fscale:
+        for hf in head_files:
+            if os.path.exists(hf):
+                with open(hf) as fh:
+                    if any(ln.startswith('FLXSCALE') for ln in fh):
+                        have_fscale = True
+                        break
+
+    # SWarp's option parser splits on whitespace (no quoting), so with a
+    # space anywhere in the paths, run in a space-free staging directory with
+    # symlinks to inputs, side-cars and config; move the products back.
+    cwd = None
+    stage = None
+    swarp_inputs = list(inputfiles)
+    swarp_config = configfile
+    swarp_out, swarp_wout = output_filename, weight_filename
+    needs_stage = any(' ' in str(p) for p in
+                      [configfile, output_filename, *inputfiles])
+    if needs_stage:
+        stage = tempfile.TemporaryDirectory(prefix='lbcgo_swarp_')
+        cwd = stage.name
+        swarp_inputs = []
+        for i, fl in enumerate(inputfiles):
+            link = os.path.join(stage.name, 'in{0:03d}.fits'.format(i))
+            os.symlink(os.path.abspath(fl), link)
+            for src, suffix in [(head_files[i], '.head'),
+                                (weight_files[i], '.weight.fits')]:
+                if os.path.exists(src):
+                    os.symlink(os.path.abspath(src),
+                               os.path.splitext(link)[0] + suffix)
+            swarp_inputs.append(link)
+        swarp_config = os.path.join(stage.name, 'swarp.conf')
+        os.symlink(os.path.abspath(configfile), swarp_config)
+        swarp_out = os.path.join(stage.name, 'coadd.fits')
+        swarp_wout = os.path.join(stage.name, 'coadd.weight.fits')
+
+    cmd_flags = ['-c', swarp_config,
+                 '-IMAGEOUT_NAME', swarp_out,
+                 '-WEIGHTOUT_NAME', swarp_wout,
+                 '-HEADER_SUFFIX', '.head',
+                 '-COMBINE_TYPE', combine_type,
+                 '-CLIP_SIGMA', str(clip_sigma),
+                 '-CLIP_AMPFRAC', str(clip_ampfrac),
+                 '-CELESTIAL_TYPE', 'EQUATORIAL', '-CENTER_TYPE', 'ALL',
+                 '-COMBINE_BUFSIZE', '4096',
+                 '-COPY_KEYWORDS',
+                 'OBJECT,OBJRA,OBJDEC,OBJEPOCH,PROPID,PI_NAME,'
+                 'FILTER,SATURATE,RDNOISE,GAIN,EXPTIME,AIRMASS,TIME-OBS']
+    if have_weights:
+        cmd_flags += ['-WEIGHT_TYPE', 'MAP_WEIGHT',
+                      '-WEIGHT_SUFFIX', '.weight.fits']
+    else:
+        cmd_flags += ['-WEIGHT_TYPE', 'NONE']
+    if have_fscale:
+        cmd_flags += ['-FSCALE_KEYWORD', 'FLXSCALE', '-FSCALE_DEFAULT', '1.0']
+    else:
+        cmd_flags += ['-FSCALE_KEYWORD', 'NONE', '-FSCALE_DEFAULT', '1.0']
+    if subtract_back:
+        cmd_flags += ['-SUBTRACT_BACK', 'Y', '-BACK_SIZE', str(int(back_size))]
+    else:
+        cmd_flags += ['-SUBTRACT_BACK', 'N']
+    if stage is not None:
+        cmd_flags += ['-XML_NAME', os.path.join(stage.name, 'swarp.xml')]
 
     # Create the final command:
-    cmd = swarp_exe + ' ' + inputfile_text + cmd_flags
+    cmd = [swarp_exe] + swarp_inputs + cmd_flags
 
     try:
-        if verbose:
-            print('########### SWARP image combination '
-                  '########### \n')
-            print(cmd)
-            swarp = Popen(shlex.split(cmd),
-                          close_fds=True)
-        else:
-            swarp = Popen(shlex.split(cmd),
-                          stdout=DEVNULL,
-                          stderr=DEVNULL,
-                          close_fds=True)
-    except Exception as e:
-        print('Oops: SWARP call:', (e))
-        return None
+        try:
+            if verbose:
+                print('########### SWARP image combination '
+                      '########### \n')
+                print(shlex.join(cmd))
+                swarp = Popen(cmd, cwd=cwd, close_fds=True)
+            else:
+                swarp = Popen(cmd, cwd=cwd,
+                              stdout=DEVNULL,
+                              stderr=DEVNULL,
+                              close_fds=True)
+        except Exception as e:
+            print('Oops: SWARP call:', (e))
+            return None
 
-    swarp.wait()
+        status = swarp.wait()
+        if status:
+            raise RuntimeError("SWarp exited with status {0}".format(status))
+
+        # Bring the products out of the staging directory
+        if stage is not None:
+            for produced, final in [(swarp_out, output_filename),
+                                    (swarp_wout, weight_filename)]:
+                if not os.path.exists(produced):
+                    raise RuntimeError("SWarp did not write {0}".format(produced))
+                shutil.move(produced, final)
+    finally:
+        if stage is not None:
+            stage.cleanup()
 
     # Add airmass to header:
     fits.setval(output_filename,'AIRMASS',value=airmass)
@@ -916,6 +1030,7 @@ def go_register(filter_directories,
                 sextractor_args = None,
                 scamp_joint = True,
                 scamp_args = None,
+                swarp_args = None,
                 verbose=True):
     """Perform astrometric registration and image combination for LBC chip-extracted data.
     
@@ -967,6 +1082,9 @@ def go_register(filter_directories,
     scamp_args : dict or None, optional
         Extra keyword arguments for :func:`go_scamp_joint` (e.g.
         ``dict(max_ref_rms=0.1)``). Default: None
+    swarp_args : dict or None, optional
+        Extra keyword arguments for :func:`go_swarp` (e.g.
+        ``dict(combine_type='MEDIAN', subtract_back=False)``). Default: None
     verbose : bool, optional
         Print detailed processing information and command outputs. Default: True
         
@@ -1053,4 +1171,5 @@ def go_register(filter_directories,
         # go_swarp = reproject and coadd images
         if do_swarp:
             go_swarp(input_filenames,
-                     verbose=verbose)
+                     verbose=verbose,
+                     **(swarp_args or {}))
