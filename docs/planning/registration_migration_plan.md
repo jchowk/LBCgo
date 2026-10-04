@@ -242,14 +242,37 @@ Purpose: a fair benchmark and an immediate improvement for users.
       `conf/lbc_detector.ecsv` with validity ranges.
 
 ### 5.3 SExtractor improvements
-- [ ] Pass `-WEIGHT_TYPE MAP_WEIGHT -WEIGHT_IMAGE <weight>`; `-FLAG_IMAGE`
-      from the mask.
-- [ ] Alignment run (default): `-BACK_SIZE 32 -BACK_FILTERSIZE 3`,
+- [x] Pass `-WEIGHT_TYPE MAP_WEIGHT -WEIGHT_IMAGE <weight>`; `-FLAG_IMAGE`
+      from the mask. (`go_sextractor` picks up the `<base>.weight.fits` /
+      `<base>.mask.fits` sidecars automatically; absent sidecars → unweighted
+      run. With a flag image, `IMAFLAGS_ISO`/`NIMAFLAGS_ISO` are added to a
+      staged copy of the param file: SExtractor fails if they are requested
+      without a `FLAG_IMAGE`, so they cannot be in the default param file.)
+- [x] Alignment run (default): `-BACK_SIZE 32 -BACK_FILTERSIZE 3`,
       `-DEBLEND_MINCONT 1e-4`, `-DETECT_THRESH 5`, drop the odd
       `-ANALYSIS_THRESH 8`. Make all of these function arguments.
-- [ ] Extended-target mode: provide the ellipse-masked, high-passed image
-      (from §6.2) as `-BACK_TYPE MANUAL -BACK_VALUE 0` input, or a
-      `CHECKIMAGE`-free variant using a precomputed background file.
+      (`ANALYSIS_THRESH` now follows `DETECT_THRESH` unless given; the conf
+      file defaults were changed to match; `go_register(sextractor_args=…)`
+      forwards overrides.)
+- [~] Extended-target mode: `go_sextractor(subtracted_image=…)` runs on a
+      supplied background-subtracted image with `BACK_TYPE MANUAL`,
+      `BACK_VALUE 0`. **Pending:** the producer of that image (§6.2).
+- Found while implementing:
+  - SExtractor does not honour quotes and splits option values at spaces;
+    with a package or data path containing a space (e.g. a Dropbox folder)
+    `-c` was silently dropped ("not found, using internal defaults") or the
+    run failed. `go_sextractor` now stages symlinks in a temp directory in
+    that case.
+  - The conv/nnw/param files were validated but never passed to `sex`
+    (the config's relative `default.conv` only resolved if the cwd held it);
+    now passed explicitly.
+  - Executable names: `sex`/`source-extractor`, `swarp`/`SWarp` accepted
+    via `find_astromatic_tool` (SExtractor, SCAMP, SWarp call sites and
+    `check_external_dependencies`).
+  - Synthetic check (SExtractor 2.28.2): with the old settings
+    (`DEBLEND_MINCONT 0.005`, mesh 64) two stars 40–50 px from a galaxy core
+    stay merged into the galaxy segment; with the new defaults both are
+    recovered. A zero-weight bad column yields no detections.
 
 ### 5.4 SCAMP: one joint run per filter directory
 SCAMP's focal-plane modes need one catalog per **exposure** with one

@@ -8,6 +8,32 @@ from astropy.io import fits
 from ccdproc import  ImageFileCollection
 import astropy.io.votable as votable
 import LBCgo
+import tempfile
+from . import masks as lbcmasks
+
+
+
+# Executable names differ between packagings: Debian/Ubuntu ship SExtractor
+# as ``source-extractor`` and SWarp as ``SWarp``; Homebrew/conda use ``sex``
+# and ``swarp``. The first name found on PATH wins.
+ASTROMATIC_NAMES = {'sex': ('sex', 'source-extractor'),
+                    'scamp': ('scamp',),
+                    'swarp': ('swarp', 'SWarp')}
+
+
+def find_astromatic_tool(tool):
+    """Return the executable name for an astromatic tool, or None if absent.
+
+    Parameters
+    ----------
+    tool : {'sex', 'scamp', 'swarp'}
+        Generic tool name; the alternatives in ``ASTROMATIC_NAMES`` are tried
+        in order.
+    """
+    for name in ASTROMATIC_NAMES[tool]:
+        if shutil.which(name):
+            return name
+    return None
 
 
 # TODO: Offer an iterative treatment of SCAMP to get desired precision
@@ -18,12 +44,24 @@ def go_sextractor(inputfile,
                 paramfile = None,
                 convfile = None,
                 nnwfile = None,
-                verbose=True):
+                verbose=True,
+                detect_thresh=5.0,
+                analysis_thresh=None,
+                back_size=32,
+                back_filtersize=3,
+                deblend_mincont=1e-4,
+                use_weight=True,
+                use_flags=True,
+                weight_file=None,
+                flag_file=None,
+                subtracted_image=None):
     """Run SExtractor on a single chip image to produce a source catalog.
 
     Detects sources and writes a FITS_LDAC catalog (``<base>.cat``) alongside
     the input file. Default configuration files are read from the LBCgo
-    package ``conf/`` directory.
+    package ``conf/`` directory. The defaults are tuned for alignment
+    catalogs (small background mesh, aggressive deblending so stars on a
+    bright galaxy are not merged into its segment).
 
     Parameters
     ----------
@@ -43,11 +81,42 @@ def go_sextractor(inputfile,
         LBCgo default ``default.nnw``. Default: None
     verbose : bool, optional
         Print the SExtractor command and progress. Default: True
+    detect_thresh : float, optional
+        ``DETECT_THRESH`` in sigma. Default: 5.0
+    analysis_thresh : float or None, optional
+        ``ANALYSIS_THRESH`` in sigma. None sets it equal to ``detect_thresh``
+        (the config-file value of 1.5 would otherwise apply). Default: None
+    back_size : int, optional
+        ``BACK_SIZE`` background mesh in pixels (32 px = 7 arcsec). Default: 32
+    back_filtersize : int, optional
+        ``BACK_FILTERSIZE`` median filter size in meshes. Default: 3
+    deblend_mincont : float, optional
+        ``DEBLEND_MINCONT``. Stars on a bright galaxy hold well under 0.5 %
+        of the galaxy segment's flux, so the SExtractor default (0.005) does
+        not separate them. Default: 1e-4
+    use_weight : bool, optional
+        Pass the chip's ``<base>.weight.fits`` sidecar (written by
+        ``go_flatfield``) as a ``MAP_WEIGHT`` image. Silently skipped when no
+        weight file exists. Default: True
+    use_flags : bool, optional
+        Pass the chip's ``<base>.mask.fits`` sidecar as ``FLAG_IMAGE``;
+        flags are then available as ``IMAFLAGS_ISO`` if requested in the
+        parameter file. Skipped when no mask file exists. Default: True
+    weight_file, flag_file : str or None, optional
+        Explicit weight / flag images overriding the sidecar names.
+    subtracted_image : str or None, optional
+        Extended-target mode. A background-subtracted (e.g. ellipse-masked,
+        high-passed) version of the chip image with the same pixel grid and
+        WCS. SExtractor then runs on it with ``BACK_TYPE MANUAL``,
+        ``BACK_VALUE 0`` so that galaxy structure is not re-estimated as
+        background. The catalog is still named after ``inputfile``.
+        Default: None
 
     Raises
     ------
     RuntimeError
-        If SExtractor (``sex``) is not found on the system PATH.
+        If SExtractor (``sex`` or ``source-extractor``) is not found on the
+        system PATH.
 
     Returns
     -------
@@ -55,11 +124,11 @@ def go_sextractor(inputfile,
         Writes a FITS_LDAC catalog to ``<inputfile_base>.cat``.
         Returns None if a required configuration file is missing.
     """
-    # Check if SExtractor is available
-    if not shutil.which('sex'):
-        raise RuntimeError("SExtractor (sex) is not available. Please install it.")
-    
-    # from IPython import embed; embed()
+    # Check if SExtractor is available (name depends on the packaging)
+    sex_exe = find_astromatic_tool('sex')
+    if sex_exe is None:
+        raise RuntimeError("SExtractor (sex or source-extractor) is not "
+                           "available. Please install it.")
 
     if configfile == None:
         # Use default config file from LBCgo package directories
@@ -112,33 +181,110 @@ def go_sextractor(inputfile,
     outputsuffix = '.cat'
     outputcatalog = filebase+outputsuffix
 
+    if analysis_thresh is None:
+        analysis_thresh = detect_thresh
+
+    # Weight map (inverse variance; 0 = bad pixel) and flag image (mask)
+    if weight_file is None and use_weight:
+        weight_file = lbcmasks.sidecar_name(inputfile, 'weight')
+    if weight_file is not None and not os.path.exists(weight_file):
+        if use_weight and verbose:
+            print("No weight map found for {0}; running unweighted.".format(inputfile))
+        weight_file = None
+
+    if flag_file is None and use_flags:
+        flag_file = lbcmasks.sidecar_name(inputfile, 'mask')
+    if flag_file is not None and not os.path.exists(flag_file):
+        flag_file = None
+
+    # Extended-target mode: background already removed from the input
+    detect_image = inputfile if subtracted_image is None else subtracted_image
+
+    # SExtractor's option parser splits on whitespace and does not honour
+    # quotes, so a path containing a space (e.g. a Dropbox folder) silently
+    # breaks the run. Stage symlinks in a space-free temporary directory.
+    paths = {'image': detect_image, 'config': configfile, 'param': paramfile,
+             'conv': convfile, 'nnw': nnwfile, 'weight': weight_file,
+             'flag': flag_file, 'catalog': outputcatalog}
+    needs_links = any(v is not None and ' ' in str(v) for v in paths.values())
+    stage = None
+    if needs_links or flag_file is not None:
+        stage = tempfile.TemporaryDirectory(prefix='lbcgo_sex_')
+    if needs_links:
+        staged = {}
+        for role, path in paths.items():
+            if path is None:
+                continue
+            name = os.path.basename(path).replace(' ', '_')
+            staged[role] = os.path.join(stage.name, name)
+            if role != 'catalog':
+                os.symlink(os.path.abspath(path), staged[role])
+        # Side-car header (.head) written by SCAMP, if any
+        head = os.path.splitext(detect_image)[0] + '.head'
+        if os.path.exists(head):
+            os.symlink(os.path.abspath(head),
+                       os.path.splitext(staged['image'])[0] + '.head')
+        paths = {**paths, **staged}
+
+    # With a flag image, add the per-source mask-flag columns to a staged copy
+    # of the parameter file (SExtractor fails if they are requested without a
+    # FLAG_IMAGE, so they cannot live in the default file).
+    if flag_file is not None:
+        with open(paths['param']) as fh:
+            active = [ln.split('#')[0].strip() for ln in fh]
+        extra = [c for c in ('IMAFLAGS_ISO(1)', 'NIMAFLAGS_ISO(1)')
+                 if c not in active]
+        if extra:
+            augmented = os.path.join(stage.name, 'flags.param')
+            with open(paths['param']) as fh, open(augmented, 'w') as out:
+                out.write(fh.read().rstrip('\n') + '\n' + '\n'.join(extra) + '\n')
+            paths['param'] = augmented
+
     # SExtractor flags
-    cmd_flags = ' -c '+ configfile + \
-        ' -CATALOG_NAME '+outputcatalog + \
-        ' -CATALOG_TYPE FITS_LDAC'+ \
-        ' -DETECT_THRESH 5.0 -ANALYSIS_THRESH 8.0'+ \
-        ' -PARAMETERS_NAME '+paramfile
+    cmd_flags = ['-c', paths['config'],
+                 '-CATALOG_NAME', paths['catalog'],
+                 '-CATALOG_TYPE', 'FITS_LDAC',
+                 '-PARAMETERS_NAME', paths['param'],
+                 '-FILTER_NAME', paths['conv'],
+                 '-STARNNW_NAME', paths['nnw'],
+                 '-DETECT_THRESH', str(detect_thresh),
+                 '-ANALYSIS_THRESH', str(analysis_thresh),
+                 '-BACK_SIZE', str(back_size),
+                 '-BACK_FILTERSIZE', str(back_filtersize),
+                 '-DEBLEND_MINCONT', str(deblend_mincont)]
+    if weight_file is not None:
+        cmd_flags += ['-WEIGHT_TYPE', 'MAP_WEIGHT',
+                      '-WEIGHT_IMAGE', paths['weight']]
+    if flag_file is not None:
+        cmd_flags += ['-FLAG_IMAGE', paths['flag']]
+    if subtracted_image is not None:
+        cmd_flags += ['-BACK_TYPE', 'MANUAL', '-BACK_VALUE', '0']
 
     # Put together the SExtractor command
-    cmd = 'sex '+inputfile+cmd_flags
+    cmd = [sex_exe, paths['image']] + cmd_flags
 
     try:
         if verbose:
             print('########### SEXTRACTOR run for {0} '
                   '########### \n'.format(inputfile.replace('.cat', '')))
-            print(cmd)
-            sextract = Popen(shlex.split(cmd),
+            print(shlex.join(cmd))
+            sextract = Popen(cmd,
                              close_fds=True)
         else:
-            sextract = Popen(shlex.split(cmd),
+            sextract = Popen(cmd,
                              stdout=DEVNULL,
                              stderr=DEVNULL,
                              close_fds=True)
+        sextract.wait()
+        # Bring the catalog out of the staging directory
+        if stage is not None and os.path.exists(paths['catalog']):
+            shutil.move(paths['catalog'], outputcatalog)
     except Exception as e:
         print('Oops: source extractor call:', (e))
         return None
-
-    sextract.wait()
+    finally:
+        if stage is not None:
+            stage.cleanup()
 
 
 def go_scamp(inputfile,
@@ -186,7 +332,7 @@ def go_scamp(inputfile,
     """
 
     # Check if SCAMP is available
-    if not shutil.which('scamp'):
+    if find_astromatic_tool('scamp') is None:
         raise RuntimeError("SCAMP is not available. Please install it.")
 
     # Make sure the input file is a SEXTRACTOR catalog:
@@ -251,7 +397,7 @@ def go_scamp(inputfile,
             cmd_flags.replace('INSTRUMENT','EXPOSURE')
 
         # Create the final command:
-        cmd = 'scamp '+inputfile+cmd_flags
+        cmd = find_astromatic_tool('scamp')+' '+inputfile+cmd_flags
 
         try:
             if verbose:
@@ -326,7 +472,8 @@ def go_swarp(inputfiles,
     """
 
     # Check if SWarp is available
-    if not shutil.which('swarp'):
+    swarp_exe = find_astromatic_tool('swarp')
+    if swarp_exe is None:
         raise RuntimeError("SWarp is not available. Please install it.")
 
     # Make sure we have a configuration file:
@@ -385,7 +532,7 @@ def go_swarp(inputfiles,
         'FILTER,SATURATE,RDNOISE,GAIN,EXPTIME,AIRMASS,TIME-OBS'
 
     # Create the final command:
-    cmd = 'swarp ' + inputfile_text + cmd_flags
+    cmd = swarp_exe + ' ' + inputfile_text + cmd_flags
 
     try:
         if verbose:
@@ -425,6 +572,7 @@ def go_register(filter_directories,
                 do_swarp=True,
                 astrometric_catalog='GAIA-DR3',
                 scamp_iterations = 3,
+                sextractor_args = None,
                 verbose=True):
     """Perform astrometric registration and image combination for LBC chip-extracted data.
     
@@ -464,6 +612,10 @@ def go_register(filter_directories,
         Number of SCAMP iterations for astrometric solution refinement.
         More iterations improve precision but increase processing time.
         Minimum of 2 recommended. Default: 3
+    sextractor_args : dict or None, optional
+        Extra keyword arguments passed to :func:`go_sextractor` (e.g.
+        ``dict(detect_thresh=3, back_size=64, use_weight=False)``).
+        Default: None
     verbose : bool, optional
         Print detailed processing information and command outputs. Default: True
         
@@ -531,7 +683,8 @@ def go_register(filter_directories,
         for filename in input_filenames:
             # Find sources for alignment
             if do_sextractor:
-                go_sextractor(filename)
+                go_sextractor(filename, verbose=verbose,
+                              **(sextractor_args or {}))
             # Calculate the astrometry
             if do_scamp:
                 go_scamp(filename,
