@@ -165,8 +165,10 @@ chip file individually**, runs `go_sextractor` then `go_scamp`; then runs
   values give variances ~20–30 % apart, depending on chip) and for absolute
   flux errors.
   Handled by `LBCgo/detector.py`: per-chip table
-  `conf/lbc_detector.ecsv` (ships empty) overrides headers; header
-  values are the fallback (§5.2).
+  `conf/lbc_detector.ecsv` overrides headers; header values are the
+  fallback (§5.2). PI decision (2026-10-04): seed the table with the LBCB
+  Table 1 values (branch `claude/seed-lbcb-detector-table`); LBCR stays on
+  header values until measured.
 - Typical observing pattern (from OB `j1419.ob`): `NDIT = 3` dither positions,
   offsets (0,0), (−40,−80), (−20,+60)″; **one exposure per filter per dither
   position** → ~3 exposures per filter per OB (repeated OBs add more).
@@ -191,8 +193,8 @@ chip file individually**, runs `go_sextractor` then `go_scamp`; then runs
     interference U-LBC filter, a bright star's primary ghost holds
     2.8 ± 0.7 % of its flux: a ring 75 px across plus a diffuse 200 px
     component shifted radially outward. A sky ghost adds ~0.15 % near the
-    field centre. (Whether the `SDT_Uspec` filter in the NGC 891 data is
-    this U-LBC filter is not stated in the paper; ask the PI.)
+    field centre. The header filter name `SDT_Uspec` (e.g. the NGC 891
+    data) **is** the U-LBC filter (PI, 2026-10-04).
   - Electronic cross-talk between chips/channels: coefficients ~3 × 10⁻⁵;
     the LBC team's pipeline corrects it. LBCgo does not.
   - Linearity residual < 1 % over the full 16-bit range; full well
@@ -326,10 +328,10 @@ Purpose: a fair benchmark and an immediate improvement for users.
 - [ ] Measure gain/read noise per chip for LBCB and LBCR from real bias and
       flat pairs (several epochs; run locally) and populate
       `conf/lbc_detector.ecsv` with validity ranges. Check the LBCB results
-      against Giallongo et al. (2008) Table 1 (§3.3). Optionally seed the
-      table with those LBCB values now (source = the paper, open date
-      range) so LBCB weights stop using the 1.75 e⁻/ADU header gain; PI's
-      call.
+      against Giallongo et al. (2008) Table 1 (§3.3), which seeds the
+      LBCB rows for now (open date range, source = the paper; PI decision
+      2026-10-04, branch `claude/seed-lbcb-detector-table`). Replace or
+      date-limit those rows once measured values exist.
 - [ ] (Optional, matters for low-surface-brightness work.) Electronic
       cross-talk ~3 × 10⁻⁵ (Giallongo et al. 2008): a saturated star
       imprints ~2 ADU ghosts in the other chips/channels. Either correct it
@@ -457,7 +459,8 @@ Extended-target mode (`extended_target=True|dict`):
   plane is masked (sky then unconstrained → recommend offset sky frames).
 - Optional: inter-exposure additive offset matching in overlaps (Montage-like
   rectification) to remove residual exposure-to-exposure sky differences.
-- Ghosts (LBCB, Giallongo et al. 2008): with the U-LBC interference filter,
+- Ghosts (LBCB, Giallongo et al. 2008): with the U-LBC interference filter
+  (header `FILTER = 'SDT_Uspec'`, so this applies to the NGC 891 U data),
   mask each bright star's ghost (ring 75 px + diffuse 200 px component,
   shifted radially outward, 2.8 % of the star's flux) before fitting the
   sky; the ~0.15 % sky ghost near the field centre is part of the sky model
