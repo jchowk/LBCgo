@@ -335,15 +335,37 @@ SCAMP 2.15.0 (conda-forge); the 2.14.1 binary in `/usr/local/bin` is broken
 - SWarp 2.41.5 accepts the SCAMP heads (`CTYPE TAN` + 20 `PV` terms); output
   scale 0.2251″/px for a 0.5 % scale error in the simulation. `astropy.wcs`
   ignores `PV` on `TAN`; astropy consumers must rewrite `CTYPE` to `TPV`
-  (as done in the validation script). `go_swarp` still builds its command
-  with `shlex.split` and fails on paths with spaces (to fix in §5.5).
+  (as done in the validation script). `go_swarp` path handling was fixed in §5.5.
 
 ### 5.5 SWarp improvements
-- [ ] `-SUBTRACT_BACK N` (sky handled by `register/sky.py`, §6.2, applied
-      to chip images before SWarp) — or, if run standalone, `BACK_SIZE ≥ 1024`.
-- [ ] `-WEIGHT_TYPE MAP_WEIGHT` with the §5.2 weights; `-FSCALE_KEYWORD
-      FLXSCALE` (from SCAMP `.head`); `-COMBINE_TYPE CLIPPED` (Gruen et al.
-      2014) as default, `MEDIAN` optional.
+Implemented in `go_swarp` (`go_register(swarp_args=dict(...))` forwards
+overrides); the packaged `swarp.lbc.conf` defaults were changed to match.
+- [x] Background: `go_swarp(subtract_back=True, back_size=1024)` by default
+      (standalone use, since `register/sky.py` §6.2 does not exist yet);
+      `subtract_back=False` gives `-SUBTRACT_BACK N` for use once the sky is
+      removed upstream or for extended targets.
+- [x] `-WEIGHT_TYPE MAP_WEIGHT` with the §5.2 `<base>.weight.fits` sidecars
+      (SWarp finds them by suffix and fails if only some exist, so weights
+      are used only when *every* input has one; otherwise unweighted with a
+      message); `-FSCALE_KEYWORD FLXSCALE` when any SCAMP `.head` carries it
+      (SWarp merges the `.head` into the header first); `-COMBINE_TYPE
+      CLIPPED` default (`CLIP_SIGMA 4`, `CLIP_AMPFRAC 0.3`), `combine_type=
+      'MEDIAN'` (also `WEIGHTED`, `AVERAGE`) optional.
+- [x] Paths with spaces: SWarp's option parser splits on whitespace, so
+      `go_swarp` now builds an argument list and, if any path has a space,
+      runs in a temporary directory with symlinked inputs/`.head`/weights/
+      config and moves the products back. A non-zero SWarp exit raises
+      `RuntimeError`.
+- Check (SWarp 2.38.0, synthetic 400² field with a galaxy, a star, a
+  half-flux exposure with `FLXSCALE 2`, a cosmic ray, a zero-weight column,
+  space in the path): flux scaling reproduces the true galaxy profile
+  (`SUBTRACT_BACK N`: r≈120 px level 374 vs 380 true); the cosmic ray is
+  rejected by both `CLIPPED` and `MEDIAN`; `BACK_SIZE 128` removes more
+  galaxy light than 1024 (centre 1784 vs 1847, and both below the unsubtracted
+  2018, as the mesh also removes the galaxy's own pedestal on this small
+  frame). Real-data comparison belongs to the §5.6 harness.
+- **Not verified:** that real SCAMP `FLXSCALE` values are sensible for LBC
+  data (needs PI datasets).
 
 ### 5.6 Validation harness (`register/qa.py`, used by every later phase)
 Datasets (PI to provide paths; see §10):

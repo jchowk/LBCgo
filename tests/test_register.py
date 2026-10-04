@@ -198,10 +198,12 @@ def test_swarp_output_filename_from_header(tmp_path):
                         imagetyp='object', filter_name='g-SLOAN',
                         object_name='NGC891', nx=NX_SCIENCE)
     mock_proc = make_mock_process()
+    conf = tmp_path / 'swarp.conf'
+    conf.write_text('')
     with patch('shutil.which', return_value='/usr/bin/swarp'), \
          patch('LBCgo.lbcregister.Popen', return_value=mock_proc) as mp, \
          patch('astropy.io.fits.setval'):
-        go_swarp([str(f1)], verbose=False)
+        go_swarp([str(f1)], configfile=str(conf), verbose=False)
     cmd_str = ' '.join(mp.call_args[0][0])
     assert 'NGC891' in cmd_str, \
         f"Expected object name 'NGC891' in swarp command: {cmd_str}"
@@ -216,10 +218,12 @@ def test_swarp_weight_filename(tmp_path):
                         imagetyp='object', filter_name='g-SLOAN',
                         object_name='NGC891', nx=NX_SCIENCE)
     mock_proc = make_mock_process()
+    conf = tmp_path / 'swarp.conf'
+    conf.write_text('')
     with patch('shutil.which', return_value='/usr/bin/swarp'), \
          patch('LBCgo.lbcregister.Popen', return_value=mock_proc) as mp, \
          patch('astropy.io.fits.setval'):
-        go_swarp([str(f1)], verbose=False)
+        go_swarp([str(f1)], configfile=str(conf), verbose=False)
     cmd_str = ' '.join(mp.call_args[0][0])
     assert '.mos.weight.fits' in cmd_str, \
         f"Expected '.mos.weight.fits' in swarp command: {cmd_str}"
@@ -670,3 +674,134 @@ def test_scamp_legacy_passes_mosaic_type(tmp_path):
         go_scamp(str(tmp_path / 'test_1.fits'), num_iterations=3, verbose=False)
     mos = [_opt(c[0][0], '-MOSAIC_TYPE') for c in mp.call_args_list]
     assert mos == ['LOOSE', 'FIX_FOCALPLANE', 'FIX_FOCALPLANE']
+
+
+# ---------------------------------------------------------------------------
+# go_swarp — §5.5 options (weights, flux scale, combine type, background)
+# ---------------------------------------------------------------------------
+
+def _swarp_cmd(tmp_path, names=('img1_1.fits',), sidecars=(), heads=(),
+               **kwargs):
+    """Run go_swarp with a mocked Popen and return (cmd list, Popen kwargs)."""
+    from LBCgo.lbcregister import go_swarp
+    files = [str(write_lbc_file(tmp_path, n, imagetyp='object',
+                                filter_name='g-SLOAN', nx=NX_SCIENCE))
+             for n in names]
+    for n in sidecars:
+        (tmp_path / n).write_bytes(b'')
+    for n, txt in heads:
+        (tmp_path / n).write_text(txt)
+    # The packaged config lives under a path with a space on this machine,
+    # which would trigger staging; use a space-free copy unless overridden.
+    if 'configfile' not in kwargs:
+        conf = tmp_path / 'swarp.conf'
+        conf.write_text('')
+        kwargs['configfile'] = str(conf)
+    with patch('shutil.which', return_value='/usr/bin/swarp'), \
+         patch('LBCgo.lbcregister.Popen',
+               return_value=make_mock_process()) as mp, \
+         patch('astropy.io.fits.setval'):
+        go_swarp(files, verbose=False, **kwargs)
+    return mp.call_args[0][0], mp.call_args[1]
+
+
+def _opt(cmd, flag):
+    return cmd[cmd.index(flag) + 1]
+
+
+def test_swarp_defaults_clipped_background_1024(tmp_path):
+    cmd, _ = _swarp_cmd(tmp_path)
+    assert _opt(cmd, '-COMBINE_TYPE') == 'CLIPPED'
+    assert _opt(cmd, '-SUBTRACT_BACK') == 'Y'
+    assert _opt(cmd, '-BACK_SIZE') == '1024'
+    # No weight sidecar and no head -> unweighted, unscaled
+    assert _opt(cmd, '-WEIGHT_TYPE') == 'NONE'
+    assert _opt(cmd, '-FSCALE_KEYWORD') == 'NONE'
+
+
+def test_swarp_uses_weight_maps_when_all_present(tmp_path):
+    cmd, _ = _swarp_cmd(tmp_path, names=('a_1.fits', 'a_2.fits'),
+                        sidecars=('a_1.weight.fits', 'a_2.weight.fits'))
+    assert _opt(cmd, '-WEIGHT_TYPE') == 'MAP_WEIGHT'
+    assert _opt(cmd, '-WEIGHT_SUFFIX') == '.weight.fits'
+
+
+def test_swarp_unweighted_if_any_weight_missing(tmp_path):
+    cmd, _ = _swarp_cmd(tmp_path, names=('a_1.fits', 'a_2.fits'),
+                        sidecars=('a_1.weight.fits',))
+    assert _opt(cmd, '-WEIGHT_TYPE') == 'NONE'
+
+
+def test_swarp_fscale_from_head(tmp_path):
+    head = 'FLXSCALE=              1.0231 / relative flux scale\nEND\n'
+    cmd, _ = _swarp_cmd(tmp_path, heads=[('img1_1.head', head)])
+    assert _opt(cmd, '-FSCALE_KEYWORD') == 'FLXSCALE'
+    cmd, _ = _swarp_cmd(tmp_path, heads=[('img1_1.head', head)],
+                        use_fscale=False)
+    assert _opt(cmd, '-FSCALE_KEYWORD') == 'NONE'
+
+
+def test_swarp_options_forwarded(tmp_path):
+    cmd, _ = _swarp_cmd(tmp_path, combine_type='median',
+                        subtract_back=False, clip_sigma=3.0)
+    assert _opt(cmd, '-COMBINE_TYPE') == 'MEDIAN'
+    assert _opt(cmd, '-SUBTRACT_BACK') == 'N'
+    assert '-BACK_SIZE' not in cmd
+    assert _opt(cmd, '-CLIP_SIGMA') == '3.0'
+
+
+def test_swarp_rejects_bad_combine_type(tmp_path):
+    from LBCgo.lbcregister import go_swarp
+    with pytest.raises(ValueError, match="combine_type"):
+        go_swarp(['x_1.fits'], combine_type='SUM')
+
+
+def test_swarp_nonzero_exit_raises(tmp_path):
+    from LBCgo.lbcregister import go_swarp
+    f = write_lbc_file(tmp_path, 'img1_1.fits', imagetyp='object',
+                       filter_name='g-SLOAN', nx=NX_SCIENCE)
+    bad = make_mock_process()
+    bad.wait.return_value = 1
+    with patch('shutil.which', return_value='/usr/bin/swarp'), \
+         patch('LBCgo.lbcregister.Popen', return_value=bad):
+        with pytest.raises(RuntimeError, match="SWarp"):
+            go_swarp([str(f)], verbose=False)
+
+
+def test_swarp_stages_paths_with_spaces(tmp_path):
+    spaced = tmp_path / 'with space'
+    spaced.mkdir()
+    conf = spaced / 'swarp.conf'
+    spaced.mkdir(exist_ok=True)
+    conf.write_text('')
+    from LBCgo.lbcregister import go_swarp
+    f = write_lbc_file(spaced, 'img1_1.fits', imagetyp='object',
+                       filter_name='g-SLOAN', nx=NX_SCIENCE)
+    out = {}
+
+    def fake_popen(cmd, **kw):
+        # Pretend SWarp wrote its products where it was told to
+        for flag in ('-IMAGEOUT_NAME', '-WEIGHTOUT_NAME'):
+            open(cmd[cmd.index(flag) + 1], 'wb').close()
+        out['cmd'], out['kw'] = cmd, kw
+        return make_mock_process()
+
+    with patch('shutil.which', return_value='/usr/bin/swarp'), \
+         patch('LBCgo.lbcregister.Popen', side_effect=fake_popen), \
+         patch('astropy.io.fits.setval'):
+        go_swarp([str(f)], configfile=str(conf), verbose=False)
+    assert out['kw']['cwd'] is not None
+    assert not any(' ' in c for c in out['cmd'])
+    assert (tmp_path / 'NGC891.g.mos.fits').exists()
+    assert (tmp_path / 'NGC891.g.mos.weight.fits').exists()
+
+
+def test_register_forwards_swarp_args(tmp_path):
+    from LBCgo.lbcregister import go_register
+    with patch('LBCgo.lbcregister.go_swarp') as gs:
+        write_lbc_file(tmp_path, 'o_1.fits', imagetyp='object',
+                       filter_name='g-SLOAN', nx=NX_SCIENCE)
+        go_register(str(tmp_path), lbc_chips=[1], do_sextractor=False,
+                    do_scamp=False, swarp_args=dict(combine_type='MEDIAN'),
+                    verbose=False)
+    assert gs.call_args[1]['combine_type'] == 'MEDIAN'
