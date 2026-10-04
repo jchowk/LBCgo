@@ -60,7 +60,7 @@ chip file individually**, runs `go_sextractor` then `go_scamp`; then runs
 | `lbcproc.py:20` | `from lbcregister import *` (absolute, not relative) → `import LBCgo` fails when installed; tests only pass with `LBCgo/LBCgo` on `PYTHONPATH`. |
 | pipeline | No weight/mask images are produced anywhere (bad columns, saturation, vignetting). |
 
-### 3.3 Verified facts about LBC data (from real NGC 891 headers, `lbcb.20141120.065509.fits`)
+### 3.3 Verified facts about LBC data (real headers: LBCB NGC 891 `lbcb.20141120.065509.fits`; LBCR sky flat `lbcr.20141229.132703.fits`, chips 1–2 of each)
 - Raw chip: 2304 × 4608, `TRIMSEC [51:2098,1:4608]`, `BIASSEC [2099:2304,…]`.
   BITPIX 16, `SATURATE = 65536`, `GAIN = 1.75`, `RDNOISE = 12`.
 - Per-chip WCS: `RA---TAN`/`DEC--TAN`, **common `CRVAL`** (= telescope pointing,
@@ -72,8 +72,57 @@ chip file individually**, runs `go_sextractor` then `go_scamp`; then runs
   50-px prescan (tested: 1035 → 985); it converts `CD` to `PC` + `CDELT=1`.
 - Alternate WCS `…A` keywords (AZ/EL) are stripped by `go_overscan`.
 - Useful keywords: `MJD_OBS` (epoch for proper motions), `LBCFWHM` (seeing,
-  arcsec), `DITHSEQ/DITHOFFX/DITHOFFY`, `INSTRUME` (`LBC_BLUE`/`LBC_RED`),
+  arcsec), `DITHSEQ/DITHOFFX/DITHOFFY`, `INSTRUME`, `DETECTOR`,
   `FILTER`, `AIRMASS`, `EXPTIME`, `LBCCHIP1..4` (chip on/off), `DETSEC`.
+- **LBCR vs LBCB layout** (chips 1–2 compared; chips 3–4 not yet seen):
+  | | LBCB | LBCR |
+  |---|---|---|
+  | `CRPIX1` chip 1 / chip 2 | −1087 / 1035 | −1044 / 1078 |
+  | chip 1 − chip 2 offset | 2122 px | 2122 px |
+  | `CRPIX2` | 2924 | 2913 |
+  | `DETSEC`, `TRIMSEC`, `BIASSEC` | identical | identical |
+  | header scale (`CD`) | 6.222e-5° = 0.224″/px | same |
+  | header rotation vs `PA_PNT` | +0.186° vs 360.186 | −0.156° vs −0.156 |
+  - Same chip spacing and readout format → trimming/mask code is
+    channel-independent.
+  - Reference point (optical axis/rotator centre) differs by (+43, −11) px
+    ≈ (9.6″, −2.5″) between cameras → distortion models must be per channel
+    (as planned in §6.3.2).
+  - Header scale 0.224″/px is nominal for both; the published LBC scale is
+    ~0.2254″/px (+0.6 %), i.e. ~18 px (~4″) at ~2900 px from the reference
+    point *before* optical distortion. Start the per-exposure solve from the
+    fitted static model, not the bare header WCS (§6.3.3).
+  - **Chip-gap inconsistency:** CRPIX (with the 50-px prescan) implies a
+    74-px gap between chip 2's last and chip 1's first data column; `DETSEC`
+    implies 49 px (cols 4451–4499), in both cameras. `DETSEC` is probably a
+    nominal readout layout. Do not use `DETSEC` geometrically; the
+    distortion calibration fits chip placement (the 25-px ≈ 5.6″ difference
+    is inside the ±60″ offset search).
+- **Header traps:**
+  - `INSTRUME` is spelled inconsistently: `'LBC_BLUE'` (underscore) vs
+    `'LBC-RED '` (hyphen, trailing space); the header comment says
+    `'LBC-BLUE' or 'LBC-RED'`. Identify the channel with
+    `LBCgo.detector.lbc_channel` (normalizes `INSTRUME`, then `DETECTOR`
+    `EEV-BLUE`/`EEV-RED`, then the `lbcb`/`lbcr` filename prefix).
+  - Sentinel values: `LBCFWHM = -3600.00` and `LBCBACK = -1.0` appear when the
+    trackers did not measure them (seen in the LBCR sky flat). Treat
+    `LBCFWHM <= 0` as missing (§6.1).
+  - `TELESCOP` is `LBT-SX` (LBCB) / `LBT-DX` (LBCR).
+- **Gain/read noise:** `GAIN = 1.75` e⁻/ADU and `RDNOISE = 12` e⁻ appear in
+  the primary and chip headers of **both** cameras, identical on every chip
+  seen → nominal values, not per-chip measurements. Published values differ:
+  a per-chip table attributed to April 2010 commissioning (LBTO/Arizona LBC
+  pages; *not verified*, pages unreachable from the planning session) gives
+  LBCB 1.96–2.09 e⁻/ADU and LBCR 2.08–2.14 e⁻/ADU, read noise 4.8–5.3 ADU
+  (≈ 10–11 e⁻); LBC papers quote ~2.02 e⁻/ADU & 5.0 ADU and ~1.75 e⁻/ADU &
+  ~9 ADU (arXiv:1703.09874, arXiv:2305.10516; attribution not checked).
+  Impact: in the sky-limited regime a gain error rescales all exposures of a
+  chip alike (coadd weights barely change); it matters where read noise is
+  not negligible (LBCB U band: at a 150-ADU sky the header and published
+  values give variances ~35 % apart) and for absolute flux errors.
+  Handled by `LBCgo/detector.py`: per-chip table
+  `conf/lbc_detector.ecsv` (ships empty) overrides headers; header
+  values are the fallback (§5.2).
 - Typical observing pattern (from OB `j1419.ob`): `NDIT = 3` dither positions,
   offsets (0,0), (−40,−80), (−20,+60)″; **one exposure per filter per dither
   position** → ~3 exposures per filter per OB (repeated OBs add more).
@@ -182,6 +231,15 @@ Purpose: a fair benchmark and an immediate improvement for users.
       `tests/test_masks.py`.
 - [ ] Tune `badpix_threshold`/`vignette_threshold` on real LBCB/LBCR flats
       (defaults 0.2 / 0.5 are untested on real data).
+- [x] Gain/read-noise source for the weights: `LBCgo/detector.py`. Lookup
+      order: per-chip row of `conf/lbc_detector.ecsv` (channel, chip, MJD
+      validity range) → `GAIN`/`RDNOISE` header keywords → nominal defaults.
+      Weight headers record `GAINSRC` (`table`/`header`/`default`).
+      Photon-transfer measurement `measure_gain_rdnoise_files(flat1, flat2,
+      bias1, bias2)` handles unequal flat levels.
+- [ ] Measure gain/read noise per chip for LBCB and LBCR from real bias and
+      flat pairs (several epochs; run locally) and populate
+      `conf/lbc_detector.ecsv` with validity ranges.
 
 ### 5.3 SExtractor improvements
 - [ ] Pass `-WEIGHT_TYPE MAP_WEIGHT -WEIGHT_IMAGE <weight>`; `-FLAG_IMAGE`
@@ -256,7 +314,8 @@ QA table produced; numbers recorded in `docs/planning/baseline_results.md`.
 
 ### 6.1 Phase 1a — detection for alignment (`register/detect.py`)
 Input: chip image (float32), mask, weight; seeing from `LBCFWHM`
-(fallback 1.0″) → FWHM_px = LBCFWHM / 0.224.
+(fallback 1.0″ when missing **or ≤ 0**: the header uses −3600 as a
+"not measured" sentinel) → FWHM_px = LBCFWHM / 0.224.
 1. Detection background: `sep.Background(data, mask=mask, bw=32, bh=32,
    fw=3, fh=3)`. In extended mode additionally subtract a median-filtered
    image (box ≈ 5 × FWHM_px, rounded to odd; `scipy.ndimage.median_filter`
@@ -352,7 +411,9 @@ Calibration fit (`calibrate.py`, run by the PI on V1/V2):
 #### 6.3.3 Per-exposure solve (`register/astrometry.py`, `match.py`)
 For each exposure (all available chips together):
 1. Initial WCS per chip = static model + header pointing/rotation
-   (`CRVAL` from header, rotation from header `PC`/`PA_PNT`).
+   (`CRVAL` from header, rotation from header `PC`/`PA_PNT`). Use the static
+   model's scale and chip placement, not the header's nominal 0.224″/px or
+   `DETSEC` (§3.3).
 2. Coarse offset: 2-D histogram (or cross-correlation) of all pairwise
    (detected − Gaia) tangent-plane offsets within ±60″; take the peak.
    Rotation is known to < 0.1° from the header; if the peak is weak, search
@@ -499,11 +560,15 @@ note it in the README).
 ## 11. Open items for the PI
 
 1. Paths/IDs of the V1–V6 datasets (§5.6).
-2. LBCR chip layout: confirm from an LBCR raw header (same CRPIX scheme?).
+2. ~~LBCR chip layout~~: resolved for chips 1–2 (§3.3): same CRPIX scheme and
+   spacing, reference point offset (+43, −11) px. Still to see: chips 3–4 of
+   each camera (orientation of chip 4).
 3. Any known LBC hardware changes (detector/corrector swaps) that should
    bound distortion-model validity ranges.
 4. Preferred coadd flux unit (current: ADU scaled to reference exposure;
    alternative: ADU/s or e⁻/s).
+5. Bias and flat pairs (per channel, several epochs) for the gain/read-noise
+   table (§5.2).
 
 ---
 

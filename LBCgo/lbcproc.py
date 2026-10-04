@@ -18,6 +18,7 @@ from ccdproc import  ImageFileCollection,CCDData
 
 from .lbcregister import *
 from . import masks as lbcmasks
+from . import detector as lbcdetector
 from ccdproc.utils.slices import slice_from_string
 
 
@@ -724,7 +725,8 @@ def go_flatfield(image_collection,
                  vignette_threshold=0.5,
                  badpix_threshold=0.2,
                  badpix_box=5,
-                 badpix_file=None):
+                 badpix_file=None,
+                 detector_table=None):
     """Apply master flat fields to multi-extension FITS object data.
 
     Loops over filters, reads the corresponding master flat, and divides each
@@ -772,6 +774,12 @@ def go_flatfield(image_collection,
     badpix_file : str or None, optional
         Optional bad-pixel region file (lines of ``chip x1 x2 y1 y2``,
         1-based inclusive, trimmed coordinates). Default: None
+    detector_table : str or None, optional
+        Per-chip gain/read-noise table (ECSV, see :mod:`LBCgo.detector`)
+        used for the weights. If None, the packaged
+        ``conf/lbc_detector.ecsv`` is used. Chips without a matching row
+        fall back to the ``GAIN``/``RDNOISE`` header keywords.
+        Default: None
 
     Returns
     -------
@@ -803,6 +811,9 @@ def go_flatfield(image_collection,
     badpix_regions = {}
     if make_weights and badpix_file is not None:
         badpix_regions = lbcmasks.read_badpix_regions(badpix_file)
+    det_table = None
+    if make_weights:
+        det_table = lbcdetector.read_detector_table(detector_table)
 
     # Loop over the available filters
     for filter in filter_names:
@@ -888,12 +899,9 @@ def go_flatfield(image_collection,
                              np.isfinite(data_before)] |= lbcmasks.COSMIC
                     mask[~np.isfinite(image_normed.data)] |= lbcmasks.NONFINITE
 
-                    gain = lbcmasks.header_value(
-                        'GAIN', [image.header, base_header],
-                        lbcmasks.DEFAULT_GAIN)
-                    rdnoise = lbcmasks.header_value(
-                        'RDNOISE', [image.header, base_header],
-                        lbcmasks.DEFAULT_RDNOISE)
+                    gain, rdnoise, gain_source = lbcdetector.gain_rdnoise(
+                        chip, [image.header, base_header], table=det_table,
+                        filename=file)
                     sky = lbcmasks.sky_level(image_normed.data, mask)
                     weight = lbcmasks.inverse_variance_weight(
                         flat_norms[idx], sky, gain, rdnoise, mask)
@@ -903,6 +911,8 @@ def go_flatfield(image_collection,
                     whdr['SKYLEVEL'] = (sky, 'Sky level used [flat-fielded ADU]')
                     whdr['GAIN'] = (gain, 'Gain used [e-/ADU]')
                     whdr['RDNOISE'] = (rdnoise, 'Read noise used [e-]')
+                    whdr['GAINSRC'] = (gain_source,
+                                       'Source of GAIN/RDNOISE')
 
                     mask_arrays.append(mask)
                     weight_arrays.append(weight)
