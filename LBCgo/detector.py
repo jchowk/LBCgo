@@ -19,8 +19,10 @@ image headers when the table is absent or has no matching row.
 :func:`measure_gain_rdnoise_files` measures them from two raw flats and two
 raw biases, and :func:`write_detector_table` writes the table.
 
-The packaged table ``conf/lbc_detector.ecsv`` is used by default; it ships
-empty, so header values are used until measured values are added.
+The packaged table ``conf/lbc_detector.ecsv`` is used by default. It is
+seeded with the published LBC-Blue values (Giallongo et al. 2008, A&A 482,
+349, Table 1; 2006 commissioning, open-ended validity) until measured values
+replace them. It has no LBC-Red rows, so LBC-Red uses header values.
 """
 
 import os

@@ -9,8 +9,13 @@
 # - {name: mjd_end, datatype: float64}
 # - {name: source, datatype: string}
 # meta: !!omap
-# - comments: ['LBC per-chip detector parameters (gain e-/ADU, read noise e-).', 'Empty by default: GAIN/RDNOISE from the image headers
-#       are used until', measured rows are added (see LBCgo.detector.measure_gain_rdnoise_files)., 'channel: LBCB or LBCR. mjd_start inclusive,
-#       mjd_end exclusive;', nan means open-ended.]
+# - comments: ['LBC per-chip detector parameters: gain [e-/ADU], read noise [e-].', 'channel: LBCB or LBCR. mjd_start inclusive, mjd_end
+#       exclusive; nan = open-ended.', Chips/channels without a matching row use the GAIN/RDNOISE image headers., 'LBCB rows: published
+#       2006 commissioning values (Giallongo et al. 2008, Table 1),', seeded until measured values exist (LBCgo.detector.measure_gain_rdnoise_files).,
+#     'LBCR: no published per-chip values; header values are used.']
 # schema: astropy-2.0
 channel chip gain rdnoise mjd_start mjd_end source
+LBCB 1 1.96 11.4 nan nan "Giallongo et al. 2008, A&A 482, 349, Table 1 (variance method, 2006 commissioning)"
+LBCB 2 2.09 11.6 nan nan "Giallongo et al. 2008, A&A 482, 349, Table 1 (variance method, 2006 commissioning)"
+LBCB 3 2.06 11.6 nan nan "Giallongo et al. 2008, A&A 482, 349, Table 1 (variance method, 2006 commissioning)"
+LBCB 4 1.98 11.2 nan nan "Giallongo et al. 2008, A&A 482, 349, Table 1 (variance method, 2006 commissioning)"

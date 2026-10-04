@@ -86,9 +86,10 @@ level *S* of the flat-fielded chip, the gain *g* and the read noise *RN*::
 Gain and read noise come from the per-chip table ``conf/lbc_detector.ecsv``
 (see :mod:`LBCgo.detector`) when it has a row for the channel, chip and date,
 and otherwise from the ``GAIN``/``RDNOISE`` header keywords. The packaged table
-is empty, so header values are used until measured values are added
-(:func:`~LBCgo.detector.measure_gain_rdnoise_files` measures them from two
-flats and two biases). Each weight extension records the values used and their
+holds the published LBC-Blue values (Giallongo et al. 2008, A&A 482, 349,
+Table 1); LBC-Red has no rows yet and uses header values. Replace or extend it
+with measured values (:func:`~LBCgo.detector.measure_gain_rdnoise_files`
+measures them from two flats and two biases). Each weight extension records the values used and their
 source in ``GAIN``, ``RDNOISE`` and ``GAINSRC``.
 
 :func:`~LBCgo.lbcproc.make_targetdirectories` and
