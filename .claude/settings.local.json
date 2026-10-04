@@ -30,7 +30,8 @@
       "Bash(BASE=\"https://raw.githubusercontent.com/K-Dense-AI/claude-scientific-skills/main/scientific-skills/astropy\")",
       "Bash(curl -s \"$BASE/references/units.md\" -o ~/.claude/skills/astropy/references/units.md)",
       "Bash(curl -s \"$BASE/references/coordinates.md\" -o ~/.claude/skills/astropy/references/coordinates.md)",
-      "Bash(curl -s \"$BASE/references/cosmology.md\" -o ~/.claude/skills/astropy/references/cosmology.md)"
+      "Bash(curl -s \"$BASE/references/cosmology.md\" -o ~/.claude/skills/astropy/references/cosmology.md)",
+      "Bash(python -c \"import numpy,astropy,ccdproc;print\\(numpy.__version__,astropy.__version__,ccdproc.__version__\\)\")"
     ]
   }
 }
