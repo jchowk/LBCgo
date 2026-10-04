@@ -4,6 +4,8 @@ Installation
 Python package
 --------------
 
+LBCgo requires Python 3.11 or later and numpy 2.0 or later.
+
 LBCgo is available on PyPI::
 
     pip install lbcgo
@@ -17,13 +19,14 @@ For development installation from source::
 Conda environment
 -----------------
 
-A pre-defined conda environment file is included in the repository::
+To install LBCgo into a dedicated conda environment::
 
-    conda env create -f lbcgo_environment.yaml
+    conda create -n lbcgo -c conda-forge python=3.11
     conda activate lbcgo
+    pip install lbcgo
 
-Python dependencies (``numpy``, ``astropy``, ``ccdproc``) are installed
-automatically via either method above.
+Python dependencies (``numpy``, ``scipy``, ``astropy``, ``ccdproc``) are
+installed automatically via either method above.
 
 External tools (Astromatic suite)
 ----------------------------------

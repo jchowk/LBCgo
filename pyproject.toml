@@ -7,11 +7,12 @@ authors = [
 ]
 license = {text = "MIT"}
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 dependencies = [
-    "numpy>=1.21,<2.0",
-    "astropy>=5.3.3",
-    "ccdproc>=2.2.0,<3.0.0"
+    "numpy>=2.0",
+    "scipy>=1.13",
+    "astropy>=6.1.4",
+    "ccdproc>=2.5.0,<3.0.0"
 ]
 
 [project.urls]
@@ -35,5 +36,5 @@ sphinx-autoapi = ">=3.0"
 furo = "*"
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core>=2.0.0"]
 build-backend = "poetry.core.masonry.api"
