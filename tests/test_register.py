@@ -277,3 +277,154 @@ def test_register_subset_chips(tmp_path):
 
     assert mp.call_count == 2, \
         f"Expected 2 sextractor calls (chips 1 and 2), got {mp.call_count}"
+
+
+# ---------------------------------------------------------------------------
+# go_sextractor — Phase 0 §5.3: weights, flags, tunables, tool names
+# ---------------------------------------------------------------------------
+
+def _run_sextractor(tmp_path, which=lambda n: '/usr/bin/' + n, **kwargs):
+    """Run go_sextractor on tmp_path/test_1.fits with Popen mocked; return cmd."""
+    from LBCgo.lbcregister import go_sextractor
+    f = tmp_path / 'test_1.fits'
+    f.touch()
+    mock_proc = make_mock_process()
+    with patch('shutil.which', side_effect=which), \
+         patch('LBCgo.lbcregister.Popen', return_value=mock_proc) as mp:
+        go_sextractor(str(f), verbose=False, **kwargs)
+    return mp.call_args[0][0]
+
+
+def _opt(cmd, flag):
+    """Value following ``flag`` in a command list."""
+    return cmd[cmd.index(flag) + 1]
+
+
+def test_sextractor_alignment_defaults(tmp_path):
+    """Defaults: thresh 5/5 (no stray 8), mesh 32, filter 3, mincont 1e-4."""
+    cmd = _run_sextractor(tmp_path)
+    assert _opt(cmd, '-DETECT_THRESH') == '5.0'
+    assert _opt(cmd, '-ANALYSIS_THRESH') == '5.0'
+    assert _opt(cmd, '-BACK_SIZE') == '32'
+    assert _opt(cmd, '-BACK_FILTERSIZE') == '3'
+    assert float(_opt(cmd, '-DEBLEND_MINCONT')) == 1e-4
+
+
+def test_sextractor_tunables_are_arguments(tmp_path):
+    cmd = _run_sextractor(tmp_path, detect_thresh=3, analysis_thresh=2,
+                          back_size=64, back_filtersize=5,
+                          deblend_mincont=0.005)
+    assert _opt(cmd, '-DETECT_THRESH') == '3'
+    assert _opt(cmd, '-ANALYSIS_THRESH') == '2'
+    assert _opt(cmd, '-BACK_SIZE') == '64'
+    assert _opt(cmd, '-BACK_FILTERSIZE') == '5'
+    assert float(_opt(cmd, '-DEBLEND_MINCONT')) == 0.005
+
+
+def test_sextractor_uses_weight_and_flag_sidecars(tmp_path):
+    for kind in ('weight', 'mask'):
+        (tmp_path / f'test_1.{kind}.fits').touch()
+    cmd = _run_sextractor(tmp_path)
+    assert _opt(cmd, '-WEIGHT_TYPE') == 'MAP_WEIGHT'
+    assert _opt(cmd, '-WEIGHT_IMAGE').endswith('test_1.weight.fits')
+    assert _opt(cmd, '-FLAG_IMAGE').endswith('test_1.mask.fits')
+
+
+def test_sextractor_no_sidecars_runs_unweighted(tmp_path):
+    cmd = _run_sextractor(tmp_path)
+    assert '-WEIGHT_TYPE' not in cmd
+    assert '-FLAG_IMAGE' not in cmd
+
+
+def test_sextractor_sidecars_can_be_disabled(tmp_path):
+    for kind in ('weight', 'mask'):
+        (tmp_path / f'test_1.{kind}.fits').touch()
+    cmd = _run_sextractor(tmp_path, use_weight=False, use_flags=False)
+    assert '-WEIGHT_TYPE' not in cmd
+    assert '-FLAG_IMAGE' not in cmd
+
+
+def test_sextractor_flag_columns_added_only_with_flag_image(tmp_path):
+    """IMAFLAGS_ISO must be requested iff a FLAG_IMAGE is passed (SExtractor
+    fails otherwise)."""
+    (tmp_path / 'test_1.mask.fits').touch()
+    captured = {}
+
+    def grab(cmd, **kw):
+        with open(_opt(cmd, '-PARAMETERS_NAME')) as fh:
+            captured['param'] = fh.read()
+        return make_mock_process()
+
+    from LBCgo.lbcregister import go_sextractor
+    f = tmp_path / 'test_1.fits'
+    f.touch()
+    with patch('shutil.which', return_value='/usr/bin/sex'), \
+         patch('LBCgo.lbcregister.Popen', side_effect=grab):
+        go_sextractor(str(f), verbose=False)
+    lines = [ln.split('#')[0].strip() for ln in captured['param'].splitlines()]
+    assert 'IMAFLAGS_ISO(1)' in lines and 'NIMAFLAGS_ISO(1)' in lines
+
+
+def test_sextractor_subtracted_image_mode(tmp_path):
+    """Extended-target mode runs on the subtracted image with BACK_TYPE MANUAL
+    but still names the catalog after the original chip file."""
+    sub = tmp_path / 'test_1.sub.fits'
+    cmd = _run_sextractor(tmp_path, subtracted_image=str(sub))
+    assert Path(cmd[1]).name == sub.name  # may be a staged symlink
+    assert _opt(cmd, '-BACK_TYPE') == 'MANUAL'
+    assert _opt(cmd, '-BACK_VALUE') == '0'
+    assert _opt(cmd, '-CATALOG_NAME').endswith('test_1.cat')
+
+
+def test_sextractor_path_with_spaces_is_staged(tmp_path):
+    """SExtractor cannot read paths with spaces; inputs are symlinked into a
+    space-free directory and the catalog is moved back."""
+    from LBCgo.lbcregister import go_sextractor
+    d = tmp_path / 'with space'
+    d.mkdir()
+    f = d / 'test_1.fits'
+    f.touch()
+    seen = {}
+
+    def fake_sex(cmd, **kw):
+        assert all(' ' not in a for a in cmd), cmd
+        seen['image'] = cmd[1]
+        Path(_opt(cmd, '-CATALOG_NAME')).write_text('cat')
+        return make_mock_process()
+
+    with patch('shutil.which', return_value='/usr/bin/sex'), \
+         patch('LBCgo.lbcregister.Popen', side_effect=fake_sex):
+        go_sextractor(str(f), verbose=False)
+    assert (d / 'test_1.cat').read_text() == 'cat'
+
+
+def test_sextractor_accepts_source_extractor_name(tmp_path):
+    """Debian/Ubuntu install the binary as 'source-extractor'."""
+    only = lambda n: '/usr/bin/source-extractor' if n == 'source-extractor' else None
+    cmd = _run_sextractor(tmp_path, which=only)
+    assert cmd[0] == 'source-extractor'
+
+
+def test_find_astromatic_tool_alternate_names():
+    from LBCgo.lbcregister import find_astromatic_tool
+    with patch('shutil.which',
+               side_effect=lambda n: '/x/SWarp' if n == 'SWarp' else None):
+        assert find_astromatic_tool('swarp') == 'SWarp'
+    with patch('shutil.which', return_value=None):
+        assert find_astromatic_tool('scamp') is None
+
+
+def test_register_passes_sextractor_args(tmp_path):
+    from LBCgo.lbcregister import go_register
+    d = tmp_path / 'NGC891' / 'g'
+    d.mkdir(parents=True)
+    write_lbc_file(d, 'lbcb.20230101.000001_1.fits', imagetyp='object',
+                   filter_name='g-SLOAN', object_name='NGC891',
+                   nx=NX_SCIENCE)
+    with patch('shutil.which', return_value='/usr/bin/sex'), \
+         patch('LBCgo.lbcregister.Popen',
+               return_value=make_mock_process()) as mp:
+        go_register([str(d) + '/'], lbc_chips=[1], do_scamp=False,
+                    do_swarp=False, verbose=False,
+                    sextractor_args=dict(detect_thresh=3))
+    assert _opt(mp.call_args[0][0], '-DETECT_THRESH') == '3'

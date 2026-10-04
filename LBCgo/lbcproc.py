@@ -82,7 +82,7 @@ def check_external_dependencies():
     missing_tools = []
     
     for tool in required_tools:
-        if not shutil.which(tool):
+        if find_astromatic_tool(tool) is None:
             missing_tools.append(tool)
     
     if missing_tools:
