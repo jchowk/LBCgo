@@ -52,7 +52,7 @@ can be omitted.
 
 **conda-forge**::
 
-    conda install -c conda-forge astromatic-scamp astromatic-swarp sextractor
+    conda install -c conda-forge --override-channels astromatic-scamp astromatic-swarp astromatic-source-extractor
 
 Verifying the installation
 --------------------------
