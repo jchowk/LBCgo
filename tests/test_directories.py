@@ -242,3 +242,56 @@ def test_lbcgo_writes_only_to_image_directory(cwd_dir, out_dir, raw_dir,
     assert (out_dir / 'data' / 'lbcb.20230101.000001_over.fits').is_file()
     assert (out_dir / 'data' / 'lbcb.20230101.000001_flat.fits').is_file()
     assert_cwd_empty(cwd_dir)
+
+
+# ---------------------------------------------------------------------------
+# Mask/weight sidecars (LBCgo.masks) follow their images
+# ---------------------------------------------------------------------------
+
+def test_go_bias_copies_sidecar_to_image_directory(overscan_names, out_dir,
+                                                   cwd_dir, raw_dir,
+                                                   three_bias_files):
+    from LBCgo.lbcproc import make_bias, go_bias
+    from LBCgo.masks import sidecar_name
+
+    assert (out_dir / sidecar_name(overscan_names[0], 'mask')).is_file()
+    ic_bias = ImageFileCollection(str(raw_dir), keywords=LBC_KEYWORDS,
+                                  filenames=[p.name for p in three_bias_files])
+    make_bias(ic_bias, image_directory=str(out_dir),
+              raw_directory=str(raw_dir), verbose=False)
+    zero_files = go_bias(overscan_names, input_directory=str(out_dir),
+                         bias_directory=str(out_dir),
+                         image_directory=str(out_dir),
+                         verbose=False, return_files=True)
+    assert (out_dir / sidecar_name(zero_files[0], 'mask')).is_file()
+    assert_cwd_empty(cwd_dir)
+
+
+def test_lbcgo_sidecars_follow_images(cwd_dir, out_dir, raw_dir,
+                                      ic_with_flats, monkeypatch):
+    """Every image lbcgo leaves behind has its mask (and, after flat
+    fielding, weight) sidecar beside it, under image_directory."""
+    import LBCgo.lbcproc as lbcproc
+
+    write_master_flat(out_dir, filter_name='g-SLOAN')
+
+    def fail(*args, **kwargs):
+        raise AssertionError('make_flatfield should not be called')
+    monkeypatch.setattr(lbcproc, 'make_flatfield', fail)
+
+    lbcproc.lbcgo(raw_directory=str(raw_dir), image_directory=str(out_dir),
+                  do_astrometry=False, clean=False, verbose=False)
+
+    filter_dir = out_dir / 'NGC891' / 'g-SLOAN'
+    data_dir = out_dir / 'data'
+    base = 'lbcb.20230101.000001'
+    for chip in range(1, 5):
+        assert (filter_dir / f'{base}_{chip}.mask.fits').is_file()
+        assert (filter_dir / f'{base}_{chip}.weight.fits').is_file()
+    assert (data_dir / f'{base}_over.mask.fits').is_file()
+    assert (data_dir / f'{base}_flat.mask.fits').is_file()
+    assert (data_dir / f'{base}_flat.weight.fits').is_file()
+    # No sidecars stranded at the top level of image_directory
+    assert sorted(p.name for p in out_dir.glob('*.mask.fits')) == []
+    assert sorted(p.name for p in out_dir.glob('*.weight.fits')) == []
+    assert_cwd_empty(cwd_dir)
