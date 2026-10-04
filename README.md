@@ -7,10 +7,13 @@ WARNING: This code is currently under continued development. While the basic fun
 
 ## Dependencies:
 
+Requires Python >= 3.11.
+
 Python dependencies:
-* `astropy`
-* `CCDProc`
-* `numpy`
+* `astropy` (>= 6.1.4)
+* `CCDProc` (>= 2.5)
+* `numpy` (>= 2.0)
+* `scipy` (>= 1.13)
 
 
 ## External Dependencies:
