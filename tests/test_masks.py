@@ -141,11 +141,14 @@ def _saturated_raw(raw_dir, filename='lbcb.20230101.000001.fits'):
 
 
 def _run_overscan(raw_dir, work_dir):
+    """Run go_overscan; return full paths (it returns names relative to
+    image_directory)."""
     from LBCgo.lbcproc import go_overscan
     ic = ImageFileCollection(str(raw_dir), keywords=LBC_KEYWORDS)
-    return go_overscan(ic, image_directory=str(work_dir) + '/',
-                       raw_directory=str(raw_dir) + '/',
-                       verbose=False, return_files=True)
+    names = go_overscan(ic, image_directory=str(work_dir) + '/',
+                        raw_directory=str(raw_dir) + '/',
+                        verbose=False, return_files=True)
+    return [str(work_dir / name) for name in names]
 
 
 def _run_flatfield(over_files, flat_value=20000.0, edit_flat=None, **kwargs):
@@ -203,7 +206,8 @@ def test_overscan_make_masks_false(raw_dir, work_dir):
     over = go_overscan(ic, image_directory=str(work_dir) + '/',
                        raw_directory=str(raw_dir) + '/', verbose=False,
                        return_files=True, make_masks=False)
-    assert not Path(masks.sidecar_name(over[0], 'mask')).exists()
+    assert (work_dir / over[0]).is_file()
+    assert not (work_dir / masks.sidecar_name(over[0], 'mask')).exists()
 
 
 def test_flatfield_writes_mask_and_weight(raw_dir, work_dir):

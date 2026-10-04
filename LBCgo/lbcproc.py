@@ -138,8 +138,8 @@ def go_overscan(image_collection,
     Returns
     -------
     list of str or None
-        Paths to overscan-corrected, trimmed FITS files (``*_over.fits``),
-        or None if ``return_files=False``.
+        Names of overscan-corrected, trimmed FITS files (``*_over.fits``),
+        relative to ``image_directory``, or None if ``return_files=False``.
     """
 
     # 
@@ -165,7 +165,7 @@ def go_overscan(image_collection,
 
         # Set up the output HDU list
         # Capture the 0th header
-        base_header = fits.getheader(raw_directory+filename)
+        base_header = fits.getheader(os.path.join(raw_directory, filename))
         master_hdu = fits.PrimaryHDU(header=base_header)
         # Start output HDU list:
         output_hdu = fits.HDUList([master_hdu])
@@ -175,7 +175,7 @@ def go_overscan(image_collection,
         # Loop through the chips
         for chip in lbc_chips:
             # Create the CCDData version of this chip
-            ccd = CCDData.read(raw_directory+filename, chip,
+            ccd = CCDData.read(os.path.join(raw_directory, filename), chip,
                                unit=u.adu)
 
             # Flag saturation on the raw ADU, trimmed like the data
@@ -232,10 +232,12 @@ def go_overscan(image_collection,
             # Append the current chip into the hdu:
             output_hdu.append(ccd.to_hdu()[0])
 
-        # Write the data
-        output_hdu.writeto(output_filename, overwrite=True)
+        # Write the data into image_directory; the returned name stays
+        # relative to image_directory.
+        output_path = os.path.join(image_directory, output_filename)
+        output_hdu.writeto(output_path, overwrite=True)
         if make_masks:
-            lbcmasks.write_sidecar(output_filename, 'mask', sat_masks,
+            lbcmasks.write_sidecar(output_path, 'mask', sat_masks,
                                    extnames=extnames)
 
         # Keep track of what files we've written.
@@ -314,7 +316,7 @@ def make_bias(image_collection,
 
             # Set up the output HDU list
             # Capture the 0th header
-            base_header = fits.getheader(raw_directory + filename)
+            base_header = fits.getheader(os.path.join(raw_directory, filename))
             master_hdu = fits.PrimaryHDU(header=base_header)
             # Start output HDU list:
             output_hdu = fits.HDUList([master_hdu])
@@ -322,7 +324,7 @@ def make_bias(image_collection,
         # Loop through the chips
         for chip in lbc_chips:
             # Create the CCDData version of this chip
-            ccd = CCDData.read(raw_directory+filename, chip, unit=u.adu)
+            ccd = CCDData.read(os.path.join(raw_directory, filename), chip, unit=u.adu)
 
             # Fit, subtract overscan
             poly_model = models.Polynomial1D(4)
@@ -369,7 +371,8 @@ def make_bias(image_collection,
 
 
     # Write the master bias
-    output_hdu.writeto(image_directory+zero_output_name, overwrite=True)
+    output_hdu.writeto(os.path.join(image_directory, zero_output_name),
+                       overwrite=True)
     output_hdu.close()
 
     # Report:
@@ -406,8 +409,8 @@ def go_bias(image_collection, bias_file=None,
     Returns
     -------
     list of str or None
-        Paths to bias-subtracted FITS files (``*_zero.fits``),
-        or None if ``return_files=False``.
+        Names of bias-subtracted FITS files (``*_zero.fits``), relative to
+        ``image_directory``, or None if ``return_files=False``.
     """
 
 
@@ -428,7 +431,7 @@ def go_bias(image_collection, bias_file=None,
 
     # Construct the bias file name:
     if bias_file == None:
-        zero_file = 'zero.flat'
+        zero_file = 'zero.fits'
     else:
         zero_file = bias_file
 
@@ -439,7 +442,8 @@ def go_bias(image_collection, bias_file=None,
     # We do this here, as it's faster than repeating this for every chip of every file.
     zero_chips = []
     for chip in lbc_chips:
-         zerochip = CCDData.read(bias_directory+zero_file, chip, unit=u.adu)
+         zerochip = CCDData.read(os.path.join(bias_directory, zero_file), chip,
+                                 unit=u.adu)
          zero_chips.append(zerochip)
     if verbose:
          print('Reading bias frame {0}'.format(zero_file))
@@ -448,7 +452,7 @@ def go_bias(image_collection, bias_file=None,
     for file in image_files:
         # Set up the output HDU list
         # Capture the 0th header
-        base_header = fits.getheader(file)
+        base_header = fits.getheader(os.path.join(input_directory, file))
         master_hdu = fits.PrimaryHDU(header=base_header)
         # Start output HDU list:
         output_hdu = fits.HDUList([master_hdu])
@@ -456,7 +460,8 @@ def go_bias(image_collection, bias_file=None,
         # Loop through the chips
         for chip in lbc_chips:
             # Create the CCDData version of this chip
-            image = CCDData.read(input_directory+file, chip, unit=u.adu)
+            image = CCDData.read(os.path.join(input_directory, file), chip,
+                                 unit=u.adu)
             # Apply the flat
             image_zeroed = ccdproc.subtract_bias(image,zero_chips[chip-1])
 
@@ -472,10 +477,11 @@ def go_bias(image_collection, bias_file=None,
         output_filename = file.replace('_over','').replace('.fits','_zero.fits')
 
         # Write the output flat-fielded data
-        output_hdu.writeto(image_directory + output_filename, overwrite=True)
+        output_path = os.path.join(image_directory, output_filename)
+        output_hdu.writeto(output_path, overwrite=True)
         # Carry the saturation mask along to the bias-subtracted file
-        lbcmasks.copy_sidecars(input_directory + file,
-                               image_directory + output_filename)
+        lbcmasks.copy_sidecars(os.path.join(input_directory, file),
+                               output_path)
         zero_corrected.append(output_filename)
 
         if verbose:
@@ -566,7 +572,7 @@ def make_flatfield(image_collection,
         if filename == flt_files[0]:
             # Set up the output HDU list
             # Capture the 0th header
-            base_header = fits.getheader(raw_directory+filename)
+            base_header = fits.getheader(os.path.join(raw_directory, filename))
             master_hdu = fits.PrimaryHDU(header=base_header)
 
             # Start output HDU list:
@@ -579,7 +585,7 @@ def make_flatfield(image_collection,
         # Loop through the chips
         for chip in lbc_chips:
             # Create the CCDData version of this chip
-            ccd = CCDData.read(raw_directory+filename, chip,
+            ccd = CCDData.read(os.path.join(raw_directory, filename), chip,
                                unit=u.adu)
             ccd_filter = ccd.header['filter']
 
@@ -698,7 +704,8 @@ def make_flatfield(image_collection,
     output_hdu[0].header['ncombine'] = num_flat_images[0]
 
     # Write the master flat
-    output_hdu.writeto(image_directory+flat_output_name, overwrite=True)
+    output_hdu.writeto(os.path.join(image_directory, flat_output_name),
+                       overwrite=True)
 
     # Write the mask
     # mask_hdu.writeto(image_directory+mask_output_name, overwrite=True)
@@ -731,7 +738,8 @@ def go_flatfield(image_collection,
 
     Loops over filters, reads the corresponding master flat, and divides each
     object frame by it. Pre-flat-fielded files are moved to a ``data/``
-    subdirectory. Output files carry the ``_flat.fits`` suffix.
+    subdirectory of ``image_directory``. Output files carry the
+    ``_flat.fits`` suffix.
 
     Parameters
     ----------
@@ -784,14 +792,13 @@ def go_flatfield(image_collection,
     Returns
     -------
     list of str or None
-        Paths to flat-fielded FITS files (``*_flat.fits``),
-        or None if ``return_files=False``.
+        Names of flat-fielded FITS files (``*_flat.fits``), relative to
+        ``image_directory``, or None if ``return_files=False``.
     """
 
-    # The pre-flatfield images will be put in a data/ directory:
-    datadir = 'data/'
-    if not os.path.exists(datadir):
-        os.makedirs(datadir)
+    # The pre-flatfield images will be put in image_directory/data/:
+    datadir = os.path.join(image_directory, 'data')
+    os.makedirs(datadir, exist_ok=True)
 
     ###### Define which chips to extract if default is chosen:
     if lbc_chips == True:
@@ -827,7 +834,7 @@ def go_flatfield(image_collection,
         # We do this here, as it's faster than repeating this for every chip of every file.
         flatfield_chips = []
         for chip in lbc_chips:
-             flatchip = CCDData.read(flat_directory+flat_filename, chip,
+             flatchip = CCDData.read(os.path.join(flat_directory, flat_filename), chip,
                                      unit=None)
              flatfield_chips.append(flatchip)
         if verbose:
@@ -855,7 +862,8 @@ def go_flatfield(image_collection,
         for file in image_files:
             # Set up the output HDU list
             # Capture the 0th header
-            base_header = fits.getheader(file)
+            input_path = os.path.join(input_directory, file)
+            base_header = fits.getheader(input_path)
             master_hdu = fits.PrimaryHDU(header=base_header)
             # Start output HDU list:
             output_hdu = fits.HDUList([master_hdu])
@@ -868,7 +876,7 @@ def go_flatfield(image_collection,
             # Loop through the chips
             for idx, chip in enumerate(lbc_chips):
                 # Create the CCDData version of this chip
-                image = CCDData.read(input_directory+file, chip,
+                image = CCDData.read(input_path, chip,
                                      unit=None)
 
                 # Fix cosmic rays
@@ -890,8 +898,7 @@ def go_flatfield(image_collection,
 
                 if make_weights:
                     mask = flat_masks[idx].copy()
-                    sat = lbcmasks.read_sidecar(input_directory+file,
-                                                'mask', chip)
+                    sat = lbcmasks.read_sidecar(input_path, 'mask', chip)
                     if sat is not None:
                         mask |= sat.astype(np.uint8)
                     if cosmiccorrect:
@@ -926,24 +933,23 @@ def go_flatfield(image_collection,
             output_filename = output_filename.replace('.fits','_flat.fits')
 
             # Write the output flat-fielded data
-            output_hdu.writeto(image_directory+output_filename,overwrite=True)
+            output_path = os.path.join(image_directory, output_filename)
+            output_hdu.writeto(output_path, overwrite=True)
             if make_weights:
-                lbcmasks.write_sidecar(image_directory+output_filename,
-                                       'mask', mask_arrays, extnames=extnames)
-                lbcmasks.write_sidecar(image_directory+output_filename,
-                                       'weight', weight_arrays,
+                lbcmasks.write_sidecar(output_path, 'mask', mask_arrays,
+                                       extnames=extnames)
+                lbcmasks.write_sidecar(output_path, 'weight', weight_arrays,
                                        extnames=extnames,
                                        headers=weight_headers)
 
             # Append the flattened image to our final list.
             flattened_files.append(output_filename)
 
-            # Move pre-flatfield file to data directory
-            cmd = 'mv '+file+' '+datadir
-            mvover = Popen(shlex.split(cmd),
-                  close_fds=True)
-            mvover.wait()
-            lbcmasks.move_sidecars(input_directory+file, datadir)
+            # Move pre-flatfield file to data directory. An explicit
+            # destination path overwrites any existing copy (as 'mv' did).
+            shutil.move(input_path,
+                        os.path.join(datadir, os.path.basename(file)))
+            lbcmasks.move_sidecars(input_path, datadir)
 
             if verbose:
                 print('Flattened {0} to {1}.'.format(file,output_filename))
@@ -1048,7 +1054,7 @@ def make_targetdirectories(image_collection,
     # Loop through the objects
     for obj in object_names:
         # Name of the target directory to be created
-        dirname = image_directory+obj.replace(' ','')+'/'
+        dirname = os.path.join(image_directory, obj.replace(' ',''), '')
         object_directories.append(dirname)
 
         # Test that the directory doesn't already exist
@@ -1088,7 +1094,7 @@ def make_targetdirectories(image_collection,
 
         # Step through each filter, creating directories and moving files.
         for filter in filters:
-            filter_dirname = dirname+filter+'/'
+            filter_dirname = os.path.join(dirname, filter, '')
             filter_directories.append(filter_dirname)
 
             # Test that the directory doesn't already exist
@@ -1114,6 +1120,7 @@ def make_targetdirectories(image_collection,
 
 def go_extractchips(filter_directories,
                     lbc_chips = True,
+                    image_directory='./',
                     verbose=True,
                     return_files = False):
     """Split multi-extension flat-fielded files into single-chip FITS files.
@@ -1121,8 +1128,9 @@ def go_extractchips(filter_directories,
     For each ``*_flat.fits`` file found in the supplied filter directories,
     writes one output file per chip named ``<base>_<chip>.fits``, each
     containing a single image extension. The original multi-extension file
-    is moved to a ``data/`` subdirectory. Output files are the direct inputs
-    to the astrometric registration step.
+    is moved to the ``data/`` subdirectory of ``image_directory``. Output
+    files are written alongside the inputs and are the direct inputs to the
+    astrometric registration step.
 
     Parameters
     ----------
@@ -1130,6 +1138,9 @@ def go_extractchips(filter_directories,
         Directory path(s) containing ``*_flat.fits`` multi-extension files.
     lbc_chips : bool or list of int, optional
         Chips to extract. If True, extracts all 4 chips. Default: True
+    image_directory : str, optional
+        Root output directory; the multi-extension inputs are moved to
+        ``<image_directory>/data/``. Default: './'
     verbose : bool, optional
         Print progress messages. Default: True
     return_files : bool, optional
@@ -1150,10 +1161,9 @@ def go_extractchips(filter_directories,
     if np.size(filter_directories) == 1 and not isinstance(filter_directories,list):
         filter_directories = [filter_directories]
 
-    # The pre-chip-extraction images will be put in a data/ directory:
-    datadir = 'data/'
-    if not os.path.exists(datadir):
-        os.makedirs(datadir)
+    # The pre-chip-extraction images will be put in image_directory/data/:
+    datadir = os.path.join(image_directory, 'data')
+    os.makedirs(datadir, exist_ok=True)
 
     # ImageFileCollection keywords
     keywds = ['object', 'filter', 'exptime', 'objra', 'objdec']
@@ -1161,7 +1171,7 @@ def go_extractchips(filter_directories,
     # Create a list of files to split apart.
     input_filenames = []
     for fltdr in filter_directories:
-        fls = glob(fltdr + '*_flat.fits')
+        fls = glob(os.path.join(fltdr, '*_flat.fits'))
         for fl in fls:
             input_filenames.append(fl)
 
@@ -1216,7 +1226,7 @@ def go_extractchips(filter_directories,
         dest = os.path.join(datadir, os.path.basename(filename))
         if os.path.exists(dest):
             os.remove(dest)
-        shutil.move(filename, datadir)
+        shutil.move(filename, dest)
         lbcmasks.move_sidecars(filename, datadir)
 
     # Return the corrected filenames if requested (True is default).
@@ -1431,7 +1441,7 @@ def lbcgo(raw_directory='./raw/',
         # Check to see if flat exists; if so, skip making the flat (time
         # consuming)
         flatname = 'flat.'+filter+'.fits'
-        if not os.path.lexists(flatname):
+        if not os.path.lexists(os.path.join(image_directory, flatname)):
             make_flatfield(ic1,verbose=verbose,
                            lbc_chips=lbc_chips,
                            raw_directory=raw_directory,
@@ -1457,7 +1467,10 @@ def lbcgo(raw_directory='./raw/',
 
         # Apply the flatfields
         flatfiles = go_flatfield(ic2, return_files=True, lbc_chips=lbc_chips,
-                                 image_directory=image_directory, verbose=verbose, 
+                                 image_directory=image_directory,
+                                 input_directory=image_directory,
+                                 flat_directory=image_directory,
+                                 verbose=verbose,
                                  cosmiccorrect=False)
 
         # Image collection of object frames overscanned & bias subtracted + flattened
@@ -1471,7 +1484,8 @@ def lbcgo(raw_directory='./raw/',
                          verbose = verbose)
 
         # Extract individual chips
-        go_extractchips(fltr_dirs, lbc_chips, verbose = verbose)
+        go_extractchips(fltr_dirs, lbc_chips,
+                        image_directory=image_directory, verbose=verbose)
 
         # Register and coadd the images
         if do_astrometry:

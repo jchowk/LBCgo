@@ -113,10 +113,10 @@ def write_lbc_file(directory, filename, **kwargs):
 def chdir_to_tmp(tmp_path, monkeypatch):
     """Run every test with cwd = tmp_path.
 
-    Several pipeline functions write to the current directory regardless of
-    image_directory (e.g. go_overscan output, the data/ directory created by
-    go_flatfield and go_extractchips), so without this they would leave
-    files wherever pytest was launched.
+    Tests that use the default image_directory='./' (e.g. go_extractchips'
+    data/ directory) would otherwise write wherever pytest was launched.
+    test_directories.py moves the cwd elsewhere to check that non-default
+    directories are honoured.
     """
     monkeypatch.chdir(tmp_path)
 
@@ -230,10 +230,15 @@ def write_master_flat(directory, filter_name='g-SLOAN', pixel_value=20000.0,
 # ---------------------------------------------------------------------------
 @pytest.fixture
 def overscan_files(ic_with_flats, work_dir, raw_dir):
-    """Run go_overscan on object files; return list of _over.fits paths."""
+    """Run go_overscan on object files; return list of _over.fits paths.
+
+    go_overscan returns names relative to image_directory, so join them
+    with work_dir to get paths that do not depend on the cwd.
+    """
     from LBCgo.lbcproc import go_overscan
-    return go_overscan(ic_with_flats,
-                       image_directory=str(work_dir) + '/',
-                       raw_directory=str(raw_dir) + '/',
-                       verbose=False,
-                       return_files=True)
+    names = go_overscan(ic_with_flats,
+                        image_directory=str(work_dir) + '/',
+                        raw_directory=str(raw_dir) + '/',
+                        verbose=False,
+                        return_files=True)
+    return [str(work_dir / name) for name in names]
