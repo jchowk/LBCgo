@@ -276,23 +276,55 @@ Purpose: a fair benchmark and an immediate improvement for users.
 
 ### 5.4 SCAMP: one joint run per filter directory
 SCAMP's focal-plane modes need one catalog per **exposure** with one
-extension per chip.
-- [ ] `merge_ldac(chip_cats) -> exposure_cat`: concatenate the
-      (`LDAC_IMHEAD`, `LDAC_OBJECTS`) HDU pairs of the 4 chip catalogs of an
-      exposure, in chip order (astropy `fits`).
-- [ ] Run SCAMP **once** on all exposure catalogs of the filter directory:
+extension per chip. Implemented in `lbcregister.py` (`go_scamp_joint`,
+default in `go_register`; `scamp_joint=False` restores per-chip solutions).
+**Status: code and unit tests done (146 pass); not yet validated end to end
+against a working SCAMP — see the blocker below.**
+- [x] `merge_ldac(chip_cats, output) -> exposure_cat`: concatenates the
+      (`LDAC_IMHEAD`, `LDAC_OBJECTS`) pairs in chip order (astropy `fits`);
+      written as `<base>_exp.cat`.
+- [x] Run SCAMP **once** on all exposure catalogs of the filter directory:
       iteration 1 `MOSAIC_TYPE LOOSE`, later `FIX_FOCALPLANE`;
       `STABILITY_TYPE INSTRUMENT`; `ASTRINSTRU_KEY FILTER` (drop CFHT's
-      `QRUNID`); restore the `-MOSAIC_TYPE` flag; delete the no-op
-      `replace()`; keep `DISTORT_DEGREES 3`.
-- [ ] `split_head(exposure_head) -> chip heads`: split the multi-section
+      `QRUNID`); `-MOSAIC_TYPE` restored (also in the per-chip `go_scamp`);
+      the no-op `replace()` deleted (`astrometric_method` is ignored, kept for
+      compatibility); `DISTORT_DEGREES 3` kept. SCAMP runs with the catalog
+      directory as cwd and relative names (spaces in paths break its option
+      parser too); a non-zero exit status raises `RuntimeError` (it was
+      silently ignored before).
+- [x] `split_head(exposure_head, chip_heads)`: splits the multi-section
       `.head` (sections separated by `END`) into `<base>_<chip>.head`.
-- [ ] Parse the SCAMP XML (`AstromSigma_Internal`, `AstromSigma_Reference`,
-      `XY_Contrast`, `AstromNDets_Reference`) per exposure/chip into
-      `astrometry_qa.ecsv`; flag fits exceeding thresholds (implements the
-      "auto-identify bad astrometric fits" ToDo).
-- [ ] Check whether the installed SCAMP version applies Gaia proper motions
-      to the observation epoch; record the version in QA output.
+- [x] Parse SCAMP output into `astrometry_qa.ecsv` (one row per exposure
+      chip: internal/reference rms in arcsec, `FLXSCALE`, `XY_Contrast`,
+      reference-match dof, `bad`/`reason`; SCAMP version, reference catalog
+      and epoch mode in the table metadata). Per-chip rms comes from the
+      `.head` (`ASTIRMS`/`ASTRRMS`, deg), per-exposure numbers from the XML
+      `Fields` table — SCAMP's XML has **no per-chip rows**, and
+      `AstromSigma_*`/`AstromNDets_*` exist only per field group. Thresholds
+      (`max_ref_rms=0.2″`, `min_xy_contrast=2`) are untuned placeholders.
+- [~] Proper motions: installed SCAMP is 2.14.1, which has
+      `ASTREFEPOCH_TYPE` (`ORIGINAL`/`MANUAL`/`FIELDS_AVERAGE`) and
+      `ASTREFPROP_KEYS`; `go_scamp_joint` sets `FIELDS_AVERAGE`. **Not
+      verified** that Gaia proper motions are actually applied (the crash
+      below prevented the reference-catalog comparison), and the version is
+      recorded in the QA metadata. SCAMP takes the observation epoch from
+      `MJD-OBS`/`DATE-OBS` (hyphen); LBC headers carry `MJD_OBS`
+      (underscore) — **check that `DATE-OBS` exists in real chip headers**,
+      otherwise SCAMP has no epoch.
+- **Blocker found (environment):** `/usr/local/bin/scamp` (2.14.1, arm64)
+  fails to start (`@rpath/libcurl.4.dylib` has no `LC_RPATH`; works with
+  `DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/opt/curl/lib`) and then crashes
+  intermittently with SIGBUS in `field.c: load_field → readbasic_head`
+  (≈50 % of runs on identical input, even single raw SExtractor catalogs;
+  in every attempt iteration 2, `FIX_FOCALPLANE`, crashed). A fresh SCAMP
+  install is needed before §5.4 can be validated. With the retry
+  workaround iteration 1 (`LOOSE`) matched a simulated 3-exposure Gaia
+  field (input scale error 0.5 % recovered as 1.0050; reference rms
+  0.06–0.08″, limited by the simulation's centroiding).
+- Header note: with `PROJECTION_TYPE SAME` SCAMP wrote `CTYPE = TAN` plus 20
+  `PV` keywords. SWarp interprets `TAN`+`PV` as a distortion, but
+  `astropy.wcs` ignores `PV` terms on `TAN`; astropy-based consumers (QA,
+  native back-end) need `TPV`. Not changed (untested with SWarp).
 
 ### 5.5 SWarp improvements
 - [ ] `-SUBTRACT_BACK N` (sky handled by `register/sky.py`, §6.2, applied

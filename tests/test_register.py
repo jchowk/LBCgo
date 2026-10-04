@@ -8,6 +8,7 @@ shutil.which is mocked to control binary-presence checks.
 
 import pytest
 import numpy as np
+from astropy.table import Table
 from pathlib import Path
 from unittest.mock import patch, MagicMock, call
 
@@ -428,3 +429,216 @@ def test_register_passes_sextractor_args(tmp_path):
                     do_swarp=False, verbose=False,
                     sextractor_args=dict(detect_thresh=3))
     assert _opt(mp.call_args[0][0], '-DETECT_THRESH') == '3'
+
+
+# ---------------------------------------------------------------------------
+# Joint SCAMP — Phase 0 §5.4
+# ---------------------------------------------------------------------------
+
+FIXTURES = Path(__file__).parent / 'fixtures' / 'scamp'
+
+
+def _write_ldac(path, n_objects, chip_marker):
+    """Minimal FITS_LDAC catalog: primary + (LDAC_IMHEAD, LDAC_OBJECTS)."""
+    from astropy.io import fits
+    cards = np.array([[('CHIP    = %d' % chip_marker).ljust(80)]])
+    imhead = fits.BinTableHDU.from_columns(
+        [fits.Column(name='Field Header Card', format='80A', array=cards)],
+        name='LDAC_IMHEAD')
+    objs = fits.BinTableHDU.from_columns(
+        [fits.Column(name='NUMBER', format='J', array=np.arange(n_objects))],
+        name='LDAC_OBJECTS')
+    fits.HDUList([fits.PrimaryHDU(), imhead, objs]).writeto(path, overwrite=True)
+
+
+def test_group_chips_by_exposure_orders_chips():
+    from LBCgo.lbcregister import group_chips_by_exposure
+    files = ['d/a_2.fits', 'd/b_1.fits', 'd/a_1.fits', 'd/b_2.fits']
+    g = group_chips_by_exposure(files)
+    assert g == {'d/a': ['d/a_1.fits', 'd/a_2.fits'],
+                 'd/b': ['d/b_1.fits', 'd/b_2.fits']}
+
+
+def test_group_chips_rejects_non_chip_name():
+    from LBCgo.lbcregister import group_chips_by_exposure
+    with pytest.raises(ValueError):
+        group_chips_by_exposure(['d/not_a_chip.fits'])
+
+
+def test_merge_ldac_concatenates_pairs_in_order(tmp_path):
+    from astropy.io import fits
+    from LBCgo.lbcregister import merge_ldac
+    cats = []
+    for chip, n in ((1, 3), (2, 5), (4, 2)):
+        c = tmp_path / f'x_{chip}.cat'
+        _write_ldac(c, n, chip)
+        cats.append(str(c))
+    out = merge_ldac(cats, str(tmp_path / 'x_exp.cat'))
+    with fits.open(out) as h:
+        assert [x.name for x in h] == ['PRIMARY'] + ['LDAC_IMHEAD', 'LDAC_OBJECTS'] * 3
+        assert [len(h[i].data) for i in (2, 4, 6)] == [3, 5, 2]
+        assert [str(h[i].data[0][0]).strip() for i in (1, 3, 5)] == \
+            ['CHIP    = 1', 'CHIP    = 2', 'CHIP    = 4']
+
+
+def test_split_head_writes_one_file_per_section(tmp_path):
+    from LBCgo.lbcregister import split_head
+    head = tmp_path / 'e.head'
+    head.write_text('CRPIX1  = 1\nEND\nCRPIX1  = 2\nEND\n')
+    outs = [str(tmp_path / 'a_1.head'), str(tmp_path / 'a_2.head')]
+    split_head(str(head), outs)
+    assert Path(outs[0]).read_text() == 'CRPIX1  = 1\nEND\n'
+    assert Path(outs[1]).read_text() == 'CRPIX1  = 2\nEND\n'
+
+
+def test_split_head_section_count_mismatch(tmp_path):
+    from LBCgo.lbcregister import split_head
+    head = tmp_path / 'e.head'
+    head.write_text('CRPIX1  = 1\nEND\n')
+    with pytest.raises(ValueError, match='sections'):
+        split_head(str(head), [str(tmp_path / 'a_1.head'),
+                               str(tmp_path / 'a_2.head')])
+
+
+def _qa_from_fixture(tmp_path, monkeypatch, **kw):
+    """QA table from a real SCAMP 2.14.1 XML/head (3 exposures, 2 chips)."""
+    import shutil
+    from LBCgo.lbcregister import scamp_qa_table
+    for n in range(3):
+        shutil.copy(FIXTURES / 'lbcb.20140101.000000_exp.head',
+                    tmp_path / f'lbcb.20140101.00000{n}_exp.head')
+    shutil.copy(FIXTURES / 'scamp.xml', tmp_path / 'scamp.xml')
+    monkeypatch.chdir(tmp_path)
+    groups = {f'lbcb.20140101.00000{n}': [f'lbcb.20140101.00000{n}_1.fits',
+                                          f'lbcb.20140101.00000{n}_2.fits']
+              for n in range(3)}
+    return scamp_qa_table('scamp.xml', groups, **kw)
+
+
+def test_qa_table_values_from_real_scamp_output(tmp_path, monkeypatch):
+    qa = _qa_from_fixture(tmp_path, monkeypatch)
+    assert len(qa) == 6
+    assert list(qa['chip'][:2]) == [1, 2]
+    # ASTRRMS is in degrees in the .head; the table is in arcsec
+    assert qa['ref_rms_x'][0] == pytest.approx(1.204308070295e-05 * 3600)
+    assert qa['xy_contrast'][0] == pytest.approx(4.794, abs=1e-3)
+    assert qa.meta['scamp_version'] == '2.14.1'
+    assert qa.meta['astref_catalog'] == 'GAIA-DR3'
+    assert not any(qa['bad'])
+
+
+def test_qa_flags_by_threshold(tmp_path, monkeypatch):
+    qa = _qa_from_fixture(tmp_path, monkeypatch, max_ref_rms=0.01,
+                          min_xy_contrast=10.0)
+    assert all(qa['bad'])
+    assert all('ref_rms' in r and 'low_contrast' in r for r in qa['reason'])
+
+
+def test_qa_flags_missing_reference_match(tmp_path, monkeypatch):
+    import re
+    _qa_from_fixture(tmp_path, monkeypatch)
+    head = tmp_path / 'lbcb.20140101.000000_exp.head'
+    head.write_text(re.sub(r'(ASTRRMS[12]=)\s*\S+', r'\1 0.0', head.read_text()))
+    from LBCgo.lbcregister import scamp_qa_table
+    groups = {'lbcb.20140101.000000': ['lbcb.20140101.000000_1.fits',
+                                       'lbcb.20140101.000000_2.fits']}
+    qa = scamp_qa_table('scamp.xml', groups)
+    assert all(qa['reason'] == 'no_ref_match')
+
+
+def _joint_setup(tmp_path, n_exp=2, chips=(1, 2)):
+    from conftest import write_lbc_file
+    files = []
+    for k in range(n_exp):
+        for chip in chips:
+            name = f'lbcb.20230101.00000{k}_{chip}.fits'
+            write_lbc_file(tmp_path, name, imagetyp='object',
+                           filter_name='g-SLOAN', object_name='X',
+                           nx=NX_SCIENCE)
+            _write_ldac(tmp_path / name.replace('.fits', '.cat'), 4, chip)
+            files.append(str(tmp_path / name))
+    return files
+
+
+def test_joint_scamp_single_run_per_iteration(tmp_path):
+    """One SCAMP call per iteration over all exposure catalogs, with the
+    focal-plane / instrument options set and the chip heads split out."""
+    from LBCgo.lbcregister import go_scamp_joint
+    files = _joint_setup(tmp_path, n_exp=2)
+
+    def fake_scamp(cmd, **kw):
+        for cat in [c for c in cmd if c.endswith('_exp.cat')]:
+            head = cat.replace('.cat', '.head')
+            (Path(kw['cwd']) / head).write_text('CRPIX1  = 1\nEND\nCRPIX1  = 2\nEND\n')
+        return make_mock_process()
+
+    with patch('shutil.which', return_value='/usr/bin/scamp'), \
+         patch('LBCgo.lbcregister.Popen', side_effect=fake_scamp) as mp, \
+         patch('LBCgo.lbcregister.scamp_qa_table',
+               return_value=Table({'bad': [False]})):
+        go_scamp_joint(files, num_iterations=3, verbose=False, qa_file=None)
+    assert mp.call_count == 3
+    cmds = [c[0][0] for c in mp.call_args_list]
+    assert [_opt(c, '-MOSAIC_TYPE') for c in cmds] == \
+        ['LOOSE', 'FIX_FOCALPLANE', 'FIX_FOCALPLANE']
+    for c in cmds:
+        assert sum(a.endswith('_exp.cat') for a in c) == 2
+        assert _opt(c, '-STABILITY_TYPE') == 'INSTRUMENT'
+        assert _opt(c, '-ASTRINSTRU_KEY') == 'FILTER'
+        assert _opt(c, '-ASTREFEPOCH_TYPE') == 'FIELDS_AVERAGE'
+    for f in files:
+        assert Path(f.replace('.fits', '.head')).exists()
+
+
+def test_joint_scamp_raises_on_scamp_failure(tmp_path):
+    from LBCgo.lbcregister import go_scamp_joint
+    files = _joint_setup(tmp_path, n_exp=1)
+    crashed = MagicMock()
+    crashed.wait.return_value = -10
+    crashed.returncode = -10
+    with patch('shutil.which', return_value='/usr/bin/scamp'), \
+         patch('LBCgo.lbcregister.Popen', return_value=crashed):
+        with pytest.raises(RuntimeError, match='status -10'):
+            go_scamp_joint(files, verbose=False)
+
+
+def test_joint_scamp_requires_catalogs(tmp_path):
+    from LBCgo.lbcregister import go_scamp_joint
+    with patch('shutil.which', return_value='/usr/bin/scamp'):
+        with pytest.raises(FileNotFoundError):
+            go_scamp_joint([str(tmp_path / 'a_1.fits')], verbose=False)
+
+
+def test_register_uses_joint_scamp_by_default(tmp_path):
+    from LBCgo.lbcregister import go_register
+    files = _joint_setup(tmp_path, n_exp=2)
+    with patch('LBCgo.lbcregister.go_scamp_joint') as joint, \
+         patch('LBCgo.lbcregister.go_scamp') as legacy:
+        go_register([str(tmp_path) + '/'], lbc_chips=[1, 2],
+                    do_sextractor=False, do_swarp=False, verbose=False)
+    assert joint.call_count == 1 and legacy.call_count == 0
+    assert len(joint.call_args[0][0]) == 4
+
+
+def test_register_legacy_per_chip_scamp(tmp_path):
+    from LBCgo.lbcregister import go_register
+    _joint_setup(tmp_path, n_exp=2)
+    with patch('LBCgo.lbcregister.go_scamp_joint') as joint, \
+         patch('LBCgo.lbcregister.go_scamp') as legacy:
+        go_register([str(tmp_path) + '/'], lbc_chips=[1, 2],
+                    do_sextractor=False, do_swarp=False,
+                    scamp_joint=False, verbose=False)
+    assert joint.call_count == 0 and legacy.call_count == 4
+
+
+def test_scamp_legacy_passes_mosaic_type(tmp_path):
+    """The per-iteration MOSAIC_TYPE is no longer dead code."""
+    from LBCgo.lbcregister import go_scamp
+    with patch('shutil.which', return_value='/usr/bin/scamp'), \
+         patch('LBCgo.lbcregister.Popen',
+               return_value=make_mock_process()) as mp, \
+         patch('LBCgo.lbcregister.votable.parse',
+               return_value=make_mock_votable()):
+        go_scamp(str(tmp_path / 'test_1.fits'), num_iterations=3, verbose=False)
+    mos = [_opt(c[0][0], '-MOSAIC_TYPE') for c in mp.call_args_list]
+    assert mos == ['LOOSE', 'FIX_FOCALPLANE', 'FIX_FOCALPLANE']

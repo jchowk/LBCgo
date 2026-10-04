@@ -7,7 +7,9 @@ from glob import glob
 from astropy.io import fits
 from ccdproc import  ImageFileCollection
 import astropy.io.votable as votable
+from astropy.table import Table
 import LBCgo
+import re
 import tempfile
 from . import masks as lbcmasks
 
@@ -287,6 +289,30 @@ def go_sextractor(inputfile,
             stage.cleanup()
 
 
+def scamp_iteration_settings(iteration):
+    """Return the SCAMP tolerances for a 0-based iteration number.
+
+    Iteration 0 is loose (``MOSAIC_TYPE LOOSE``, reads ``.ahead`` files);
+    later iterations fix the focal plane, read the previous ``.head`` as
+    input astrometry, and tighten the match tolerances.
+    """
+    if iteration == 0:
+        return dict(mosaic_type='LOOSE', pixscale_maxerr='1.2',
+                    position_maxerr='1', posangle_maxerr='5.0',
+                    crossid_radius='7.5', aheader_suffix='.ahead')
+    if iteration == 1:
+        return dict(mosaic_type='FIX_FOCALPLANE', pixscale_maxerr='1.1',
+                    position_maxerr='0.1', posangle_maxerr='3.0',
+                    crossid_radius='5.0', aheader_suffix='.head')
+    if iteration == 2:
+        return dict(mosaic_type='FIX_FOCALPLANE', pixscale_maxerr='1.05',
+                    position_maxerr='0.05', posangle_maxerr='1.0',
+                    crossid_radius='5.0', aheader_suffix='.head')
+    return dict(mosaic_type='FIX_FOCALPLANE', pixscale_maxerr='1.05',
+                position_maxerr='0.025', posangle_maxerr='1.0',
+                crossid_radius='2.5', aheader_suffix='.head')
+
+
 def go_scamp(inputfile,
              astrometric_catalog='GAIA-DR3',
              astrometric_method = 'exposure',
@@ -310,7 +336,8 @@ def go_scamp(inputfile,
         Reference catalog for cross-matching. Common options: ``'GAIA-DR3'``,
         ``'GAIA-DR2'``, ``'2MASS'``, ``'USNO-B1'``. Default: ``'GAIA-DR3'``
     astrometric_method : str, optional
-        Mosaic type strategy passed to SCAMP. Default: ``'exposure'``
+        Deprecated and ignored (it never had an effect). The mosaic type is
+        set per iteration; for focal-plane solutions use :func:`go_scamp_joint`.
     num_iterations : int, optional
         Number of SCAMP iterations. Fewer than 2 will be raised to 2.
         Default: 3
@@ -354,47 +381,17 @@ def go_scamp(inputfile,
 
     # Perform the iterations
     for scmpiter in np.arange(num_iterations):
-        if scmpiter == 0:
-            mosaic_type = 'LOOSE'
-            pixscale_maxerr = '1.2'
-            position_maxerr = '1'
-            posangle_maxerr = '5.0'
-            crossid_radius = '7.5'
-            aheader_suffix = '.ahead'
-        elif scmpiter == 1:
-           mosaic_type = 'FIX_FOCALPLANE'
-           pixscale_maxerr = '1.1'
-           position_maxerr = '0.1'
-           posangle_maxerr = '3.0'
-           crossid_radius = '5.0'
-           aheader_suffix = '.head'
-        elif scmpiter == 2:
-           mosaic_type = 'FIX_FOCALPLANE'
-           pixscale_maxerr = '1.05'
-           position_maxerr = '0.05'
-           posangle_maxerr = '1.0'
-           crossid_radius = '5.0'
-           aheader_suffix = '.head'
-        else:
-           mosaic_type = 'FIX_FOCALPLANE'
-           pixscale_maxerr = '1.05'
-           position_maxerr = '0.025'
-           posangle_maxerr = '1.0'
-           crossid_radius = '2.5'
-           aheader_suffix = '.head'
+        it = scamp_iteration_settings(scmpiter)
 
         cmd_flags = ' -c '+ configfile + \
-            ' -PIXSCALE_MAXERR '+pixscale_maxerr+ \
-            ' -POSANGLE_MAXERR '+posangle_maxerr+ \
-            ' -POSITION_MAXERR '+position_maxerr+ \
+            ' -MOSAIC_TYPE '+it['mosaic_type']+ \
+            ' -PIXSCALE_MAXERR '+it['pixscale_maxerr']+ \
+            ' -POSANGLE_MAXERR '+it['posangle_maxerr']+ \
+            ' -POSITION_MAXERR '+it['position_maxerr']+ \
             ' -ASTREF_CATALOG '+astrometric_catalog+ \
-            ' -AHEADER_SUFFIX '+aheader_suffix+ \
-            ' -CROSSID_RADIUS '+crossid_radius+\
+            ' -AHEADER_SUFFIX '+it['aheader_suffix']+ \
+            ' -CROSSID_RADIUS '+it['crossid_radius']+\
             ' -XML_NAME '+xmlfile
-        # ' -MOSAIC_TYPE '+mosaic_type+ \
-
-        if astrometric_method == 'exposure':
-            cmd_flags.replace('INSTRUMENT','EXPOSURE')
 
         # Create the final command:
         cmd = find_astromatic_tool('scamp')+' '+inputfile+cmd_flags
@@ -427,6 +424,322 @@ def go_scamp(inputfile,
     astrometric_dispersion = np.sqrt(np.sum(xy_dispersion**2))
 
     # TODO: Do something with the astrometric dispersion
+
+
+CHIP_FILE_RE = re.compile(r'^(?P<base>.*)_(?P<chip>\d+)\.fits$')
+
+
+def group_chips_by_exposure(chip_files):
+    """Group ``<base>_<chip>.fits`` names by exposure.
+
+    Returns
+    -------
+    dict
+        ``{base: [chip files sorted by chip number]}`` in order of first
+        appearance; ``base`` includes the directory.
+    """
+    groups = {}
+    for fl in chip_files:
+        m = CHIP_FILE_RE.match(fl)
+        if m is None:
+            raise ValueError("Not a chip file (<base>_<chip>.fits): "
+                             "{0}".format(fl))
+        groups.setdefault(m.group('base'), []).append((int(m.group('chip')), fl))
+    return {b: [f for _, f in sorted(v)] for b, v in groups.items()}
+
+
+def merge_ldac(chip_catalogs, output_catalog):
+    """Concatenate the LDAC extensions of several catalogs into one.
+
+    SCAMP's focal-plane modes need one catalog per exposure with one
+    (``LDAC_IMHEAD``, ``LDAC_OBJECTS``) HDU pair per chip. The pairs are
+    appended in the order the catalogs are given (chip order); the primary
+    HDU comes from the first catalog.
+
+    Parameters
+    ----------
+    chip_catalogs : list of str
+        SExtractor FITS_LDAC catalogs, one per chip.
+    output_catalog : str
+        Merged catalog to write (overwritten).
+
+    Returns
+    -------
+    str
+        ``output_catalog``
+    """
+    merged = None
+    for cat in chip_catalogs:
+        with fits.open(cat) as hdul:
+            if merged is None:
+                merged = fits.HDUList([hdul[0].copy()])
+            # Skip the primary; the rest are (IMHEAD, OBJECTS) pairs
+            for hdu in hdul[1:]:
+                merged.append(hdu.copy())
+    merged.writeto(output_catalog, overwrite=True)
+    return output_catalog
+
+
+def split_head(exposure_head, chip_heads):
+    """Split a multi-section SCAMP ``.head`` file into per-chip files.
+
+    SCAMP writes one section per catalog extension, each terminated by an
+    ``END`` card, in extension (chip) order.
+
+    Parameters
+    ----------
+    exposure_head : str
+        The ``.head`` file SCAMP wrote for a merged exposure catalog.
+    chip_heads : list of str
+        Output filenames, one per chip, in the same order as the merged
+        catalog's extensions.
+
+    Raises
+    ------
+    ValueError
+        If the number of sections differs from ``len(chip_heads)``.
+    """
+    with open(exposure_head) as fh:
+        lines = fh.read().splitlines()
+    sections, current = [], []
+    for ln in lines:
+        current.append(ln)
+        if ln.strip() == 'END':
+            sections.append(current)
+            current = []
+    if len(sections) != len(chip_heads):
+        raise ValueError("{0} has {1} header sections but {2} chips were "
+                         "expected".format(exposure_head, len(sections),
+                                           len(chip_heads)))
+    for name, sect in zip(chip_heads, sections):
+        with open(name, 'w') as out:
+            out.write('\n'.join(sect) + '\n')
+
+
+def read_head_sections(head_file):
+    """Return one ``astropy.io.fits.Header`` per ``END``-terminated section."""
+    with open(head_file) as fh:
+        lines = fh.read().splitlines()
+    headers, current = [], []
+    for ln in lines:
+        current.append(ln)
+        if ln.strip() == 'END':
+            headers.append(fits.Header.fromstring('\n'.join(current), sep='\n'))
+            current = []
+    return headers
+
+
+def scamp_qa_table(xmlfile, groups, max_ref_rms=0.2, min_xy_contrast=2.0,
+                   astref_catalog='GAIA-DR3', astref_epoch=None):
+    """Build the astrometry QA table from a joint SCAMP run.
+
+    Per-chip numbers come from the ``.head`` sections (``ASTIRMS``/``ASTRRMS``
+    are in degrees, converted to arcsec; ``FLXSCALE``), per-exposure numbers
+    from the SCAMP XML ``Fields`` table (``XY_Contrast``, reference-match
+    count and rms).
+
+    Parameters
+    ----------
+    xmlfile : str
+        SCAMP XML written by the last iteration.
+    groups : dict
+        ``{exposure base: [chip files]}`` as from
+        :func:`group_chips_by_exposure`; ``<base>_exp.head`` must exist.
+    max_ref_rms : float, optional
+        A chip is flagged when either axis' reference rms (arcsec) exceeds
+        this, or is exactly 0 (no reference matches).
+    min_xy_contrast : float, optional
+        An exposure is flagged when SCAMP's ``XY_Contrast`` is below this.
+    astref_catalog, astref_epoch : str, optional
+        Recorded in the table metadata with the SCAMP version.
+
+    Returns
+    -------
+    astropy.table.Table
+        One row per exposure chip; ``bad`` is True where any check failed and
+        ``reason`` lists the failed checks.
+    """
+    fields = votable.parse(xmlfile).get_first_table().to_table()
+    by_cat = {os.path.basename(str(r['Catalog_Name'])): r for r in fields}
+
+    rows, scamp_version = [], None
+    for base, chips in groups.items():
+        heads = read_head_sections(base + '_exp.head')
+        if len(heads) != len(chips):
+            raise ValueError("{0}_exp.head has {1} sections for {2} chips"
+                             .format(base, len(heads), len(chips)))
+        field = by_cat.get(os.path.basename(base) + '_exp.cat')
+        if scamp_version is None:
+            for h in heads[:1]:
+                m = re.search(r'SCAMP version (\S+)', ' '.join(map(str, h['HISTORY'])))
+                scamp_version = m.group(1) if m else None
+        contrast = float(field['XY_Contrast']) if field is not None else np.nan
+        ref_ndeg = int(field['NDeg_Reference']) if field is not None else 0
+        for ext, (chipfile, h) in enumerate(zip(chips, heads), start=1):
+            m = CHIP_FILE_RE.match(chipfile)
+            irms = [3600.*float(h.get('ASTIRMS{0}'.format(i), 0.)) for i in (1, 2)]
+            rrms = [3600.*float(h.get('ASTRRMS{0}'.format(i), 0.)) for i in (1, 2)]
+            reasons = []
+            if max(rrms) == 0.:
+                reasons.append('no_ref_match')
+            elif max(rrms) > max_ref_rms:
+                reasons.append('ref_rms')
+            if not contrast >= min_xy_contrast:
+                reasons.append('low_contrast')
+            rows.append((os.path.basename(base), int(m.group('chip')), ext,
+                         irms[0], irms[1], rrms[0], rrms[1],
+                         float(h.get('FLXSCALE', np.nan)), ref_ndeg, contrast,
+                         bool(reasons), ','.join(reasons)))
+    qa = Table(rows=rows, names=['exposure', 'chip', 'ext',
+                                 'int_rms_x', 'int_rms_y',
+                                 'ref_rms_x', 'ref_rms_y', 'flxscale',
+                                 'n_ref_dof', 'xy_contrast', 'bad', 'reason'],
+               dtype=[str, int, int, float, float, float, float, float, int,
+                      float, bool, str])
+    for col in ('int_rms_x', 'int_rms_y', 'ref_rms_x', 'ref_rms_y'):
+        qa[col].unit = 'arcsec'
+    qa.meta.update(scamp_version=scamp_version, astref_catalog=astref_catalog,
+                   astref_epoch=astref_epoch, max_ref_rms=max_ref_rms,
+                   min_xy_contrast=min_xy_contrast)
+    return qa
+
+
+def go_scamp_joint(chip_files,
+                   astrometric_catalog='GAIA-DR3',
+                   num_iterations=3,
+                   configfile=None,
+                   astref_epoch='FIELDS_AVERAGE',
+                   qa_file='astrometry_qa.ecsv',
+                   max_ref_rms=0.2,
+                   min_xy_contrast=2.0,
+                   verbose=True):
+    """Solve the astrometry of all exposures in a filter directory jointly.
+
+    Merges the four chip catalogs (``<base>_<chip>.cat``) of each exposure
+    into ``<base>_exp.cat``, runs SCAMP once over all exposure catalogs
+    (``STABILITY_TYPE INSTRUMENT``, ``ASTRINSTRU_KEY FILTER``: one
+    distortion/focal-plane solution per filter directory), then splits the
+    resulting ``.head`` into ``<base>_<chip>.head`` for SWarp and writes a QA
+    table.
+
+    Parameters
+    ----------
+    chip_files : list of str
+        Chip images ``<base>_<chip>.fits`` (their ``.cat`` must exist) from
+        one filter directory.
+    astrometric_catalog : str, optional
+        SCAMP ``ASTREF_CATALOG``. Default: ``'GAIA-DR3'``
+    num_iterations : int, optional
+        Iterations with tightening tolerances (minimum 2). Default: 3
+    configfile : str or None, optional
+        SCAMP configuration; None uses ``scamp.lbc.conf``.
+    astref_epoch : {'FIELDS_AVERAGE', 'ORIGINAL', 'MANUAL'}, optional
+        SCAMP ``ASTREFEPOCH_TYPE``: epoch to which reference-catalog proper
+        motions are propagated. Default: ``'FIELDS_AVERAGE'``
+    qa_file : str or None, optional
+        QA table (ECSV) written into the filter directory; None to skip.
+    max_ref_rms : float, optional
+        Flag chips whose reference-catalog astrometric rms (arcsec, either
+        axis) exceeds this. Default: 0.2 (not yet tuned on real data)
+    min_xy_contrast : float, optional
+        Flag exposures whose SCAMP ``XY_Contrast`` falls below this.
+        Default: 2.0 (not yet tuned on real data)
+    verbose : bool, optional
+
+    Returns
+    -------
+    astropy.table.Table
+        The QA table (one row per exposure chip), or None if SCAMP failed.
+    """
+    scamp_exe = find_astromatic_tool('scamp')
+    if scamp_exe is None:
+        raise RuntimeError("SCAMP is not available. Please install it.")
+    if num_iterations < 2:
+        print('WARNING: Use at least 2 SCAMP iterations. Setting num_iterations = 2...')
+        num_iterations = 2
+
+    if configfile is None:
+        configfile = os.path.join(LBCgo.__path__[0], 'conf', 'scamp.lbc.conf')
+    groups = group_chips_by_exposure(chip_files)
+    workdir = os.path.dirname(os.path.abspath(next(iter(groups.values()))[0]))
+
+    # One merged catalog per exposure
+    exp_cats = {}
+    for base, chips in groups.items():
+        chip_cats = [c.replace('.fits', '.cat') for c in chips]
+        missing = [c for c in chip_cats if not os.path.exists(c)]
+        if missing:
+            raise FileNotFoundError("Missing SExtractor catalogs: "
+                                    "{0}".format(missing))
+        exp_cats[base] = merge_ldac(chip_cats, base + '_exp.cat')
+    if len({len(c) for c in groups.values()}) > 1:
+        print("WARNING: exposures have different numbers of chips; SCAMP's "
+              "FIX_FOCALPLANE assumes a common layout.")
+
+    # SCAMP's option parser splits on spaces: run in the catalog directory
+    # with relative names, and use a space-free copy of the config if needed.
+    stage = None
+    if ' ' in configfile:
+        stage = tempfile.TemporaryDirectory(prefix='lbcgo_scamp_')
+        staged = os.path.join(stage.name, os.path.basename(configfile))
+        shutil.copy(configfile, staged)
+        configfile = staged
+    xmlname = 'scamp.xml'
+    rel_cats = [os.path.relpath(os.path.abspath(c), workdir)
+                for c in exp_cats.values()]
+    try:
+        for scmpiter in range(num_iterations):
+            it = scamp_iteration_settings(scmpiter)
+            cmd = ([scamp_exe] + rel_cats +
+                   ['-c', configfile,
+                    '-MOSAIC_TYPE', it['mosaic_type'],
+                    '-PIXSCALE_MAXERR', it['pixscale_maxerr'],
+                    '-POSANGLE_MAXERR', it['posangle_maxerr'],
+                    '-POSITION_MAXERR', it['position_maxerr'],
+                    '-CROSSID_RADIUS', it['crossid_radius'],
+                    '-AHEADER_SUFFIX', it['aheader_suffix'],
+                    '-ASTREF_CATALOG', astrometric_catalog,
+                    '-ASTREFEPOCH_TYPE', astref_epoch,
+                    '-STABILITY_TYPE', 'INSTRUMENT',
+                    '-ASTRINSTRU_KEY', 'FILTER',
+                    '-MERGEDOUTCAT_TYPE', 'NONE',
+                    '-XML_NAME', xmlname])
+            if verbose:
+                print('########### SCAMP joint iteration {0} for {1} '
+                      'exposures ###########'.format(scmpiter + 1, len(rel_cats)))
+                print(shlex.join(cmd))
+                proc = Popen(cmd, cwd=workdir, close_fds=True)
+            else:
+                proc = Popen(cmd, cwd=workdir, stdout=DEVNULL,
+                             stderr=DEVNULL, close_fds=True)
+            if proc.wait() != 0:
+                raise RuntimeError("SCAMP exited with status {0} (iteration "
+                                   "{1})".format(proc.returncode, scmpiter + 1))
+    except RuntimeError:
+        raise
+    except Exception as e:
+        print('Oops: SCAMP call:', (e))
+        return None
+    finally:
+        if stage is not None:
+            stage.cleanup()
+
+    # Per-chip heads for SWarp
+    for base, chips in groups.items():
+        split_head(base + '_exp.head', [c.replace('.fits', '.head') for c in chips])
+
+    qa = scamp_qa_table(os.path.join(workdir, xmlname), groups,
+                        max_ref_rms=max_ref_rms,
+                        min_xy_contrast=min_xy_contrast,
+                        astref_catalog=astrometric_catalog,
+                        astref_epoch=astref_epoch)
+    nbad = int(np.sum(qa['bad']))
+    if nbad:
+        print("WARNING: {0} chip astrometric solution(s) flagged; see "
+              "{1}".format(nbad, qa_file))
+    if qa_file is not None:
+        qa.write(os.path.join(workdir, qa_file), overwrite=True)
+    return qa
 
 
 def go_swarp(inputfiles,
@@ -573,6 +886,8 @@ def go_register(filter_directories,
                 astrometric_catalog='GAIA-DR3',
                 scamp_iterations = 3,
                 sextractor_args = None,
+                scamp_joint = True,
+                scamp_args = None,
                 verbose=True):
     """Perform astrometric registration and image combination for LBC chip-extracted data.
     
@@ -616,6 +931,14 @@ def go_register(filter_directories,
         Extra keyword arguments passed to :func:`go_sextractor` (e.g.
         ``dict(detect_thresh=3, back_size=64, use_weight=False)``).
         Default: None
+    scamp_joint : bool, optional
+        Solve all exposures of a filter directory with one SCAMP run
+        (:func:`go_scamp_joint`; focal-plane and distortion shared across
+        exposures, writes ``astrometry_qa.ecsv``). False restores the legacy
+        independent per-chip solutions (:func:`go_scamp`). Default: True
+    scamp_args : dict or None, optional
+        Extra keyword arguments for :func:`go_scamp_joint` (e.g.
+        ``dict(max_ref_rms=0.1)``). Default: None
     verbose : bool, optional
         Print detailed processing information and command outputs. Default: True
         
@@ -677,16 +1000,22 @@ def go_register(filter_directories,
             for fl in fls:
                 input_filenames.append(fl)
 
-        # Loop through the files
-        # go_sextractor = find sources
-        # go_scamp = calculate astrometry
-        for filename in input_filenames:
-            # Find sources for alignment
-            if do_sextractor:
+        # go_sextractor = find sources (per chip)
+        if do_sextractor:
+            for filename in input_filenames:
                 go_sextractor(filename, verbose=verbose,
                               **(sextractor_args or {}))
-            # Calculate the astrometry
-            if do_scamp:
+
+        # go_scamp_joint = one solution for all exposures in this directory;
+        # go_scamp = legacy independent solution for each chip
+        if do_scamp and scamp_joint and input_filenames:
+            go_scamp_joint(input_filenames,
+                           astrometric_catalog=astrometric_catalog,
+                           num_iterations=scamp_iterations,
+                           verbose=verbose,
+                           **(scamp_args or {}))
+        elif do_scamp:
+            for filename in input_filenames:
                 go_scamp(filename,
                          astrometric_catalog=astrometric_catalog,
                          num_iterations=scamp_iterations,
