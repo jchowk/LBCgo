@@ -774,17 +774,15 @@ note it in the README).
 
 ## 11. Open items for the PI
 
-1. Paths/IDs of the V1–V6 datasets (§5.6).
+1. Paths/IDs of the V1–V6 datasets (§5.6). This will come later.
 2. ~~LBCR chip layout~~: resolved for chips 1–2 (§3.3): same CRPIX scheme and
    spacing, reference point offset (+43, −11) px. Chip 4 is rotated 90° on
    the sky with the same readout layout (Speziali et al. 2008; PI). Left: the
-   low-priority header check in §5.1.
-3. Any known LBC hardware changes (detector/corrector swaps) that should
-   bound distortion-model validity ranges.
-4. Preferred coadd flux unit (current: ADU scaled to reference exposure;
-   alternative: ADU/s or e⁻/s).
+   low-priority header check in §5.1. We will need to examine the headers from all four chips to verify their known locations with respect to the central chip (chip #2 in extension 2). 
+3. There are no hardware changes that should affect the result over time (other than perhaps some natural drift that could change things over time).
+4. Preferred coadd flux unit is ADU/s.
 5. Bias and flat pairs (per channel, several epochs) for the gain/read-noise
-   table (§5.2).
+   table (§5.2) will be collected. This is a later priority.
 
 ---
 
