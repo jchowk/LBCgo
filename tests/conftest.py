@@ -109,6 +109,18 @@ def write_lbc_file(directory, filename, **kwargs):
 # ---------------------------------------------------------------------------
 # Directory fixtures
 # ---------------------------------------------------------------------------
+@pytest.fixture(autouse=True)
+def chdir_to_tmp(tmp_path, monkeypatch):
+    """Run every test with cwd = tmp_path.
+
+    Tests that use the default image_directory='./' (e.g. go_extractchips'
+    data/ directory) would otherwise write wherever pytest was launched.
+    test_directories.py moves the cwd elsewhere to check that non-default
+    directories are honoured.
+    """
+    monkeypatch.chdir(tmp_path)
+
+
 @pytest.fixture
 def raw_dir(tmp_path):
     """A tmp raw/ subdirectory."""

@@ -16,12 +16,7 @@ from astropy.io import fits
 import ccdproc
 from ccdproc import  ImageFileCollection,CCDData
 
-# Package import; fall back to a bare import when lbcproc.py is used from
-# inside the LBCgo/ directory without the package being importable.
-try:
-    from LBCgo.lbcregister import *
-except ImportError:
-    from lbcregister import *
+from .lbcregister import *
 
 
 # Suppress some of the WCS warnings
