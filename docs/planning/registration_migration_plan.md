@@ -251,6 +251,10 @@ LBCgo/
   conf/distortion/
     lbcb_<version>.fits one HDU per chip (TAN-SIP header) + metadata table
     lbcr_<version>.fits
+calibration/            (top level, not shipped in the package; §9.1)
+  README.md             provenance convention
+  NEW_PRODUCT.md        README skeleton for a new calibration product
+  <product>_<version>/  README.md, inputs.ecsv, run.py per product
 ```
 
 Public API (backwards compatible):
@@ -330,8 +334,10 @@ Purpose: a fair benchmark and an immediate improvement for users.
       `conf/lbc_detector.ecsv` with validity ranges. Check the LBCB results
       against Giallongo et al. (2008) Table 1 (§3.3), which seeds the
       LBCB rows for now (open date range, source = the paper; PI decision
-      2026-10-04, branch `claude/seed-lbcb-detector-table`). Replace or
-      date-limit those rows once measured values exist.
+      2026-10-04, PR jchowk/LBCgo#6; provenance in
+      `calibration/gain_rdnoise_lbcb_giallongo2008/`). Replace or
+      date-limit those rows once measured values exist, and record each
+      measurement run in its own `calibration/` directory (§9.1).
 - [ ] (Optional, matters for low-surface-brightness work.) Electronic
       cross-talk ~3 × 10⁻⁵ (Giallongo et al. 2008): a saturated star
       imprints ~2 ADU ghosts in the other chips/channels. Either correct it
@@ -635,6 +641,31 @@ more than the star density of any single field:
 - **Hold out a test subset** of exposures (different nights) for the
   polynomial-order choice (step 4) and residual maps.
 
+Calibration inputs (form of the data):
+- **Raw** multi-extension `lbcb.*` / `lbcr.*` frames as delivered by the
+  archive (~85 MB each). `calibrate.py` reads them directly and does
+  overscan subtraction and trimming itself, reusing `go_overscan`'s
+  per-chip code (factor it out rather than duplicating it), so positions are
+  in the same trimmed chip coordinates the pipeline uses. It also writes the
+  saturation mask: saturated stars give biased centroids.
+- **No bias frames:** the overscan removes the bias level; a separate bias
+  frame does not change centroids.
+- **Flat optional**, used only for the bad-pixel mask (`masks.flat_mask`)
+  and for more uniform detection depth in the vignetted corners. Any flat
+  from a nearby epoch will do; flat fielding does not move centroids
+  measurably (the pixel-to-pixel term is ~0.01 px for a bright star,
+  estimated, below the 10–30 mas per-exposure turbulence), and the
+  pixel-area effect changes fluxes, not positions.
+- Header keywords used: `MJD_OBS` (proper-motion epoch), `CRVAL`/`CRPIX`/
+  `CD` (starting WCS), `PA_PNT`, `ROTANGLE`, `AIRMASS`, `FILTER`,
+  `INSTRUME`/`DETECTOR`. `go_overscan` strips `ROTANGLE`/`PARANGLE` from
+  the chip headers but keeps them in the primary header.
+- Outputs: the model file in `LBCgo/conf/distortion/` (with a `PROVENANCE`
+  keyword naming its `calibration/` directory) and that directory's
+  README, `inputs.ecsv` and `run.py` (§9.1). Matched star catalogs
+  (exposure, chip, x, y, Gaia `source_id`, MJD) go to a Zenodo deposit or
+  release asset so the fit can be redone without the raw frames.
+
 Calibration fit (`calibrate.py`, run by the PI on V1/V2):
 1. For each calibration exposure: detect (§6.1), initial WCS from header,
    coarse offset search (§6.3.3), match to Gaia.
@@ -830,6 +861,23 @@ note it in the README).
   `merge_ldac`, `split_head`, XML QA parsing.
 - photutils 3 uses new attribute names (`n_pixels`, `x_centroid`, …):
   use the new names from the start; set `photutils.future_column_names = True`.
+
+### 9.1 Calibration provenance
+
+Convention set out in `calibration/README.md` (PI decision 2026-10-04):
+- Code that derives a calibration lives in the package, with tests
+  (`LBCgo/detector.py` now; `LBCgo/register/calibrate.py` later).
+- Products the pipeline reads live in `LBCgo/conf/` and point back to
+  their provenance (`source` column; `PROVENANCE` header keyword).
+- How each product was made lives in a top-level `calibration/<product>/`
+  directory: README (date, who, LBCgo commit, product checksums, results),
+  `inputs.ecsv` (archive filenames / `OBS_ID`s, MJD, channel, filter,
+  role) and `run.py` (orchestration only; data paths from an environment
+  variable). New versions get new directories.
+- Raw frames stay out of git. Intermediate catalogs small enough (≲ 5 MB
+  compressed) can be committed; otherwise Zenodo or a release asset.
+- `.gitignore` ignores `temp*` and `_*`: do not name files in
+  `calibration/` "template…" or with a leading underscore.
 
 ---
 
