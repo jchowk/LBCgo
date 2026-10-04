@@ -74,7 +74,8 @@ chip file individually**, runs `go_sextractor` then `go_scamp`; then runs
 - Useful keywords: `MJD_OBS` (epoch for proper motions), `LBCFWHM` (seeing,
   arcsec), `DITHSEQ/DITHOFFX/DITHOFFY`, `INSTRUME`, `DETECTOR`,
   `FILTER`, `AIRMASS`, `EXPTIME`, `LBCCHIP1..4` (chip on/off), `DETSEC`.
-- **LBCR vs LBCB layout** (chips 1–2 compared; chips 3–4 not yet seen):
+- **LBCR vs LBCB layout** (chips 1–2 compared from headers; chip 4 is
+  rotated on the sky, see "Detector arrangement" below):
   | | LBCB | LBCR |
   |---|---|---|
   | `CRPIX1` chip 1 / chip 2 | −1087 / 1035 | −1044 / 1078 |
@@ -98,6 +99,30 @@ chip file individually**, runs `go_sextractor` then `go_scamp`; then runs
     nominal readout layout. Do not use `DETSEC` geometrically; the
     distortion calibration fits chip placement (the 25-px ≈ 5.6″ difference
     is inside the ±60″ offset search).
+- **Detector arrangement and optics** (Speziali et al. 2008, SPIE 7014,
+  70144T; read in full):
+  - Both cameras use the same arrangement: four E2V 42-90 CCDs, three side
+    by side and **chip 4 rotated 90° on the sky** above them (paper Figs. 3,
+    4), ~0.23″/px, plus two small technical chips for guiding/active optics.
+  - **The rotation is on the sky only.** In the raw readout frame all four
+    chips have the same layout (2304 × 4608, overscan along x), as the PI's
+    raw NGC 891 display shows, so `go_overscan`'s `overscan_axis=1` is
+    correct for every chip (verification item in §5.1). Chip 4's rotation
+    lives in its WCS (CD matrix); the distortion model (§6.3.2) must take
+    its orientation from the header, not assume it matches chips 1–3.
+  - The two correctors were built with "the same focal plane scale and even
+    the geometrical distortions ... forced to be the same" (§3.1). But the
+    red corrector is BK7 (blue: fused silica) and has a 10 % larger field of
+    view, chosen "to remove the small vignetting that affected the LBCB".
+    → Vignetting masks matter mainly for LBCB (§5.2); the LBCB distortion
+    model is a good starting guess for LBCR but is fitted separately
+    (§6.3.2).
+  - Detectors are coplanar to ±13.5 µm (one pixel) without shimming.
+  - The paper notes that the distortion "is visible on the raw frames as a
+    background enhancement in the central part of the images, that must not
+    be confused with genuine flat field effect": the **pixel solid angle
+    varies across the field**. See the surface-brightness requirement in
+    §6.4.
 - **Header traps:**
   - `INSTRUME` is spelled inconsistently: `'LBC_BLUE'` (underscore) vs
     `'LBC-RED '` (hyphen, trailing space); the header comment says
@@ -116,6 +141,8 @@ chip file individually**, runs `go_sextractor` then `go_scamp`; then runs
   LBCB 1.96–2.09 e⁻/ADU and LBCR 2.08–2.14 e⁻/ADU, read noise 4.8–5.3 ADU
   (≈ 10–11 e⁻); LBC papers quote ~2.02 e⁻/ADU & 5.0 ADU and ~1.75 e⁻/ADU &
   ~9 ADU (arXiv:1703.09874, arXiv:2305.10516; attribution not checked).
+  Speziali et al. (2008) give the red-camera controller read noise as
+  "< 10 e⁻ @500 Kpix/s/ch", another sign that `RDNOISE = 12` is nominal.
   Impact: in the sky-limited regime a gain error rescales all exposures of a
   chip alike (coadd weights barely change); it matters where read noise is
   not negligible (LBCB U band: at a 150-ADU sky the header and published
@@ -223,6 +250,13 @@ Purpose: a fair benchmark and an immediate improvement for users.
       `go_swarp`), so an apt install is reported as missing even though the
       README suggests `apt-get`. Check the Homebrew/conda-forge names too.
 
+- [ ] (Low priority; PI expects it to hold.) Confirm from raw headers of
+      both cameras that chips 3 and 4 have the same readout layout as chips
+      1–2 (`NAXIS1/2 = 2304/4608`, `TRIMSEC [51:2098,…]`, `BIASSEC
+      [2099:2304,…]`), i.e. that chip 4's 90° rotation is on the sky only
+      and `go_overscan`'s `overscan_axis=1` is right for all chips. Record
+      chip 4's CD matrix for §6.3.2.
+
 ### 5.2 Weight and mask maps (shared by both back-ends)
 - [x] In `go_flatfield`/`go_extractchips`, write per-chip mask + weight
       (implemented in `LBCgo/masks.py`; the bad-pixel list is an optional
@@ -237,7 +271,10 @@ Purpose: a fair benchmark and an immediate improvement for users.
 - [x] Unit tests with synthetic chips (known bad column, saturated star):
       `tests/test_masks.py`.
 - [ ] Tune `badpix_threshold`/`vignette_threshold` on real LBCB/LBCR flats
-      (defaults 0.2 / 0.5 are untested on real data).
+      (defaults 0.2 / 0.5 are untested on real data). Tune per camera: the
+      LBCR corrector's larger field was designed to remove the vignetting
+      seen in LBCB (§3.3), so expect the threshold to matter mainly for
+      LBCB.
 - [x] Gain/read-noise source for the weights: `LBCgo/detector.py`. Lookup
       order: per-chip row of `conf/lbc_detector.ecsv` (channel, chip, MJD
       validity range) → `GAIN`/`RDNOISE` header keywords → nominal defaults.
@@ -279,6 +316,13 @@ extension per chip.
       to the observation epoch; record the version in QA output.
 
 ### 5.5 SWarp improvements
+- [ ] Keep `FSCALASTRO_TYPE FIXED` (current `swarp.lbc.conf`). Sky-flat-
+      fielded chips are in surface-brightness units (§6.4, "Surface
+      brightness"). As I understand the SWarp manual, `FIXED` applies one
+      constant astrometric flux scale per image while `VARIABLE` applies the
+      local pixel-area ratio, which would apply the distortion's area change
+      a second time. Confirm against the manual of the installed SWarp and,
+      better, with the §6.4 synthetic star-field test.
 - [ ] `-SUBTRACT_BACK N` (sky handled by `register/sky.py`, §6.2, applied
       to chip images before SWarp) — or, if run standalone, `BACK_SIZE ≥ 1024`.
 - [ ] `-WEIGHT_TYPE MAP_WEIGHT` with the §5.2 weights; `-FSCALE_KEYWORD
@@ -390,7 +434,12 @@ reference, e.g. chip 2 `CRPIX = (985, 2924)` after trimming), unit-scaled CD
 (chip rotation/scale relative to the focal plane), and SIP `A/B` (order 3–4)
 with inverse `AP/BP`. One file per channel and model version, with metadata:
 channel, filters, valid MJD range, fit rms, number of exposures, software
-version.
+version. Chip 4 is rotated 90° on the sky relative to chips 1–3 (§3.3):
+take each chip's starting CD matrix from its raw header rather than
+assuming a common orientation. The two correctors were designed with the
+same scale and distortion (Speziali et al. 2008), so the fitted LBCB model
+is a good starting point for LBCR, but LBCR is fitted separately (different
+glass, larger field, different reference point).
 
 Calibration data (V1/V2; selection criteria). The distortion is shared by
 all exposures, and each exposure adds only ~6 parameters of its own, so
@@ -458,8 +507,15 @@ Calibration fit (`calibrate.py`, run by the PI on V1/V2):
    compare displacement maps. Merge filters/epochs whose maps differ by
    < 10 mas rms; otherwise ship separate models with validity ranges.
 6. LBCB sanity check: compare the displacement field with Bellini & Bedin
-   (2010) for B/V.
-7. Write the per-chip TAN-SIP headers; verify forward/inverse SIP
+   (2010) for B/V. Also compare the LBCB and LBCR displacement fields:
+   they were designed to be the same, so large differences beyond chip
+   placement point to a fitting problem or a real optical difference worth
+   understanding.
+7. Produce a relative pixel-area map per chip (determinant of the
+   distortion Jacobian, normalized to the reference point) and ship it with
+   the model. §6.4 needs it for photometry on single, unresampled frames
+   (not for resampling).
+8. Write the per-chip TAN-SIP headers; verify forward/inverse SIP
    round-trip < 0.01 px over each chip.
 
 #### 6.3.3 Per-exposure solve (`register/astrometry.py`, `match.py`)
@@ -495,19 +551,45 @@ and linear terms to < 1 mas; matching robust to 30″ pointing offsets and
 30 % spurious detections. Mock `refcat` in tests.
 
 ### 6.4 Phase 3 — coadd (`register/coadd.py`, `photscale.py`)
+**Surface brightness (requirement).** The distortion changes the pixel solid
+angle across the field (pincushion: pixels cover less sky towards the
+edge; Speziali et al. 2008 note the resulting central "background
+enhancement" in raw frames). A sky flat divides this out, so after
+`go_flatfield` each chip is in **surface-brightness** units: the sky is flat,
+but the summed counts of a star on a single frame are biased by the local
+pixel area (percent level near the edge, given the ≤ 1.75 % distortion
+quoted by Giallongo et al. 2008; the exact area variation comes from the
+fitted model). Therefore:
+- Resample chips as surface brightness, i.e. without a position-dependent
+  pixel-area rescaling. `drizzle` 3.0 with its defaults (`iscale=1`,
+  `in_units='cps'`) already does this; verified 2026-10-04: a uniform input
+  stays uniform under a strong SIP distortion and under a 2× change of
+  pixel scale, and the output sum of a point source scales with the local
+  Jacobian (27.92 vs 25 × J = 27.92 at a corner). So drizzle the
+  sky-flattened chips directly. **Do not** multiply them by a pixel-area
+  map first: that would apply the area correction twice. Do not set
+  `iscale`/`pixel_scale_ratio` to anything but a constant.
+- Required test: a synthetic star field with known fluxes and a known
+  distortion, "sky-flattened" (divided by its relative pixel area), must
+  come out of the coadd with fluxes independent of position to < 0.2 %.
+- Any photometry on single, unresampled frames (step 2, QA) must divide by
+  the pixel-area map (§6.3.2 step 7), or be done on the resampled images.
+
 1. Output grid: TAN, north up, pixel scale 0.224″ (configurable), bounds
    from all chip footprints (`reproject.mosaicking.find_optimal_celestial_wcs`
    with `resolution` fixed, or own bounding-box code).
 2. Flux scaling: per exposure, relative zero point from the median
    magnitude difference of matched stars vs a reference exposure (highest
-   transparency); store `FLXSCALE` in headers. Absolute calibration is out of
+   transparency), with single-frame fluxes corrected by the pixel-area map
+   (see "Surface brightness" above; a dithered star sits at different
+   field positions in different exposures); store `FLXSCALE` in headers. Absolute calibration is out of
    scope (later: Gaia XP synthetic photometry, separate ToDo).
 3. Pixel maps: evaluate the input→output mapping (chip WCS → sky → output
    pixel) on a coarse grid (every 32 px) and interpolate bicubically; require
    max interpolation error < 0.01 px (test). Build `drizzle` pixmap arrays
    from this.
-4. Resample each exposure (sky-subtracted, scaled) with
-   `drizzle.resample.Drizzle` (`kernel='square'`, `pixfrac=1.0` default;
+4. Resample each exposure (sky-subtracted, scaled; surface-brightness
+   units, see above) with `drizzle.resample.Drizzle` (`kernel='square'`, `pixfrac=1.0` default;
    `lanczos3` optional) using the §5.2 weight maps; write one resampled
    science + weight layer per exposure to disk (`np.memmap` or zarr).
    Expected size: ~7000 × 7000 float32 ≈ 200 MB per layer.
@@ -615,8 +697,9 @@ note it in the README).
 
 1. Paths/IDs of the V1–V6 datasets (§5.6).
 2. ~~LBCR chip layout~~: resolved for chips 1–2 (§3.3): same CRPIX scheme and
-   spacing, reference point offset (+43, −11) px. Still to see: chips 3–4 of
-   each camera (orientation of chip 4).
+   spacing, reference point offset (+43, −11) px. Chip 4 is rotated 90° on
+   the sky with the same readout layout (Speziali et al. 2008; PI). Left: the
+   low-priority header check in §5.1.
 3. Any known LBC hardware changes (detector/corrector swaps) that should
    bound distortion-model validity ranges.
 4. Preferred coadd flux unit (current: ADU scaled to reference exposure;
@@ -631,7 +714,12 @@ note it in the README).
 - Bellini, A. & Bedin, L. R. 2010, A&A, 517, A34 — LBC-Blue geometric
   distortion correction, ~15 mas. https://www.aanda.org/10.1051/0004-6361/200913783
 - Giallongo, E. et al. 2008, A&A, 482, 349 — LBC-Blue performance; distortion
-  ≤ 1.75 %. https://arxiv.org/abs/0801.1474
+  ≤ 1.75 %. https://arxiv.org/abs/0801.1474 (figures from search snippets;
+  full text not read)
+- Speziali, R. et al. 2008, Proc. SPIE 7014, 70144T — LBC description and
+  performance, both cameras: detector arrangement, correctors designed with
+  equal scale and distortion, LBCR vignetting, read noise, pixel-area
+  background effect. doi:10.1117/12.790132 (read in full)
 - Bertin, E. & Arnouts, S. 1996, A&AS, 117, 393 — SExtractor.
 - Bertin, E. 2006, ASP Conf. Ser., 351, 112 — SCAMP.
 - Bertin, E. et al. 2002, ASP Conf. Ser., 281, 228 — SWarp.
