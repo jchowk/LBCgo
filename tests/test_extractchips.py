@@ -28,8 +28,9 @@ def filter_dir(tmp_path):
 
 @pytest.fixture(autouse=True)
 def chdir_to_tmp(tmp_path, monkeypatch):
-    """go_extractchips creates data/ relative to cwd; set cwd to tmp_path
-    so each test gets its own isolated data/ directory."""
+    """These tests use the default image_directory='./', so go_extractchips
+    creates data/ in the cwd; set cwd to tmp_path so each test gets its own
+    isolated data/ directory. See test_directories.py for non-cwd cases."""
     monkeypatch.chdir(tmp_path)
 
 

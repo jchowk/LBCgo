@@ -218,10 +218,15 @@ def write_master_flat(directory, filter_name='g-SLOAN', pixel_value=20000.0,
 # ---------------------------------------------------------------------------
 @pytest.fixture
 def overscan_files(ic_with_flats, work_dir, raw_dir):
-    """Run go_overscan on object files; return list of _over.fits paths."""
+    """Run go_overscan on object files; return list of _over.fits paths.
+
+    go_overscan returns names relative to image_directory, so join them
+    with work_dir to get paths that do not depend on the cwd.
+    """
     from LBCgo.lbcproc import go_overscan
-    return go_overscan(ic_with_flats,
-                       image_directory=str(work_dir) + '/',
-                       raw_directory=str(raw_dir) + '/',
-                       verbose=False,
-                       return_files=True)
+    names = go_overscan(ic_with_flats,
+                        image_directory=str(work_dir) + '/',
+                        raw_directory=str(raw_dir) + '/',
+                        verbose=False,
+                        return_files=True)
+    return [str(work_dir / name) for name in names]
