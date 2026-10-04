@@ -110,12 +110,13 @@ grid and interpolate (§6.4).
 ```
 LBCgo/
   lbcproc.py            (existing; fix relative import; add weight/mask output)
+  masks.py              bad-pixel / saturation / vignetting masks, weight maps
+                        (done; top level because lbcproc produces them)
   lbcregister.py        (existing astromatic back-end, improved in Phase 0;
                          go_register becomes a dispatcher)
   register/             (new, in-process back-end)
     __init__.py
     config.py           dataclasses with all tunables + defaults
-    masks.py            bad-pixel / saturation / vignetting masks, weight maps
     detect.py           sep-based detection for alignment
     sky.py              science-sky models (default + extended-target mode)
     refcat.py           Gaia DR3 query, cache, epoch propagation, quality cuts
@@ -160,14 +161,16 @@ alternate WCS `O`), `<filterdir>/astrometry_qa.ecsv`.
 Purpose: a fair benchmark and an immediate improvement for users.
 
 ### 5.1 Housekeeping
-- [ ] `lbcproc.py:20` → `from .lbcregister import *`; confirm `import LBCgo`
+- [x] `lbcproc.py:20` → `from .lbcregister import *`; confirm `import LBCgo`
       works without `PYTHONPATH` hacks; run tests.
-- [ ] `pyproject.toml`: `requires-python = ">=3.11"`, `numpy>=2`,
+- [x] `pyproject.toml`: `requires-python = ">=3.11"`, `numpy>=2`,
       `astropy>=6.1.4`, `ccdproc>=2.5`; add `scipy`. (New deps added in later
       phases.) Update README/`docs/installation.rst`.
 
 ### 5.2 Weight and mask maps (shared by both back-ends)
-- [ ] In `go_flatfield`/`go_extractchips`, write per-chip mask + weight:
+- [x] In `go_flatfield`/`go_extractchips`, write per-chip mask + weight
+      (implemented in `LBCgo/masks.py`; the bad-pixel list is an optional
+      user `badpix_file`, none is shipped yet):
   - saturation: raw ADU ≥ 0.9 × `SATURATE` (must be flagged *before* flat
     division, i.e. carry a mask through `go_overscan` → `go_flatfield`);
   - bad columns: static per-chip bad-pixel list in `conf/` (start from the
@@ -175,7 +178,10 @@ Purpose: a fair benchmark and an immediate improvement for users.
     master flat);
   - vignetting: normalized flat < 0.5 (tunable) → mask; else weight ∝ flat²
     / sky variance (background-limited inverse variance in flattened units).
-- [ ] Unit tests with synthetic chips (known bad column, saturated star).
+- [x] Unit tests with synthetic chips (known bad column, saturated star):
+      `tests/test_masks.py`.
+- [ ] Tune `badpix_threshold`/`vignette_threshold` on real LBCB/LBCR flats
+      (defaults 0.2 / 0.5 are untested on real data).
 
 ### 5.3 SExtractor improvements
 - [ ] Pass `-WEIGHT_TYPE MAP_WEIGHT -WEIGHT_IMAGE <weight>`; `-FLAG_IMAGE`

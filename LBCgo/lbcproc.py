@@ -17,6 +17,8 @@ import ccdproc
 from ccdproc import  ImageFileCollection,CCDData
 
 from .lbcregister import *
+from . import masks as lbcmasks
+from ccdproc.utils.slices import slice_from_string
 
 
 # Suppress some of the WCS warnings
@@ -91,7 +93,10 @@ def go_overscan(image_collection,
                 image_directory='./',
                 raw_directory='./raw/',
                 verbose=True,
-                return_files = True):
+                return_files = True,
+                make_masks=True,
+                saturation_fraction=0.9,
+                saturation_grow=1):
     """Remove overscan and trim LBC object images.
 
     Fits a 4th-order polynomial to each chip's overscan strip (``BIASSEC``),
@@ -119,6 +124,15 @@ def go_overscan(image_collection,
         Print progress messages. Default: True
     return_files : bool, optional
         Return a list of output filenames. Default: True
+    make_masks : bool, optional
+        Also write a saturation mask sidecar ``*_over.mask.fits`` (see
+        :mod:`LBCgo.masks`). Saturation must be measured here, on raw ADU,
+        before overscan subtraction and flat fielding. Default: True
+    saturation_fraction : float, optional
+        Flag raw pixels at or above this fraction of ``SATURATE``.
+        Default: 0.9
+    saturation_grow : int, optional
+        Grow the saturation mask by this many pixels. Default: 1
 
     Returns
     -------
@@ -154,12 +168,27 @@ def go_overscan(image_collection,
         master_hdu = fits.PrimaryHDU(header=base_header)
         # Start output HDU list:
         output_hdu = fits.HDUList([master_hdu])
+        sat_masks = []
+        extnames = []
 
         # Loop through the chips
         for chip in lbc_chips:
             # Create the CCDData version of this chip
             ccd = CCDData.read(raw_directory+filename, chip,
                                unit=u.adu)
+
+            # Flag saturation on the raw ADU, trimmed like the data
+            if make_masks:
+                saturate = lbcmasks.header_value(
+                    'SATURATE', [ccd.header, base_header],
+                    lbcmasks.DEFAULT_SATURATE)
+                sat = lbcmasks.saturation_mask(ccd.data, saturate,
+                                               fraction=saturation_fraction,
+                                               grow=saturation_grow)
+                trim = slice_from_string(ccd.header['TRIMSEC'],
+                                         fits_convention=True)
+                sat_masks.append(np.where(sat[trim], lbcmasks.SATURATED, 0))
+                extnames.append(ccd.header.get('EXTNAME'))
 
             # Fit, subtract overscan
             poly_model = models.Polynomial1D(4)
@@ -204,6 +233,9 @@ def go_overscan(image_collection,
 
         # Write the data
         output_hdu.writeto(output_filename, overwrite=True)
+        if make_masks:
+            lbcmasks.write_sidecar(output_filename, 'mask', sat_masks,
+                                   extnames=extnames)
 
         # Keep track of what files we've written.
         over_files_out.append(output_filename)
@@ -440,6 +472,9 @@ def go_bias(image_collection, bias_file=None,
 
         # Write the output flat-fielded data
         output_hdu.writeto(image_directory + output_filename, overwrite=True)
+        # Carry the saturation mask along to the bias-subtracted file
+        lbcmasks.copy_sidecars(input_directory + file,
+                               image_directory + output_filename)
         zero_corrected.append(output_filename)
 
         if verbose:
@@ -684,7 +719,12 @@ def go_flatfield(image_collection,
                  lbc_chips = True,
                  cosmiccorrect=True,
                  verbose=True,
-                 return_files=False):
+                 return_files=False,
+                 make_weights=True,
+                 vignette_threshold=0.5,
+                 badpix_threshold=0.2,
+                 badpix_box=5,
+                 badpix_file=None):
     """Apply master flat fields to multi-extension FITS object data.
 
     Loops over filters, reads the corresponding master flat, and divides each
@@ -715,6 +755,23 @@ def go_flatfield(image_collection,
         Print progress messages. Default: True
     return_files : bool, optional
         Return a list of output filenames. Default: False
+    make_weights : bool, optional
+        Write mask and inverse-variance weight sidecars
+        (``*_flat.mask.fits``, ``*_flat.weight.fits``; see
+        :mod:`LBCgo.masks`). Saturation flags are taken from the input's
+        ``.mask.fits`` sidecar written by :func:`go_overscan`, if present.
+        Default: True
+    vignette_threshold : float, optional
+        Mask pixels whose median-normalized flat is below this value.
+        Default: 0.5
+    badpix_threshold : float, optional
+        Mask pixels whose flat deviates from its local median by more than
+        this fraction. Default: 0.2
+    badpix_box : int, optional
+        Median-filter box (pixels) used for ``badpix_threshold``. Default: 5
+    badpix_file : str or None, optional
+        Optional bad-pixel region file (lines of ``chip x1 x2 y1 y2``,
+        1-based inclusive, trimmed coordinates). Default: None
 
     Returns
     -------
@@ -743,6 +800,10 @@ def go_flatfield(image_collection,
     # Hold a list of files that get flattened.
     flattened_files = []
 
+    badpix_regions = {}
+    if make_weights and badpix_file is not None:
+        badpix_regions = lbcmasks.read_badpix_regions(badpix_file)
+
     # Loop over the available filters
     for filter in filter_names:
         # Work out which flatfield file we're working with
@@ -761,6 +822,22 @@ def go_flatfield(image_collection,
         if verbose:
              print('\nReading flatfield {0}.'.format(flat_filename))
 
+        # Flat-derived mask bits are the same for every image in this filter
+        flat_norms = []
+        flat_masks = []
+        if make_weights:
+            for chip in lbc_chips:
+                flat_norm = (flatfield_chips[chip-1].data /
+                             np.median(flatfield_chips[chip-1].data))
+                fmask = lbcmasks.flat_mask(flat_norm,
+                                           vignette_threshold=vignette_threshold,
+                                           badpix_threshold=badpix_threshold,
+                                           badpix_box=badpix_box)
+                lbcmasks.apply_badpix_regions(fmask,
+                                              badpix_regions.get(chip, []))
+                flat_norms.append(flat_norm)
+                flat_masks.append(fmask)
+
         # Select the files to be normalized with the current filter
         image_files = image_collection.files_filtered(filter=filter)
 
@@ -772,14 +849,20 @@ def go_flatfield(image_collection,
             # Start output HDU list:
             output_hdu = fits.HDUList([master_hdu])
 
+            mask_arrays = []
+            weight_arrays = []
+            weight_headers = []
+            extnames = []
+
             # Loop through the chips
-            for chip in lbc_chips:
+            for idx, chip in enumerate(lbc_chips):
                 # Create the CCDData version of this chip
                 image = CCDData.read(input_directory+file, chip,
                                      unit=None)
 
                 # Fix cosmic rays
                 if cosmiccorrect:
+                    data_before = image.data.copy()
                     go_cleancosmic(image)
 
                 # Apply the flat
@@ -794,6 +877,38 @@ def go_flatfield(image_collection,
                 # Append the flattened data into output HDU:
                 output_hdu.append(image_normed.to_hdu()[0])
 
+                if make_weights:
+                    mask = flat_masks[idx].copy()
+                    sat = lbcmasks.read_sidecar(input_directory+file,
+                                                'mask', chip)
+                    if sat is not None:
+                        mask |= sat.astype(np.uint8)
+                    if cosmiccorrect:
+                        mask[(image.data != data_before) &
+                             np.isfinite(data_before)] |= lbcmasks.COSMIC
+                    mask[~np.isfinite(image_normed.data)] |= lbcmasks.NONFINITE
+
+                    gain = lbcmasks.header_value(
+                        'GAIN', [image.header, base_header],
+                        lbcmasks.DEFAULT_GAIN)
+                    rdnoise = lbcmasks.header_value(
+                        'RDNOISE', [image.header, base_header],
+                        lbcmasks.DEFAULT_RDNOISE)
+                    sky = lbcmasks.sky_level(image_normed.data, mask)
+                    weight = lbcmasks.inverse_variance_weight(
+                        flat_norms[idx], sky, gain, rdnoise, mask)
+
+                    whdr = fits.Header()
+                    whdr['WGTTYPE'] = ('INVVAR', 'Inverse variance, 1/ADU^2')
+                    whdr['SKYLEVEL'] = (sky, 'Sky level used [flat-fielded ADU]')
+                    whdr['GAIN'] = (gain, 'Gain used [e-/ADU]')
+                    whdr['RDNOISE'] = (rdnoise, 'Read noise used [e-]')
+
+                    mask_arrays.append(mask)
+                    weight_arrays.append(weight)
+                    weight_headers.append(whdr)
+                    extnames.append(image.header.get('EXTNAME'))
+
             # Create the output file name
             #   - Get rid of the overscan or zero labels and the .fits extension.
             #   - Add the _flat tag.
@@ -802,6 +917,13 @@ def go_flatfield(image_collection,
 
             # Write the output flat-fielded data
             output_hdu.writeto(image_directory+output_filename,overwrite=True)
+            if make_weights:
+                lbcmasks.write_sidecar(image_directory+output_filename,
+                                       'mask', mask_arrays, extnames=extnames)
+                lbcmasks.write_sidecar(image_directory+output_filename,
+                                       'weight', weight_arrays,
+                                       extnames=extnames,
+                                       headers=weight_headers)
 
             # Append the flattened image to our final list.
             flattened_files.append(output_filename)
@@ -811,6 +933,7 @@ def go_flatfield(image_collection,
             mvover = Popen(shlex.split(cmd),
                   close_fds=True)
             mvover.wait()
+            lbcmasks.move_sidecars(input_directory+file, datadir)
 
             if verbose:
                 print('Flattened {0} to {1}.'.format(file,output_filename))
@@ -935,6 +1058,7 @@ def make_targetdirectories(image_collection,
         for fl in object_files:
             src = os.path.join(image_collection.location, fl)
             shutil.move(src, dirname)
+            lbcmasks.move_sidecars(src, dirname)
 
 
         # Create filter-specific directories and fill them. For now this just
@@ -972,6 +1096,8 @@ def make_targetdirectories(image_collection,
                                                             filter=filter)
             for fltfl in filter_files:
                 shutil.move(os.path.join(dirname, fltfl), filter_dirname)
+                lbcmasks.move_sidecars(os.path.join(dirname, fltfl),
+                                       filter_dirname)
 
     return object_directories, filter_directories
 
@@ -1066,6 +1192,8 @@ def go_extractchips(filter_directories,
 
             # Write the data
             output_hdu.writeto(output_filename, overwrite=True)
+            # Split the mask/weight sidecars the same way, if present
+            lbcmasks.extract_sidecar_chips(filename, output_filename, chip)
 
             # Keep track of what files we've written.
             chip_files.append(output_filename)
@@ -1079,6 +1207,7 @@ def go_extractchips(filter_directories,
         if os.path.exists(dest):
             os.remove(dest)
         shutil.move(filename, datadir)
+        lbcmasks.move_sidecars(filename, datadir)
 
     # Return the corrected filenames if requested (True is default).
     if return_files == True:
