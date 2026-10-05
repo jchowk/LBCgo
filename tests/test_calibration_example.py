@@ -88,6 +88,9 @@ def example_run(tmp_path):
 def test_example_recovers_gain_and_read_noise(example_run):
     rows = Table.read(example_run / 'detector_rows.ecsv', format='ascii.ecsv')
     assert len(rows) == 8
+    # Same units as conf/lbc_detector.ecsv
+    assert str(rows['gain'].unit) == 'electron / adu'
+    assert str(rows['rdnoise'].unit) == 'electron'
     for row in rows:
         gains, rns = TRUTH[row['channel']]
         assert abs(row['gain'] / gains[row['chip'] - 1] - 1) < 0.03
@@ -100,6 +103,7 @@ def test_example_writes_provenance(example_run):
     assert set(log) >= {'date_utc', 'lbcgo_version', 'lbcgo_commit',
                         'params', 'inputs_sha256', 'outputs_sha256'}
     assert len(log['inputs_sha256']) == 8
+    assert log['params']['cell'] == 50
     per_set = Table.read(example_run / 'results_per_set.ecsv',
                          format='ascii.ecsv')
     assert len(per_set) == 8 and set(per_set['set']) == {1, 2}

@@ -289,3 +289,86 @@ def test_flatfield_empty_table_uses_headers(raw_dir, work_dir, tmp_path):
     with _flatfield_with_table(raw_dir, work_dir, empty) as wh:
         assert all(wh[ext].header['GAINSRC'] == 'header'
                    for ext in range(1, N_CHIPS + 1))
+
+
+# ---------------------------------------------------------------------------
+# Robustness to illumination mismatch between the two flats (cell variance)
+# ---------------------------------------------------------------------------
+
+def _mismatched_pair(rng, mismatch, shape=(600, 600), gain=2.05, rn=11.5,
+                     level_adu=34000.0):
+    """Two flats whose illumination differs by a linear gradient of
+    `mismatch` (fractional, peak to peak across the region), plus biases."""
+    ny, nx = shape
+    xx = np.mgrid[0:ny, 0:nx][1] / nx
+    prnu = 1.0 + 0.01 * rng.standard_normal(shape)
+    signal = level_adu * gain
+    f1 = (rng.poisson(signal * prnu) + rng.normal(0, rn, shape)) / gain
+    f2 = (rng.poisson(0.96 * signal * prnu * (1 + mismatch * (xx - 0.5)))
+          + rng.normal(0, rn, shape)) / gain
+    b1 = rng.normal(0, rn, shape) / gain
+    b2 = rng.normal(0, rn, shape) / gain
+    return f1, f2, b1, b2
+
+
+def test_gain_robust_to_illumination_mismatch():
+    """A 1 % peak-to-peak gradient between flats (as in real twilight pairs)
+    biases a whole-region variance strongly low; 50-px cells do not."""
+    rng = np.random.default_rng(21)
+    frames = _mismatched_pair(rng, 0.01)
+    g_whole, rn_whole = detector.measure_gain_rdnoise(*frames, cell=None)
+    g_cell, rn_cell = detector.measure_gain_rdnoise(*frames)       # cell=50
+    assert g_whole / 2.05 - 1 < -0.05          # the bias seen in real data
+    assert abs(g_cell / 2.05 - 1) < 0.015
+    assert abs(rn_cell / 11.5 - 1) < 0.02
+
+
+def test_gain_cells_match_whole_region_without_mismatch():
+    rng = np.random.default_rng(22)
+    frames = _mismatched_pair(rng, 0.0)
+    g_whole, _ = detector.measure_gain_rdnoise(*frames, cell=None)
+    g_cell, _ = detector.measure_gain_rdnoise(*frames)
+    assert abs(g_cell / g_whole - 1) < 0.01
+    assert abs(g_cell / 2.05 - 1) < 0.015
+
+
+def test_cell_variance_falls_back_to_whole_region():
+    rng = np.random.default_rng(23)
+    d = rng.normal(0, 3.0, (40, 60))
+    assert detector._cell_variance(d, 50, 4.0) == \
+        detector._cell_variance(d, None, 4.0)
+    assert abs(detector._cell_variance(rng.normal(0, 3.0, (500, 500)),
+                                       50, 4.0) / 9.0 - 1) < 0.02
+
+
+# ---------------------------------------------------------------------------
+# Ambiguous (tied) detector-table rows
+# ---------------------------------------------------------------------------
+
+def _two_rows(start_new):
+    nan = np.nan
+    return Table(rows=[('LBCB', 1, 1.96, 11.4, nan, nan, 'old'),
+                       ('LBCB', 1, 1.84, 8.9, start_new, nan, 'new')],
+                 names=detector.TABLE_COLUMNS)
+
+
+def test_lookup_warns_on_tied_open_rows():
+    t = _two_rows(np.nan)
+    with pytest.warns(UserWarning, match='same mjd_start'):
+        assert detector.lookup_detector_params(t, 'LBCB', 1, 60822.3) == \
+            (1.96, 11.4)
+    assert detector.detector_table_conflicts(t) == [('LBCB', 1, None)]
+
+
+def test_lookup_newer_finite_start_supersedes_without_warning(recwarn):
+    t = _two_rows(60822.0)
+    assert detector.lookup_detector_params(t, 'LBCB', 1, 60822.3) == (1.84, 8.9)
+    assert detector.lookup_detector_params(t, 'LBCB', 1, 56981.3) == (1.96, 11.4)
+    assert not [w for w in recwarn if issubclass(w.category, UserWarning)
+                and 'mjd_start' in str(w.message)]
+    assert detector.detector_table_conflicts(t) == []
+
+
+def test_packaged_table_has_no_conflicts():
+    assert detector.detector_table_conflicts(
+        detector.read_detector_table()) == []
