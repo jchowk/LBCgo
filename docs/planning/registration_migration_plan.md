@@ -328,7 +328,17 @@ Purpose: a fair benchmark and an immediate improvement for users.
       validity range) → `GAIN`/`RDNOISE` header keywords → nominal defaults.
       Weight headers record `GAINSRC` (`table`/`header`/`default`).
       Photon-transfer measurement `measure_gain_rdnoise_files(flat1, flat2,
-      bias1, bias2)` handles unequal flat levels.
+      bias1, bias2)` handles unequal flat levels, and measures the variances
+      in 50-px blocks (`cell`): the first real run (2025-05 flats, branch
+      `202505_calibration`) gave LBCB gains 6–12 % below Giallongo et al.
+      Table 1, consistent with illumination differences between the two
+      twilight flats of a pair (different exposure time, time, rotator
+      angle), which a whole-region variance turns into a low gain (−6 % for
+      a 0.5 % peak-to-peak mismatch over 1000 px in simulation; < 0.5 % with
+      blocks). Pick consecutive flats of one sequence at the same rotator
+      angle; avoid z/Y-band flats (fringing). `lookup_detector_params` warns
+      when two matching rows share `mjd_start` (`detector_table_conflicts`
+      lists them): give new rows a finite `mjd_start`.
 - [ ] Measure gain/read noise per chip for LBCB and LBCR from real bias and
       flat pairs (several epochs; run locally) and populate
       `conf/lbc_detector.ecsv` with validity ranges. Check the LBCB results

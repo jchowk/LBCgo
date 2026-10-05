@@ -23,6 +23,7 @@ import os
 import subprocess
 from pathlib import Path
 
+import astropy.units as u
 import numpy as np
 from astropy.io import fits
 from astropy.table import Table, vstack
@@ -36,6 +37,7 @@ HERE = Path(__file__).resolve().parent
 PARAMS = {
     'box': 1000,          # central region of each trimmed chip [px]
     'sigma': 4.0,         # clipping threshold
+    'cell': 50,           # block size for the variances [px]
     'mjd_start': np.nan,  # validity range written to the product rows
     'mjd_end': np.nan,
 }
@@ -89,7 +91,7 @@ def main():
 
         t = detector.measure_gain_rdnoise_files(
             *map(str, flats + biases), box=params['box'],
-            sigma=params['sigma'])
+            sigma=params['sigma'], cell=params['cell'])
         t['set'] = set_id
         t['mjd'] = float(np.mean(rows['mjd_obs']))
         results.append(t)
@@ -113,6 +115,8 @@ def main():
                              float(np.median(results['gain'][sel])),
                              float(np.median(results['rdnoise'][sel])),
                              params['mjd_start'], params['mjd_end'], source))
+    product['gain'].unit = u.electron / u.adu
+    product['rdnoise'].unit = u.electron
     detector.write_detector_table(product, str(HERE / 'detector_rows.ecsv'),
                                   overwrite=True)
 
