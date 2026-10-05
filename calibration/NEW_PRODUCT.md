@@ -18,7 +18,10 @@ Why this product was made and what it is used for in the pipeline.
 
 ## Inputs
 
-`inputs.ecsv`, one row per frame, with at least these columns:
+`inputs.ecsv`, one row per frame, with at least these columns (generate a
+starting table with `python calibration/make_inputs.py <raw_dir> -o
+inputs.ecsv`, filtering by `--channel`, `--imagetyp`, `--object`,
+`--filter`, `--propid`):
 
 | column | meaning |
 |---|---|

@@ -32,7 +32,10 @@ Contents:
   their SHA-256 checksums, and the main results (e.g. fit rms) with any
   caveats.
 - `inputs.ecsv`: one row per input frame (columns in `NEW_PRODUCT.md`).
-  Archive filenames and `OBS_ID`s, not local paths.
+  Archive filenames and `OBS_ID`s, not local paths. Build a first version
+  from a directory of raw frames with [`make_inputs.py`](make_inputs.py)
+  (ccdproc `ImageFileCollection`, same globs and keywords as `lbcgo()`),
+  then edit it down to the frames you want.
 - `run.py`: the driver. It only orchestrates calls into the `LBCgo`
   package and sets parameters; any real logic belongs in the package, with
   tests. Local data paths come from an environment variable or command-line
