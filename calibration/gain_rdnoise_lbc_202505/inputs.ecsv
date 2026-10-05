@@ -45,4 +45,21 @@ lbcr.20250527.025402.fits.gz lbcr1748314408 60822.12087 LBCR R-BESSEL 3.24 flat 
 lbcr.20250527.025734.fits.gz lbcr1748314622 60822.12332 LBCR R-BESSEL 5.24 flat 5 "" SkyFlat flatcalib SkyFlat_BR_pa180 flat 1.07712 10988.0
 lbcr.20250527.030022.fits.gz lbcr1748314784 60822.12526 LBCR R-BESSEL 10.238 flat 6 "" SkyFlat flatcalib SkyFlat_BR_pa180 flat 1.07602 11765.0
 lbcr.20250527.030247.fits.gz lbcr1748314932 60822.12694 LBCR R-BESSEL 15.239 flat 6 "" SkyFlat flatcalib SkyFlat_BR_pa180 flat 1.07561 10862.0
+lbcb.20250527.014007.fits.gz lbcb1748309972 60822.06953 LBCB U-BESSEL 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcb.20250527.014042.fits.gz lbcb1748310007 60822.06993 LBCB U-BESSEL 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcb.20250527.014116.fits.gz lbcb1748310042 60822.07033 LBCB U-BESSEL 0.0 bias 8 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20250527.014153.fits.gz lbcb1748310078 60822.07076 LBCB U-BESSEL 0.0 bias 8 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcb.20250527.024617.fits.gz lbcb1748313934 60822.11547 LBCB B-BESSEL 0.383 flat 7 "" SkyFlat flatcalib SkyFlat_BR_pa0 flat 1.08134 9344.0
+lbcb.20250527.024701.fits.gz lbcb1748313981 60822.11599 LBCB B-BESSEL 0.365 flat 7 "" SkyFlat flatcalib SkyFlat_BR_pa0 flat 1.08072 7772.0
+lbcb.20250527.024758.fits.gz lbcb1748314039 60822.11665 LBCB B-BESSEL 0.484 flat 8 "" SkyFlat flatcalib SkyFlat_BR_pa0 flat 1.07994 10023.0
+lbcb.20250527.024840.fits.gz lbcb1748314083 60822.11713 LBCB B-BESSEL 0.465 flat 8 "" SkyFlat flatcalib SkyFlat_BR_pa0 flat 1.07989 8464.0
+lbcr.20250527.013057.fits.gz lbcr1748309431 60822.06316 LBCR F972N20 0.0 bias 9 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20250527.013124.fits.gz lbcr1748309457 60822.06347 LBCR F972N20 0.0 bias 9 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcr.20250527.013150.fits.gz lbcr1748309484 60822.06378 LBCR F972N20 0.0 bias 10 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20250527.013217.fits.gz lbcr1748309511 60822.06409 LBCR F972N20 0.0 bias 10 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20250527.024608.fits.gz lbcr1748313934 60822.11537 LBCR R-BESSEL 0.34 flat 9 "" SkyFlat flatcalib SkyFlat_BR_pa0 flat 1.08137 5411.0
+lbcr.20250527.024656.fits.gz lbcr1748313981 60822.11593 LBCR R-BESSEL 0.339 flat 9 "" SkyFlat flatcalib SkyFlat_BR_pa0 flat 1.08072 4559.0
+lbcr.20250527.024754.fits.gz lbcr1748314039 60822.11661 LBCR R-BESSEL 0.44 flat 10 "" SkyFlat flatcalib SkyFlat_BR_pa0 flat 1.07994 5760.0
+lbcr.20250527.024836.fits.gz lbcr1748314083 60822.11709 LBCR R-BESSEL 0.439 flat 10 "" SkyFlat flatcalib SkyFlat_BR_pa0 flat 1.07989 4929.0
+
 

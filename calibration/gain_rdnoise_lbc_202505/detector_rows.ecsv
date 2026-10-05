@@ -3,18 +3,18 @@
 # datatype:
 # - {name: channel, datatype: string}
 # - {name: chip, datatype: int32}
-# - {name: gain, datatype: float64}
-# - {name: rdnoise, datatype: float64}
+# - {name: gain, unit: electron / adu, datatype: float64}
+# - {name: rdnoise, unit: electron, datatype: float64}
 # - {name: mjd_start, datatype: float64}
 # - {name: mjd_end, datatype: float64}
 # - {name: source, datatype: string}
 # schema: astropy-2.0
 channel chip gain rdnoise mjd_start mjd_end source
-LBCB 1 1.8547152095406545 8.977852128281398 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo b8f7aa698a)"
-LBCB 2 1.7768775154729848 9.784462333706912 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo b8f7aa698a)"
-LBCB 3 1.8051661169090754 9.173847867948352 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo b8f7aa698a)"
-LBCB 4 1.7110370508829806 9.305289997537933 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo b8f7aa698a)"
-LBCR 1 1.8170238817082156 10.168843899822136 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo b8f7aa698a)"
-LBCR 2 1.8057064162974865 13.113687281315906 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo b8f7aa698a)"
-LBCR 3 1.7966335718508986 10.043409492626624 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo b8f7aa698a)"
-LBCR 4 1.853088974805646 9.85023013273164 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo b8f7aa698a)"
+LBCB 1 1.8536068167875688 8.97547567786822 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo 5068d5db11)"
+LBCB 2 1.7753117680660924 9.942290468101342 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo 5068d5db11)"
+LBCB 3 1.797956382844815 9.273650592777846 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo 5068d5db11)"
+LBCB 4 1.7109396643774686 9.261998212762743 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo 5068d5db11)"
+LBCR 1 1.8021319310832948 10.08622256307331 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo 5068d5db11)"
+LBCR 2 1.7991160845173493 13.111842670952395 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo 5068d5db11)"
+LBCR 3 1.7908344752806769 10.0300538231757 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo 5068d5db11)"
+LBCR 4 1.8346058547783022 9.784639953183579 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo 5068d5db11)"
