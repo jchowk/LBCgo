@@ -1,0 +1,22 @@
+# %ECSV 1.0
+# ---
+# datatype:
+# - {name: channel, datatype: string}
+# - {name: chip, datatype: int64}
+# - {name: gain, unit: electron / adu, datatype: float64}
+# - {name: rdnoise, unit: electron, datatype: float64}
+# - {name: mjd_start, datatype: float64}
+# - {name: mjd_end, datatype: float64}
+# - {name: source, datatype: string}
+# - {name: set, datatype: int64}
+# - {name: mjd, datatype: float64}
+# schema: astropy-2.0
+channel chip gain rdnoise mjd_start mjd_end source set mjd
+LBCB 1 1.8404538524410103 8.94012196581704 nan nan "PTC: lbcb.20250527.115244.fits.gz, lbcb.20250527.115443.fits.gz; lbcb.20250527.013052.fits.gz, lbcb.20250527.013126.fits.gz" 1 60822.279475
+LBCB 2 1.8340622918196983 10.192792433448263 nan nan "PTC: lbcb.20250527.115244.fits.gz, lbcb.20250527.115443.fits.gz; lbcb.20250527.013052.fits.gz, lbcb.20250527.013126.fits.gz" 1 60822.279475
+LBCB 3 1.8616046626152336 9.640566851244754 nan nan "PTC: lbcb.20250527.115244.fits.gz, lbcb.20250527.115443.fits.gz; lbcb.20250527.013052.fits.gz, lbcb.20250527.013126.fits.gz" 1 60822.279475
+LBCB 4 1.7450568840946383 9.472835866202676 nan nan "PTC: lbcb.20250527.115244.fits.gz, lbcb.20250527.115443.fits.gz; lbcb.20250527.013052.fits.gz, lbcb.20250527.013126.fits.gz" 1 60822.279475
+LBCR 1 1.7735527008628456 9.94658223080838 nan nan "PTC: lbcr.20250527.113400.fits.gz, lbcr.20250527.114216.fits.gz; lbcr.20250527.012911.fits.gz, lbcr.20250527.012937.fits.gz" 2 60822.273455
+LBCR 2 1.7372417186170277 12.724588366805204 nan nan "PTC: lbcr.20250527.113400.fits.gz, lbcr.20250527.114216.fits.gz; lbcr.20250527.012911.fits.gz, lbcr.20250527.012937.fits.gz" 2 60822.273455
+LBCR 3 1.7332033369943198 9.712343061841397 nan nan "PTC: lbcr.20250527.113400.fits.gz, lbcr.20250527.114216.fits.gz; lbcr.20250527.012911.fits.gz, lbcr.20250527.012937.fits.gz" 2 60822.273455
+LBCR 4 1.7449508747563356 9.316603871718918 nan nan "PTC: lbcr.20250527.113400.fits.gz, lbcr.20250527.114216.fits.gz; lbcr.20250527.012911.fits.gz, lbcr.20250527.012937.fits.gz" 2 60822.273455

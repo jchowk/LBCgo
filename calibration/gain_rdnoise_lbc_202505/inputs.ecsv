@@ -1,0 +1,31 @@
+# %ECSV 1.0
+# ---
+# datatype:
+# - {name: filename, datatype: string}
+# - {name: obs_id, datatype: string}
+# - {name: mjd_obs, datatype: float64}
+# - {name: channel, datatype: string}
+# - {name: filter, datatype: string}
+# - {name: exptime, datatype: float64}
+# - {name: role, datatype: string}
+# - {name: set, datatype: int64}
+# - {name: notes, datatype: string}
+# - {name: object, datatype: string}
+# - {name: propid, datatype: string}
+# - {name: lbcobnam, datatype: string}
+# - {name: imagetyp, datatype: string}
+# - {name: airmass, datatype: float64}
+# - {name: median_adu, datatype: float64}
+# meta: !!omap
+# - comments: [Calibration inputs built by calibration/make_inputs.py from 2025.05_calib/., role from IMAGETYP; set = channel + UT date.
+#       Review and edit before use (e.g. 2 flats + 2 biases per set for gain/read noise).]
+# schema: astropy-2.0
+filename obs_id mjd_obs channel filter exptime role set notes object propid lbcobnam imagetyp airmass median_adu
+lbcb.20250527.013052.fits.gz lbcb1748309417 60822.0631 LBCB U-BESSEL 0.0 bias 1 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcb.20250527.013126.fits.gz lbcb1748309452 60822.0635 LBCB U-BESSEL 0.0 bias 1 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcb.20250527.115244.fits.gz lbcb1748346727 60822.49496 LBCB SDT_Uspec 0.782 flat 1 "" SkyFlat flatcalib SkyFlat_SY_pa0 flat 1.17767 34751.0
+lbcb.20250527.115443.fits.gz lbcb1748346841 60822.49634 LBCB SDT_Uspec 0.572 flat 1 "" SkyFlat flatcalib SkyFlat_SY_pa0 flat 1.18053 33289.0
+lbcr.20250527.012911.fits.gz lbcr1748309325 60822.06194 LBCR F972N20 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20250527.012937.fits.gz lbcr1748309351 60822.06224 LBCR F972N20 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20250527.113400.fits.gz lbcr1748345605 60822.48195 LBCR z-SLOAN 15.909 flat 2 "" SkyFlat flatcalib SkyFlat_gz_pa0 flat 1.15955 26290.0
+lbcr.20250527.114216.fits.gz lbcr1748346105 60822.48769 LBCR z-SLOAN 2.479 flat 2 "" SkyFlat flatcalib SkyFlat_gz_pa180 flat 1.16707 25345.0

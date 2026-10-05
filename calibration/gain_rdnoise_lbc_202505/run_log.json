@@ -1,0 +1,25 @@
+{
+  "date_utc": "2026-10-05T00:50:33.960290+00:00",
+  "lbcgo_version": "0.1.6",
+  "lbcgo_commit": "0e2c77646805498f33c7a05c276f626ec9b44e3c",
+  "params": {
+    "box": 1000,
+    "sigma": 4.0,
+    "mjd_start": null,
+    "mjd_end": null
+  },
+  "inputs_sha256": {
+    "lbcb.20250527.013052.fits.gz": "cbc0ce94e135d0052cd04bc29d4315ffda5ba11571342e228e726dca5f99485e",
+    "lbcb.20250527.013126.fits.gz": "b235236d540afc3099ff38bd131968e86eca3577f5a306fe9a03c8969f9e26d3",
+    "lbcb.20250527.115244.fits.gz": "07ae96025d7788deab6f2da3c1ed138fa5cf3fa0cc7d497f9276317bb3b3e1e5",
+    "lbcb.20250527.115443.fits.gz": "2dd7332e477f56eebaefde58af916dda0199bf57e89c5dd770a0ebb10d443168",
+    "lbcr.20250527.012911.fits.gz": "2aa1bec6e9b655f134089a2a9389005e71a58e0b89b04ff0481d42fa4425c9fe",
+    "lbcr.20250527.012937.fits.gz": "c325c21a4b38b88bef79a3ae7819a512c92ffda9f08bab13123ffb503b37936e",
+    "lbcr.20250527.113400.fits.gz": "1d819c5a76cd80db9cbba5f5d69f09fa428b054011f20a5e68f44bc4a714e0d1",
+    "lbcr.20250527.114216.fits.gz": "ccbc58f25e2053bf24dafcd252e775d023d7678241232a6dc1374fbe0cc679a3"
+  },
+  "outputs_sha256": {
+    "results_per_set.ecsv": "125a12930dd8f01fcb822150e9ef0438dc3c3c32ee22dea21f2e42701196bcb6",
+    "detector_rows.ecsv": "bb73a905598a60e96aa77c16bf6c193c1075a79e36e6437feac9346db18291d5"
+  }
+}
