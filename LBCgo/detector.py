@@ -41,6 +41,9 @@ from . import masks as lbcmasks
 DEFAULT_TABLE = os.path.join(os.path.dirname(__file__), 'conf',
                              'lbc_detector.ecsv')
 
+PTC_COLUMNS = ['level', 'rdnoise_adu', 'k', 'rho_x', 'rho_y', 'bias_rho_x',
+               'bias_rho_y', 'gain_nn']
+
 TABLE_COLUMNS = ['channel', 'chip', 'gain', 'rdnoise', 'mjd_start',
                  'mjd_end', 'source']
 
@@ -214,6 +217,107 @@ def _cell_variance(data, cell, sigma):
     return float(np.nanmedian(np.asarray(std) ** 2))
 
 
+def _cell_correlations(data, cell, sigma):
+    """Nearest-neighbour correlation coefficients (rho_x, rho_y).
+
+    In each ``cell`` x ``cell`` block (whole array if ``cell`` is None or too
+    large) the clipped mean is removed and pixels beyond ``sigma`` are
+    ignored; rho is the lag-1 covariance along x (y) divided by the
+    variance. Returns the medians over blocks. Independent pixels give 0;
+    the brighter-fatter effect gives positive values that grow with signal.
+    """
+    data = np.asarray(data, dtype=float)
+    ny, nx = data.shape
+    if cell is None or cell >= min(ny, nx):
+        blocks = data[np.newaxis]
+    else:
+        ncy, ncx = ny // cell, nx // cell
+        blocks = (data[:ncy * cell, :ncx * cell]
+                  .reshape(ncy, cell, ncx, cell)
+                  .transpose(0, 2, 1, 3)
+                  .reshape(ncy * ncx, cell, cell))
+    mean, _, std = sigma_clipped_stats(blocks, sigma=sigma, axis=(1, 2))
+    mean = np.asarray(mean)[:, None, None]
+    std = np.asarray(std)[:, None, None]
+    d = blocks - mean
+    d = np.where(np.abs(d) > sigma * std, np.nan, d)
+    var = np.nanmean(d ** 2, axis=(1, 2))
+    rho_x = np.nanmean(d[:, :, :-1] * d[:, :, 1:], axis=(1, 2)) / var
+    rho_y = np.nanmean(d[:, :-1, :] * d[:, 1:, :], axis=(1, 2)) / var
+    return float(np.nanmedian(rho_x)), float(np.nanmedian(rho_y))
+
+
+def measure_ptc(flat1, flat2, bias1, bias2, sigma=4.0, cell=50):
+    """Photon-transfer measurement with diagnostics.
+
+    Same method as :func:`measure_gain_rdnoise` (see there), returning a
+    dict with:
+
+    gain, rdnoise
+        e-/ADU and e-.
+    level
+        Mean bias-subtracted signal of the two flats [ADU]. The apparent
+        gain can depend on it (brighter-fatter effect, non-linearity), so
+        measurements at several levels are fitted with
+        :func:`fit_gain_vs_level`.
+    rdnoise_adu
+        Read noise [ADU]; independent of the gain.
+    k
+        mu_1 / mu_2.
+    rho_x, rho_y
+        Nearest-neighbour correlation coefficients of the flat difference
+        (:func:`_cell_correlations`). Positive values growing with level
+        indicate the brighter-fatter effect: charge pushed into
+        neighbouring pixels lowers the per-pixel variance and raises the
+        apparent gain.
+    bias_rho_x, bias_rho_y
+        The same for the bias difference (electronic correlations).
+    gain_nn
+        Diagnostic gain with the nearest-neighbour covariances added back to
+        the variances, var * (1 + 2 rho_x + 2 rho_y). If the level
+        dependence comes from the brighter-fatter effect this is much less
+        level-dependent than ``gain``. It ignores longer-range covariances,
+        so it is a test of the explanation, not the adopted value.
+    """
+    f1 = np.asarray(flat1, dtype=float)
+    f2 = np.asarray(flat2, dtype=float)
+    b1 = np.asarray(bias1, dtype=float)
+    b2 = np.asarray(bias2, dtype=float)
+
+    _, m_b1, _ = sigma_clipped_stats(b1, sigma=sigma)
+    _, m_b2, _ = sigma_clipped_stats(b2, sigma=sigma)
+    bias_level = 0.5 * (m_b1 + m_b2)
+    _, mu1, _ = sigma_clipped_stats(f1 - bias_level, sigma=sigma)
+    _, mu2, _ = sigma_clipped_stats(f2 - bias_level, sigma=sigma)
+    if mu1 <= 0 or mu2 <= 0:
+        raise ValueError('Flats must be brighter than the biases.')
+    k = mu1 / mu2
+
+    diff_ff = (f1 - bias_level) - k * (f2 - bias_level)
+    diff_bb = b1 - b2
+    var_ff = _cell_variance(diff_ff, cell, sigma)
+    read_var = 0.5 * _cell_variance(diff_bb, cell, sigma)
+
+    noise = var_ff - (1.0 + k ** 2) * read_var
+    if noise <= 0:
+        raise ValueError('Flat difference is not noisier than the read '
+                         'noise; flats too faint?')
+    gain = mu1 * (1.0 + k) / noise
+
+    rho_x, rho_y = _cell_correlations(diff_ff, cell, sigma)
+    brho_x, brho_y = _cell_correlations(diff_bb, cell, sigma)
+    noise_nn = (var_ff * (1 + 2 * (rho_x + rho_y))
+                - (1.0 + k ** 2) * read_var * (1 + 2 * (brho_x + brho_y)))
+    gain_nn = mu1 * (1.0 + k) / noise_nn if noise_nn > 0 else np.nan
+
+    return {'gain': float(gain), 'rdnoise': float(gain * np.sqrt(read_var)),
+            'level': float(0.5 * (mu1 + mu2)),
+            'rdnoise_adu': float(np.sqrt(read_var)), 'k': float(k),
+            'rho_x': rho_x, 'rho_y': rho_y,
+            'bias_rho_x': brho_x, 'bias_rho_y': brho_y,
+            'gain_nn': float(gain_nn)}
+
+
 def measure_gain_rdnoise(flat1, flat2, bias1, bias2, sigma=4.0, cell=50):
     """Photon-transfer gain and read noise from two flats and two biases.
 
@@ -258,31 +362,8 @@ def measure_gain_rdnoise(flat1, flat2, bias1, bias2, sigma=4.0, cell=50):
     rdnoise : float
         e-
     """
-    f1 = np.asarray(flat1, dtype=float)
-    f2 = np.asarray(flat2, dtype=float)
-    b1 = np.asarray(bias1, dtype=float)
-    b2 = np.asarray(bias2, dtype=float)
-
-    _, m_b1, _ = sigma_clipped_stats(b1, sigma=sigma)
-    _, m_b2, _ = sigma_clipped_stats(b2, sigma=sigma)
-    bias_level = 0.5 * (m_b1 + m_b2)
-    _, mu1, _ = sigma_clipped_stats(f1 - bias_level, sigma=sigma)
-    _, mu2, _ = sigma_clipped_stats(f2 - bias_level, sigma=sigma)
-    if mu1 <= 0 or mu2 <= 0:
-        raise ValueError('Flats must be brighter than the biases.')
-    k = mu1 / mu2
-
-    var_ff = _cell_variance((f1 - bias_level) - k * (f2 - bias_level),
-                            cell, sigma)
-    read_var = 0.5 * _cell_variance(b1 - b2, cell, sigma)
-
-    noise = var_ff - (1.0 + k ** 2) * read_var
-    if noise <= 0:
-        raise ValueError('Flat difference is not noisier than the read '
-                         'noise; flats too faint?')
-    gain = mu1 * (1.0 + k) / noise
-    rdnoise = gain * np.sqrt(read_var)
-    return float(gain), float(rdnoise)
+    m = measure_ptc(flat1, flat2, bias1, bias2, sigma=sigma, cell=cell)
+    return m['gain'], m['rdnoise']
 
 
 def _overscan_corrected_chip(filename, chip, box):
@@ -328,9 +409,11 @@ def measure_gain_rdnoise_files(flat1, flat2, bias1, bias2, lbc_chips=True,
     Returns
     -------
     astropy.table.Table
-        One row per chip with the :data:`TABLE_COLUMNS` columns. mjd_start
-        and mjd_end are left open (NaN); edit them before use if the values
-        should apply to a limited date range.
+        One row per chip with the :data:`TABLE_COLUMNS` columns plus the
+        diagnostics of :func:`measure_ptc` (:data:`PTC_COLUMNS`: level,
+        rdnoise_adu, k, rho_x, rho_y, bias_rho_x, bias_rho_y, gain_nn).
+        mjd_start and mjd_end are left open (NaN). Combine measurements at
+        several levels with :func:`summarize_gain_rdnoise`.
     """
     if lbc_chips is True:
         lbc_chips = [1, 2, 3, 4]
@@ -348,16 +431,158 @@ def measure_gain_rdnoise_files(flat1, flat2, bias1, bias2, lbc_chips=True,
         if max(np.median(f1), np.median(f2)) > 0.7 * saturate:
             raise ValueError('Chip {0}: flats are too close to saturation '
                              'for a photon-transfer measurement.'.format(chip))
-        gain, rdnoise = measure_gain_rdnoise(f1, f2, b1, b2, sigma=sigma,
-                                             cell=cell)
+        m = measure_ptc(f1, f2, b1, b2, sigma=sigma, cell=cell)
         source = 'PTC: {0}, {1}; {2}, {3}'.format(
             *(os.path.basename(f) for f in (flat1, flat2, bias1, bias2)))
-        rows.append((channel or '', chip, gain, rdnoise, np.nan, np.nan,
-                     source))
-    table = Table(rows=rows, names=TABLE_COLUMNS)
+        rows.append((channel or '', chip, m['gain'], m['rdnoise'], np.nan,
+                     np.nan, source) + tuple(m[c] for c in PTC_COLUMNS))
+    table = Table(rows=rows, names=TABLE_COLUMNS + PTC_COLUMNS)
     table['gain'].unit = u.electron / u.adu
     table['rdnoise'].unit = u.electron
+    table['level'].unit = u.adu
+    table['rdnoise_adu'].unit = u.adu
+    table['gain_nn'].unit = u.electron / u.adu
     return table
+
+
+def fit_gain_vs_level(levels, gains, min_sets=3):
+    """Straight-line fit gain = gain0 + slope * level.
+
+    The apparent photon-transfer gain rises with signal level when the
+    brighter-fatter effect (or non-linearity) suppresses the variance; the
+    zero-level intercept is the conversion gain. With fewer than
+    ``min_sets`` points (or no spread in level) the median is returned
+    instead (``model='median'``).
+
+    Returns
+    -------
+    dict
+        model, n, gain0, gain0_err, slope [e-/ADU per ADU], slope_err,
+        rms (residual scatter), level_min, level_max. Uncertainties come
+        from the residual scatter (NaN with fewer than three points).
+    """
+    levels = np.asarray(levels, dtype=float)
+    gains = np.asarray(gains, dtype=float)
+    ok = np.isfinite(levels) & np.isfinite(gains)
+    levels, gains = levels[ok], gains[ok]
+    n = len(gains)
+    out = {'n': n, 'level_min': float(levels.min()) if n else np.nan,
+           'level_max': float(levels.max()) if n else np.nan}
+    if n < max(min_sets, 2) or np.ptp(levels) == 0:
+        out.update(model='median', gain0=float(np.median(gains)) if n
+                   else np.nan, gain0_err=np.nan, slope=np.nan,
+                   slope_err=np.nan,
+                   rms=float(np.std(gains, ddof=1)) if n > 1 else np.nan)
+        return out
+    design = np.vstack([np.ones(n), levels]).T
+    coef, *_ = np.linalg.lstsq(design, gains, rcond=None)
+    resid = gains - design @ coef
+    if n > 2:
+        s2 = np.sum(resid ** 2) / (n - 2)
+        cov = s2 * np.linalg.inv(design.T @ design)
+        errs = np.sqrt(np.diag(cov))
+        rms = float(np.sqrt(s2))
+    else:
+        errs, rms = (np.nan, np.nan), np.nan
+    out.update(model='linear', gain0=float(coef[0]), slope=float(coef[1]),
+               gain0_err=float(errs[0]), slope_err=float(errs[1]), rms=rms)
+    return out
+
+
+FIT_COLUMNS = ['channel', 'chip', 'model', 'n', 'gain0', 'gain0_err',
+               'slope_pct_per_10k', 'slope_pct_err', 'rms', 'level_min',
+               'level_max', 'gain_median', 'rdnoise_adu', 'rdnoise_adu_std',
+               'rdnoise', 'rho_slope_per_10k', 'gain_nn_slope_pct_per_10k']
+
+
+def summarize_gain_rdnoise(results, model='linear', min_sets=3,
+                           source='', mjd_start=np.nan, mjd_end=np.nan):
+    """Combine per-set measurements into detector-table rows.
+
+    Parameters
+    ----------
+    results : astropy.table.Table
+        Output of :func:`measure_gain_rdnoise_files` for several sets
+        (vstacked), including the ``level`` and ``rdnoise_adu`` columns.
+    model : {'linear', 'median'}, optional
+        'linear': gain = zero-level intercept of :func:`fit_gain_vs_level`
+        (falls back to the median with fewer than ``min_sets`` sets).
+        'median': median over sets (ignores any level dependence).
+    source, mjd_start, mjd_end
+        Written into the product rows.
+
+    Returns
+    -------
+    rows : astropy.table.Table
+        :data:`TABLE_COLUMNS`, one row per channel/chip, with
+        rdnoise = gain x median(rdnoise_adu).
+    fit : astropy.table.Table
+        :data:`FIT_COLUMNS`: the fit and diagnostics per channel/chip
+        (slopes in percent of gain0 per 10,000 ADU; rho_slope is the change
+        of rho_x + rho_y per 10,000 ADU; gain_nn_slope is the slope of the
+        covariance-corrected gain, near zero if the brighter-fatter effect
+        explains the trend).
+    """
+    for col in ('level', 'rdnoise_adu'):
+        if col not in results.colnames:
+            raise ValueError("results need a '{0}' column: re-run "
+                             "measure_gain_rdnoise_files".format(col))
+    if model not in ('linear', 'median'):
+        raise ValueError("model must be 'linear' or 'median'")
+
+    rows, fit_rows = [], []
+    channels = np.char.upper(np.asarray(results['channel'], dtype=str))
+    for channel in sorted(set(channels)):
+        for chip in sorted(set(results['chip'][channels == channel])):
+            r = results[(channels == channel) & (results['chip'] == chip)]
+            level = np.asarray(r['level'], dtype=float)
+            gain = np.asarray(r['gain'], dtype=float)
+            f = fit_gain_vs_level(level, gain,
+                                  min_sets=min_sets if model == 'linear'
+                                  else np.inf)
+            rn_adu = np.asarray(r['rdnoise_adu'], dtype=float)
+            g0 = f['gain0']
+            rdnoise = g0 * float(np.median(rn_adu))
+
+            def pct_slope(values):
+                fv = fit_gain_vs_level(level, values, min_sets=3)
+                if fv['model'] != 'linear' or not np.isfinite(fv['gain0']) \
+                        or fv['gain0'] == 0:
+                    return np.nan
+                return 1e4 * fv['slope'] / fv['gain0'] * 100
+
+            rho = (np.asarray(r['rho_x'], dtype=float)
+                   + np.asarray(r['rho_y'], dtype=float)
+                   if 'rho_x' in r.colnames else np.full(len(r), np.nan))
+            rf = fit_gain_vs_level(level, rho, min_sets=3)
+            gnn = (np.asarray(r['gain_nn'], dtype=float)
+                   if 'gain_nn' in r.colnames else np.full(len(r), np.nan))
+
+            rows.append((channel, int(chip), g0, rdnoise, mjd_start, mjd_end,
+                         source))
+            fit_rows.append((channel, int(chip), f['model'], f['n'], g0,
+                         f['gain0_err'],
+                         1e4 * f['slope'] / g0 * 100,
+                         1e4 * f['slope_err'] / g0 * 100, f['rms'],
+                         f['level_min'], f['level_max'],
+                         float(np.median(gain)), float(np.median(rn_adu)),
+                         float(np.std(rn_adu, ddof=1)) if len(rn_adu) > 1
+                         else np.nan, rdnoise,
+                         1e4 * rf['slope'] if rf['model'] == 'linear'
+                         else np.nan,
+                         pct_slope(gnn)))
+
+    product = Table(rows=rows, names=TABLE_COLUMNS,
+                    dtype=['U4', 'i4', 'f8', 'f8', 'f8', 'f8', 'U200'])
+    product['gain'].unit = u.electron / u.adu
+    product['rdnoise'].unit = u.electron
+    fit = Table(rows=fit_rows, names=FIT_COLUMNS)
+    for col in ('gain0', 'gain0_err', 'gain_median'):
+        fit[col].unit = u.electron / u.adu
+    for col in ('level_min', 'level_max', 'rdnoise_adu', 'rdnoise_adu_std'):
+        fit[col].unit = u.adu
+    fit['rdnoise'].unit = u.electron
+    return product, fit
 
 
 def write_detector_table(table, filename=None, overwrite=False):
