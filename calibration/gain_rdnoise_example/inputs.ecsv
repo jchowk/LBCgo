@@ -1,0 +1,26 @@
+# %ECSV 1.0
+# ---
+# datatype:
+# - {name: filename, datatype: string}
+# - {name: obs_id, datatype: string}
+# - {name: mjd_obs, datatype: float64}
+# - {name: channel, datatype: string}
+# - {name: filter, datatype: string}
+# - {name: exptime, datatype: float64}
+# - {name: role, datatype: string}
+# - {name: set, datatype: int64}
+# - {name: notes, datatype: string}
+# meta: !!omap
+# - comments: [EXAMPLE inputs for calibration/gain_rdnoise_example/run.py., One row per raw frame; each set = 2 flats + 2 biases of one
+#       channel and epoch., 'Flats: similar levels, ~10,000-30,000 ADU above bias, unsaturated.', 'Filenames are illustrative, not real
+#       archive frames.']
+# schema: astropy-2.0
+filename obs_id mjd_obs channel filter exptime role set notes
+lbcb.20250101.002100.fits lbcbEXAMPLE1flat002100 60676.0 LBCB r-SLOAN 5.0 flat 1 "EXAMPLE ROW: replace with real archive frames"
+lbcb.20250101.002130.fits lbcbEXAMPLE1flat002130 60676.0 LBCB r-SLOAN 5.0 flat 1 "EXAMPLE ROW: replace with real archive frames"
+lbcb.20250101.120000.fits lbcbEXAMPLE1bias120000 60676.0 LBCB none 0.0 bias 1 "EXAMPLE ROW: replace with real archive frames"
+lbcb.20250101.120030.fits lbcbEXAMPLE1bias120030 60676.0 LBCB none 0.0 bias 1 "EXAMPLE ROW: replace with real archive frames"
+lbcr.20250101.002100.fits lbcrEXAMPLE2flat002100 60676.0 LBCR r-SLOAN 5.0 flat 2 "EXAMPLE ROW: replace with real archive frames"
+lbcr.20250101.002130.fits lbcrEXAMPLE2flat002130 60676.0 LBCR r-SLOAN 5.0 flat 2 "EXAMPLE ROW: replace with real archive frames"
+lbcr.20250101.120000.fits lbcrEXAMPLE2bias120000 60676.0 LBCR none 0.0 bias 2 "EXAMPLE ROW: replace with real archive frames"
+lbcr.20250101.120030.fits lbcrEXAMPLE2bias120030 60676.0 LBCR none 0.0 bias 2 "EXAMPLE ROW: replace with real archive frames"

@@ -36,7 +36,10 @@ Contents:
 - `run.py`: the driver. It only orchestrates calls into the `LBCgo`
   package and sets parameters; any real logic belongs in the package, with
   tests. Local data paths come from an environment variable or command-line
-  argument, never hard-coded.
+  argument, never hard-coded. See
+  [`gain_rdnoise_example/run.py`](gain_rdnoise_example/run.py) for a
+  working example; it also writes a `run_log.json` with the LBCgo commit,
+  parameters and SHA-256 checksums of inputs and outputs.
 - Optional: small diagnostic figures, small intermediate catalogs.
 
 The product file itself should point back here: e.g. the `source` column of
@@ -48,3 +51,4 @@ model file naming this directory.
 | Directory | Product | Status |
 |---|---|---|
 | [`gain_rdnoise_lbcb_giallongo2008/`](gain_rdnoise_lbcb_giallongo2008/README.md) | LBCB rows of `conf/lbc_detector.ecsv` | Published values, seeded 2026-10-04 |
+| [`gain_rdnoise_example/`](gain_rdnoise_example/README.md) | none (worked example of a `run.py` driver for measuring gain/read noise) | Example; illustrative inputs; smoke-tested by `tests/test_calibration_example.py` |
