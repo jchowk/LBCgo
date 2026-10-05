@@ -10,11 +10,11 @@
 # - {name: source, datatype: string}
 # schema: astropy-2.0
 channel chip gain rdnoise mjd_start mjd_end source
-LBCB 1 1.8547152095406545 8.977852128281398 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo d78a70996b)"
-LBCB 2 1.7768775154729848 9.784462333706912 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo d78a70996b)"
-LBCB 3 1.8051661169090754 9.173847867948352 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo d78a70996b)"
-LBCB 4 1.7110370508829806 9.305289997537933 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo d78a70996b)"
-LBCR 1 1.8170238817082156 10.168843899822136 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo d78a70996b)"
-LBCR 2 1.8057064162974865 13.113687281315906 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo d78a70996b)"
-LBCR 3 1.7966335718508986 10.043409492626624 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo d78a70996b)"
-LBCR 4 1.853088974805646 9.85023013273164 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo d78a70996b)"
+LBCB 1 1.8547152095406545 8.977852128281398 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo b8f7aa698a)"
+LBCB 2 1.7768775154729848 9.784462333706912 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo b8f7aa698a)"
+LBCB 3 1.8051661169090754 9.173847867948352 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo b8f7aa698a)"
+LBCB 4 1.7110370508829806 9.305289997537933 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo b8f7aa698a)"
+LBCR 1 1.8170238817082156 10.168843899822136 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo b8f7aa698a)"
+LBCR 2 1.8057064162974865 13.113687281315906 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo b8f7aa698a)"
+LBCR 3 1.7966335718508986 10.043409492626624 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo b8f7aa698a)"
+LBCR 4 1.853088974805646 9.85023013273164 nan nan "calibration/gain_rdnoise_lbc_202505 (LBCgo b8f7aa698a)"

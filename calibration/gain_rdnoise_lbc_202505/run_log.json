@@ -1,7 +1,7 @@
 {
-  "date_utc": "2026-10-05T01:29:47.463810+00:00",
+  "date_utc": "2026-10-05T01:32:39.286892+00:00",
   "lbcgo_version": "0.1.6",
-  "lbcgo_commit": "d78a70996ba901d0dbdeb87bf724bc4af8694254",
+  "lbcgo_commit": "b8f7aa698a98f0babec77bb1772cb5a5e89ee675",
   "params": {
     "box": 1000,
     "sigma": 4.0,
@@ -36,6 +36,6 @@
   },
   "outputs_sha256": {
     "results_per_set.ecsv": "af8a9ccc140b7186a4ae67fe2f82868a2b68aba90a6b6cde9794666ea39f7968",
-    "detector_rows.ecsv": "047c166a7d749c3d354ed875f58e150e417f9fd0fa8fbdbedc61999147b486c9"
+    "detector_rows.ecsv": "57369d9e3983b117a2e4a9873f23cd64e296925b36e71c193f0a4aaa6356bf0b"
   }
 }
