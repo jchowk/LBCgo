@@ -51,6 +51,10 @@ directory) and their format.
 
 ## How to reproduce
 
+`run.py` follows [`gain_rdnoise_example/run.py`](gain_rdnoise_example/run.py):
+data path from `$LBCGO_RAW` or `--raw`, outputs and `run_log.json` written
+next to it.
+
 ```
 export LBCGO_RAW=/path/to/raw/frames
 python calibration/<product_dir>/run.py
