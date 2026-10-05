@@ -28,6 +28,12 @@ output files with the directory; for this example, don't.
 
 ## Inputs
 
+Build it with
+`python calibration/make_inputs.py <raw_dir> --channel LBCR --imagetyp flat zero --levels -o inputs.ecsv`:
+`--levels` adds each flat's overscan-subtracted level (`median_adu`, centre of
+chip 2), which helps pick two flats at similar levels. Then keep exactly two
+flats and two biases per `set` (sets start as one per channel and UT date).
+
 `inputs.ecsv` columns: `filename` (archive name), `obs_id`, `mjd_obs`,
 `channel` (`LBCB`/`LBCR`), `filter`, `exptime`, `role` (`flat` or `bias`),
 `set` (groups the four frames of one measurement), `notes`. `run.py` checks
