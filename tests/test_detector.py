@@ -540,3 +540,115 @@ def test_brighter_fatter_level_dependence_is_recovered():
     assert 3.0 < fit['slope_pct_per_10k'][0] < 5.5
     assert fit['rho_slope_per_10k'][0] > 0
     assert abs(fit['gain_nn_slope_pct_per_10k'][0]) < 0.5
+
+
+# ---------------------------------------------------------------------------
+# Covariances summed over lags: brighter-fatter vs non-linearity
+# ---------------------------------------------------------------------------
+
+def test_covariance_sum_white_noise_and_gradient():
+    rng = np.random.default_rng(41)
+    x = rng.normal(0, 5.0, (1000, 1000))
+    S, S_err, rho = detector._cell_covariance_sum(x, 50, 4.0, 3)
+    assert rho.shape == (7, 7) and rho[3, 3] == 1.0
+    assert 0.005 < S_err < 0.02
+    # Without the -p(1+S)/n correction S would be about -0.06
+    assert abs(S) < 3.5 * S_err
+    # A gradient (here 1.25 ADU across a block) is removed with the plane;
+    # removing only the mean would add ~0.25 to S
+    yy, xx = np.mgrid[:1000, :1000]
+    S_ramp, _, _ = detector._cell_covariance_sum(x + 0.025 * xx + 0.01 * yy,
+                                                 50, 4.0, 3)
+    assert abs(S_ramp - S) < 0.002
+
+
+def test_covariance_sum_known_correlation():
+    rng = np.random.default_rng(42)
+    x = rng.normal(0, 5.0, (1000, 1000))
+    # d = x + x shifted by two columns: rho(dx=+-2) = 1/2, S = 1
+    S, S_err, rho = detector._cell_covariance_sum(
+        x + np.roll(x, 2, axis=1), 50, 4.0, 3)
+    assert abs(S - 1.0) < 3.5 * S_err
+    assert abs(rho[3, 5] - 0.5) < 0.01 and abs(rho[3, 1] - 0.5) < 0.01
+    assert abs(rho[3, 4]) < 0.01 and abs(rho[5, 3]) < 0.01
+
+
+def test_measure_ptc_max_lag_zero_skips_sum():
+    rng = np.random.default_rng(43)
+    shape = (300, 300)
+    prnu = np.ones(shape)
+    frames = [_simulate(rng, 2.0, 10.0, s, prnu, shape)
+              for s in (20000.0, 20000.0, 0.0, 0.0)]
+    m0 = detector.measure_ptc(*frames, max_lag=0)
+    m3 = detector.measure_ptc(*frames)
+    assert np.isnan(m0['gain_sum']) and np.isnan(m0['rho_sum'])
+    assert m0['gain'] == m3['gain'] and np.isfinite(m3['gain_sum'])
+    assert set(detector.PTC_COLUMNS) <= set(m3)
+
+
+def _flat_bf_nl(rng, gain, signal_e, prnu, rn_e, a_per_e, b_per_e, beta):
+    """Flat with a brighter-fatter effect reaching two pixels (each pixel
+    gives a to its four nearest neighbours and b to the four at distance 2,
+    both proportional to the signal; charge is conserved) and a sublinear
+    response N (1 - beta N)."""
+    e = rng.poisson(signal_e * prnu).astype(float)
+    a, b = a_per_e * signal_e, b_per_e * signal_e
+
+    def ring(k):
+        return sum(np.roll(e, s, axis=ax) for s in (k, -k) for ax in (0, 1))
+
+    e = (1 - 4 * a - 4 * b) * e + a * ring(1) + b * ring(2)
+    e = e * (1 - beta * e)
+    return 1000.0 + (e + rng.normal(0.0, rn_e, e.shape)) / gain
+
+
+def _ptc_series(seed, a_per_e=0.0, b_per_e=0.0, beta=0.0):
+    rng = np.random.default_rng(seed)
+    shape = (1000, 1000)
+    gain, rn = 1.75, 10.0
+    prnu = 1.0 + 0.01 * rng.standard_normal(shape)
+    rows = []
+    for adu in (5000., 10000., 20000., 30000.):
+        s = adu * gain
+        m = detector.measure_ptc(
+            _flat_bf_nl(rng, gain, s, prnu, rn, a_per_e, b_per_e, beta),
+            _flat_bf_nl(rng, gain, 1.03 * s, prnu, rn, a_per_e, b_per_e,
+                        beta),
+            _simulate(rng, gain, rn, 0.0, prnu, shape),
+            _simulate(rng, gain, rn, 0.0, prnu, shape))
+        m.update(channel='LBCR', chip=1)
+        rows.append(m)
+    return detector.summarize_gain_rdnoise(Table(rows=rows))[1][0]
+
+
+def test_gain_sum_removes_long_range_brighter_fatter():
+    """Half of the charge sharing goes two pixels away: gain_nn keeps part
+    of the slope, gain_sum (lags <= 3) removes it."""
+    a = 0.003 / (1e4 * 1.75)             # a = b = 0.003 at 10,000 ADU
+    f = _ptc_series(44, a_per_e=a, b_per_e=a)
+    assert f['slope_pct_per_10k'] > 4.0
+    assert f['gain_nn_slope_pct_per_10k'] > 1.5
+    assert abs(f['gain_sum_slope_pct_per_10k']) < \
+        3 * f['gain_sum_slope_pct_err']
+    assert f['rho_sum_slope_per_10k'] > 0.03
+    assert abs(f['gain0'] / 1.75 - 1) < 0.015
+    assert abs(f['gain_sum_median'] / 1.75 - 1) < 0.015
+
+
+def test_gain_sum_keeps_nonlinearity():
+    """A sublinear response raises the apparent gain without creating
+    covariances: gain_sum has the same slope as gain."""
+    f = _ptc_series(45, beta=7.6e-7)     # ~ +4.8 % per 10,000 ADU
+    assert f['slope_pct_per_10k'] > 4.0
+    assert abs(f['gain_sum_slope_pct_per_10k'] - f['slope_pct_per_10k']) \
+        < 3 * f['gain_sum_slope_pct_err']
+    assert abs(f['rho_sum_slope_per_10k']) < 0.01
+    assert abs(f['gain0'] / 1.75 - 1) < 0.015
+
+
+def test_summarize_without_gain_sum_columns():
+    r = _results([1e4, 2e4, 3e4], [1.8, 1.82, 1.84], [5., 5., 5.])
+    _, fit = detector.summarize_gain_rdnoise(r)
+    assert np.isnan(fit['gain_sum_slope_pct_per_10k'][0])
+    assert np.isnan(fit['gain_sum_median'][0])
+    assert list(fit.colnames) == detector.FIT_COLUMNS

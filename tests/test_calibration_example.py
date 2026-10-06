@@ -113,6 +113,7 @@ def test_example_fits_gain_against_level(example_run):
         assert np.isclose(f['rdnoise'], row['rdnoise'])
         if f['channel'] == 'LBCB':
             assert f['model'] == 'linear' and f['n'] == 3
+            assert np.isfinite(f['gain_sum_slope_pct_per_10k'])
             # no brighter-fatter effect in the simulation: flat within noise
             assert abs(f['slope_pct_per_10k']) < 3 * f['slope_pct_err'] + 1
         else:
@@ -126,6 +127,7 @@ def test_example_writes_provenance(example_run):
     assert len(log['inputs_sha256']) == 16
     assert log['params']['cell'] == 50
     assert log['params']['gain_model'] == 'linear'
+    assert log['params']['max_lag'] == 3 and log['params']['box'] == 1000
     assert set(log['outputs_sha256']) == {'results_per_set.ecsv',
                                           'gain_fit.ecsv',
                                           'detector_rows.ecsv'}
@@ -133,8 +135,21 @@ def test_example_writes_provenance(example_run):
                          format='ascii.ecsv')
     assert len(per_set) == 16 and set(per_set['set']) == {1, 2, 3, 4}
     assert str(per_set['level'].unit) == 'adu'
-    assert {'rdnoise_adu', 'rho_x', 'rho_y', 'gain_nn'} <= set(
-        per_set.colnames)
+    assert {'rdnoise_adu', 'rho_x', 'rho_y', 'gain_nn', 'rho_sum',
+            'gain_sum', 'gain_sum_err'} <= set(per_set.colnames)
+    assert np.all(np.isfinite(per_set['gain_sum']))
+
+
+def test_example_box_zero_uses_whole_chip(example_run):
+    env = dict(os.environ, PYTHONPATH=os.pathsep.join(
+        [str(REPO), os.environ.get('PYTHONPATH', '')]))
+    raw = example_run.parent / 'raw'
+    proc = subprocess.run([sys.executable, str(example_run / 'run.py'),
+                           '--raw', str(raw), '--box', '0'],
+                          env=env, capture_output=True, text=True)
+    assert proc.returncode == 0, proc.stderr
+    log = json.loads((example_run / 'run_log.json').read_text())
+    assert log['params']['box'] is None
 
 
 def test_example_requires_data_path(tmp_path):
