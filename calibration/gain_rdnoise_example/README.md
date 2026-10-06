@@ -28,8 +28,8 @@ g0; read noise = g0 × median read noise in ADU. With fewer than
 
 | file | content |
 |---|---|
-| `results_per_set.ecsv` | every measurement: one row per set and chip, with `level` [ADU], `rdnoise_adu`, `k`, `rho_x`, `rho_y`, `bias_rho_x`, `bias_rho_y`, `gain_nn` |
-| `gain_fit.ecsv` | one row per channel and chip: `model` (`linear`/`median`), `n`, `gain0` ± `gain0_err`, slope in % per 10,000 ADU ± error, residual `rms`, level range, median gain for comparison, read noise, and the brighter-fatter diagnostics `rho_slope_per_10k` and `gain_nn_slope_pct_per_10k` |
+| `results_per_set.ecsv` | every measurement: one row per set and chip, with `level` [ADU], `rdnoise_adu`, `k`, `rho_x`, `rho_y`, `bias_rho_x`, `bias_rho_y`, `gain_nn`, `rho_sum`, `rho_sum_err`, `bias_rho_sum`, `gain_sum`, `gain_sum_err` |
+| `gain_fit.ecsv` | one row per channel and chip: `model` (`linear`/`median`), `n`, `gain0` ± `gain0_err`, slope in % per 10,000 ADU ± error, residual `rms`, level range, median gain for comparison, read noise, and the brighter-fatter diagnostics `rho_slope_per_10k`, `gain_nn_slope_pct_per_10k`, `rho_sum_slope_per_10k`, `gain_sum_median`, `gain_sum_slope_pct_per_10k` ± `gain_sum_slope_pct_err` |
 | `detector_rows.ecsv` | one row per channel and chip (gain = `gain0`), in the format of `LBCgo/conf/lbc_detector.ecsv`, with `source` naming this directory and the LBCgo commit |
 | `run_log.json` | date, LBCgo version and commit (`+dirty` if the imported code has uncommitted changes), parameters, SHA-256 of every input and output |
 
@@ -38,6 +38,14 @@ Reading `gain_fit.ecsv`: if the brighter-fatter effect explains the slope,
 `gain_nn_slope_pct_per_10k` (gain with the nearest-neighbour covariances
 added back) is close to zero. `gain_nn` ignores longer-range covariances,
 so it is a diagnostic, not the adopted gain.
+
+`gain_sum` adds back the covariances of all lags up to `PARAMS['max_lag']`
+(3 px). The brighter-fatter effect only moves charge between pixels, so it
+leaves `gain_sum` flat; non-linearity creates no covariances and gives
+`gain_sum` the same slope as the gain. Compare
+`gain_sum_slope_pct_per_10k` ± `gain_sum_slope_pct_err` with
+`slope_pct_per_10k`. Summing 48 lags is noisy (~1 % per set for the default
+1000-px box), so for this test run on the whole chip: `run.py --box 0`.
 
 It does **not** edit `LBCgo/conf/lbc_detector.ecsv`. Review
 `detector_rows.ecsv` (e.g. against Giallongo et al. 2008 Table 1 for LBCB),
@@ -80,7 +88,12 @@ open-ended median.
 ```
 export LBCGO_RAW=/path/to/raw/frames
 python calibration/<product_dir>/run.py          # or --raw /path
+python calibration/<product_dir>/run.py --box 0  # whole chip
 ```
+
+An existing product directory keeps its own copy of `run.py`; copy the
+current example over it (keeping the product's `PARAMS`) to get new
+outputs such as `gain_sum`.
 
 `tests/test_calibration_example.py` runs this script on synthetic frames with
 known gain and read noise, so it keeps working as the package changes.

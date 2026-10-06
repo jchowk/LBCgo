@@ -4,6 +4,7 @@ Product: candidate rows for LBCgo/conf/lbc_detector.ecsv.
 Inputs:  inputs.ecsv in this directory. One row per raw frame, with a `set`
          column grouping two flats + two biases of one channel/epoch.
 Usage:   LBCGO_RAW=/path/to/raw python run.py [--raw DIR] [--box 1000]
+         (--box 0: whole trimmed chip)
 
 This script only orchestrates: the measurement is
 LBCgo.detector.measure_gain_rdnoise_files and the combination of sets is
@@ -16,7 +17,10 @@ It writes, next to itself:
   results_per_set.ecsv   every measurement (one row per set and chip, with
                          level, read noise in ADU and correlation diagnostics)
   gain_fit.ecsv          the fit per channel/chip: intercept, slope, scatter,
-                         and the brighter-fatter diagnostics
+                         and the brighter-fatter diagnostics. The slope of
+                         gain_sum (covariances summed to max_lag added back)
+                         separates brighter-fatter (slope ~0) from
+                         non-linearity (slope ~ that of gain)
   detector_rows.ecsv     one row per channel/chip, ready to be reviewed and
                          merged into conf/lbc_detector.ecsv
   run_log.json           LBCgo version/commit, parameters, input checksums
@@ -42,9 +46,11 @@ HERE = Path(__file__).resolve().parent
 
 # Parameters that define this product (change -> new product directory)
 PARAMS = {
-    'box': 1000,          # central region of each trimmed chip [px]
+    'box': 1000,          # central region of each trimmed chip [px];
+                          # None = whole chip (less noise in gain_sum)
     'sigma': 4.0,         # clipping threshold
     'cell': 50,           # block size for the variances [px]
+    'max_lag': 3,         # lags summed for gain_sum (0 = skip)
     'gain_model': 'linear',  # 'linear': intercept of gain vs level;
                              # 'median': median over sets
     'min_sets': 3,        # fewer sets per chip -> median instead of the fit
@@ -77,12 +83,14 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument('--raw', default=os.environ.get('LBCGO_RAW'),
                     help='directory holding the raw frames (or $LBCGO_RAW)')
-    ap.add_argument('--box', type=int, default=PARAMS['box'])
+    ap.add_argument('--box', type=int, default=PARAMS['box'],
+                    help='central region [px]; 0 = whole chip')
     args = ap.parse_args()
     if not args.raw:
         ap.error('give --raw or set LBCGO_RAW')
     raw = Path(args.raw)
-    params = dict(PARAMS, box=args.box)
+    params = dict(PARAMS, box=args.box if args.box and args.box > 0
+                  else None)
 
     inputs = Table.read(HERE / 'inputs.ecsv', format='ascii.ecsv')
     results = []
@@ -101,7 +109,8 @@ def main():
 
         t = detector.measure_gain_rdnoise_files(
             *map(str, flats + biases), box=params['box'],
-            sigma=params['sigma'], cell=params['cell'])
+            sigma=params['sigma'], cell=params['cell'],
+            max_lag=params['max_lag'])
         t['set'] = set_id
         t['mjd'] = float(np.mean(rows['mjd_obs']))
         results.append(t)
@@ -126,7 +135,9 @@ def main():
         print(f"{r['channel']} chip {r['chip']}: {r['model']} n={r['n']} "
               f"g0={r['gain0']:.3f}+-{r['gain0_err']:.3f} "
               f"slope={r['slope_pct_per_10k']:+.2f}%/10k ADU "
-              f"(gain_nn {r['gain_nn_slope_pct_per_10k']:+.2f}%/10k) "
+              f"(gain_nn {r['gain_nn_slope_pct_per_10k']:+.2f}, gain_sum "
+              f"{r['gain_sum_slope_pct_per_10k']:+.2f}"
+              f"+-{r['gain_sum_slope_pct_err']:.2f} %/10k) "
               f"RN={r['rdnoise']:.2f} e-")
     detector.write_detector_table(product, str(HERE / 'detector_rows.ecsv'),
                                   overwrite=True)
