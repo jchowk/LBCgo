@@ -339,6 +339,40 @@ Purpose: a fair benchmark and an immediate improvement for users.
       angle; avoid z/Y-band flats (fringing). `lookup_detector_params` warns
       when two matching rows share `mjd_start` (`detector_table_conflicts`
       lists them): give new rows a finite `mjd_start`.
+- [x] Level dependence of the photon-transfer gain. The second real run
+      (branch `202505_calibration`, commit `83d8100`, several flat pairs per
+      chip at different levels) shows the apparent gain rising linearly with
+      flat level: +1.8–2.1 % per 10,000 ADU on LBCB and +2.9–5.1 % on LBCR,
+      with residuals of 0.1–0.4 %. That is several times what the < 1 %
+      linearity residuals of Giallongo et al. (2008) allow, and is the
+      signature of the brighter-fatter effect: charge pushed into
+      neighbouring pixels lowers the per-pixel variance, raises the
+      apparent gain, and leaves positive nearest-neighbour covariances in
+      the flat difference (Antilogus et al. 2014, JINST 9, C03048; Astier
+      et al. 2019, A&A 629, A36). It is stronger on LBCR (thick,
+      deep-depletion CCDs). A median over sets therefore depends on which
+      levels were observed. Adopted method (`detector.summarize_gain_rdnoise`):
+      per channel/chip, fit gain = g0 + slope × level and adopt the
+      zero-level intercept g0 as the conversion gain (median if fewer than
+      3 sets or no spread in level); read noise = g0 × median read noise in
+      ADU (the ADU value does not depend on the gain). `measure_ptc` also
+      reports `rho_x`, `rho_y` (lag-1 correlation of the flat difference,
+      in 50-px blocks) and `gain_nn`, the gain with those covariances added
+      back to the variance. If the brighter-fatter effect explains the
+      trend, `rho` grows with level and `gain_nn` is nearly flat (verified
+      on a simulation in `tests/test_detector.py`: true gain 1.75, apparent
+      1.79–2.00, intercept 1.749, `gain_nn` 1.75–1.77). `gain_nn` ignores
+      longer-range covariances, so it is a test, not the adopted value.
+      For the weight maps the intercept is the right value: sky levels are
+      low, and the conversion gain sets the Poisson term.
+- [ ] Re-run `202505_calibration` with the new `run.py` and check
+      `gain_fit.ecsv`: `rho_slope_per_10k` > 0 and
+      `gain_nn_slope_pct_per_10k` ≈ 0 confirm the brighter-fatter
+      explanation; a remaining slope in `gain_nn` points to
+      non-linearity or longer-range correlations. LBCB intercepts so far
+      are 9–17 % below the 2006 values (Giallongo Table 1), more than the
+      method explains; check for a controller/electronics change in the
+      LBT logs before date-limiting the seeded rows.
 - [ ] Measure gain/read noise per chip for LBCB and LBCR from real bias and
       flat pairs (several epochs; run locally) and populate
       `conf/lbc_detector.ecsv` with validity ranges. Check the LBCB results
