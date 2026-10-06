@@ -365,7 +365,9 @@ Purpose: a fair benchmark and an immediate improvement for users.
       1.79–2.00, intercept 1.749, `gain_nn` 1.75–1.77). `gain_nn` ignores
       longer-range covariances, so it is a test, not the adopted value.
       For the weight maps the intercept is the right value: sky levels are
-      low, and the conversion gain sets the Poisson term.
+      low, and the per-pixel gain sets the per-pixel variance. (It is not
+      always the gain for fluxes summed over pixels: see `gain_flux`
+      below.)
 - [x] Re-run of `202505_calibration` with the new `run.py` (commit
       `eede421`, five sets per chip; assessed 2026-10-06): nearest-neighbour
       covariances explain 75–103 % of the LBCB slope (`gain_nn` slope
@@ -379,8 +381,10 @@ Purpose: a fair benchmark and an immediate improvement for users.
       intercept; (b) the intercept moves by up to 1.1 % between a linear
       and a quadratic fit, so the systematic uncertainty (1–3 %) exceeds
       `gain0_err` (0.1–0.4 %); (c) LBCB chips 2 and 3 read noise rises
-      ~5 % through the bias sequence (01:28–01:41 UT; these are the
-      start-of-night `biascheck` frames, to be replaced); (d) LBCB read
+      ~5 % through the bias sequence (01:28–01:41 UT; cause unknown —
+      `biascheck` is the PROPID of every LBC bias, not a special
+      start-of-night set (PI, 2026-10-06); compare biases from later in
+      the night); (d) LBCB read
       noise in ADU agrees with Giallongo Table 1 (RN/gain) for chip 2 and
       within 4–8 % for chips 3–4, while the gains are 16–18 % lower: the
       two measurements differ in electron scale rather than in ADC
@@ -401,15 +405,63 @@ Purpose: a fair benchmark and an immediate improvement for users.
       response the gain slope 4.9 stays 4.9 ± 0.6 in `gain_sum`. Noise:
       ~1 % per set for a 1000 × 1000 box (48 lags), so run this test with
       the whole chip (`run.py --box 0`, ~0.3 %).
-- [ ] Re-run `202505_calibration` (without the `biascheck` biases) with
-      `--box 0` and read `gain_sum_slope_pct_per_10k` for LBCR: ≈ 0 →
-      brighter-fatter with covariances beyond lag 1; ≈ the gain slope →
-      non-linearity (~1 % at 10k ADU, 2–3 % at 22k ADU), which then needs
-      an LBCR linearity test (exposure-time sequence on a stable source)
-      and a correction for bright-source photometry. Either way the
-      zero-level intercept stays the conversion gain. Then check the LBT
-      logs/headers for a controller change before date-limiting the
-      seeded LBCB rows.
+- [x] Whole-chip re-run of `202505_calibration` (`--box 0`, commit
+      `a2d7108`; assessed 2026-10-06). Adding back the covariances summed
+      to 3 px (`gain_sum`) removes the level dependence on every chip:
+      `gain_sum` slopes −0.78 to +0.05 %/10k ADU (all sets) and −0.65 to
+      +0.67 (close pairs only), against per-pixel gain slopes of +1.9–2.0
+      (LBCB) and +3.2–5.0 (LBCR). So the LBCR trend is the brighter-fatter
+      effect with covariances beyond lag 1 (`rho_sum` grows 0.035–0.054
+      per 10k ADU on LBCR, 0.020–0.026 on LBCB), not non-linearity:
+      LBCR non-linearity ≲ 0.3 % at 10k ADU and ≲ 0.7 % at 22k ADU
+      (from |`gain_sum` slope| ≲ 1 %/10k ADU, apparent gain ∝ 1 + 3βN).
+      No separate LBCR linearity test is needed for the gain. The
+      intercept g0 changes by ≤ 0.13 % when the widely spaced pairs are
+      dropped.
+- [x] Two gains (`detector.OPTIONAL_TABLE_COLUMNS`). Correlations present
+      at zero signal make the per-pixel gain and the flux gain differ:
+      median `gain_sum` / g0 = −4.6 % on LBCR chip 1 (positive serial
+      correlation at low level, falling with level: CTI-like), +2.8 % on
+      LBCR chip 2 (serial anti-correlation, ρ_x ≈ −0.020: electronic),
+      −1.2 to +1.2 % elsewhere. Both differences are reproduced by
+      1/(1 + S) with S the summed correlation extrapolated to zero signal.
+      For any linear readout kernel with weights summing to H (CTI: H = 1;
+      undershoot: H < 1), the mean of an aperture sum scales as H and its
+      variance as H², so mean/variance of aperture sums — `gain_sum` once
+      `max_lag` covers the kernel — is the electrons per ADU of a flux.
+      Hence: `gain` (per pixel, zero-level intercept) for per-pixel
+      variance and weight maps; `gain_flux` (median `gain_sum`) for
+      Poisson errors of source fluxes and flux→electron conversion.
+      `gain_flux` is an optional column of `conf/lbc_detector.ecsv` (NaN =
+      unknown; `read_detector_table` adds it to older tables;
+      `lookup_gain_flux` falls back to `gain` and says so). Nothing in the
+      pipeline uses it yet. Correlated read noise: `bias_rho_sum` 0.03–0.24
+      (LBCR chip 2 negative), so read noise in an aperture is up to ~11 %
+      above the independent-pixel value; per-pixel read noise is
+      unaffected.
+- [x] `gain_sum` depends on the time between the two flats: χ²/dof of
+      `gain_sum` about a line 1.1–12.5; averaged over chips, pairs 41–60 s
+      apart read +0.3 to +0.6 % (sets 7–8: −0.1, −0.3 %) and pairs
+      143–212 s apart −0.5 to −0.8 % (lowest: set 5, which also mixes
+      pa0/pa180). Presumably the twilight changes between exposures and
+      leaves small-scale structure that the 48-lag sum weights heavily;
+      g0 is insensitive. `summarize_gain_rdnoise(flux_max_dt=60)` uses only
+      pairs ≤ 60 s apart for `gain_flux` (NaN if none), with an error
+      from the scatter of those pairs; `run.py` records `flat_dt` per set
+      and warns when the two flats come from different OBs (`lbcobnam`).
+- [ ] Re-run `202505_calibration` with the current `run.py` (writes
+      `gain_flux`) and review `detector_rows.ecsv` for merging into
+      `conf/lbc_detector.ecsv` with a finite `mjd_start` (e.g. 60822).
+      Expected uncertainty of `gain`: ~1 % (linear vs quadratic fit),
+      not the 0.1–0.4 % of `gain0_err`. Before date-limiting the seeded
+      LBCB rows, compare with the `GAIN` keywords of the 2025 headers and
+      the LBT/LBC team's current values: both gains are 0.82–0.92 × the
+      2006 values while read noise in ADU agrees for chip 2, i.e. the
+      electron scales differ.
+- [ ] More data: flat pairs at 1–4k ADU (shorter extrapolation to zero
+      level), consecutive pairs ≤ 60 s apart at the same rotator angle
+      (for `gain_flux`), and biases from later in the night (read-noise
+      drift on LBCB chips 2–3).
 - [ ] Measure gain/read noise per chip for LBCB and LBCR from real bias and
       flat pairs (several epochs; run locally) and populate
       `conf/lbc_detector.ecsv` with validity ranges. Check the LBCB results

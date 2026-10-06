@@ -5,17 +5,19 @@
 # - {name: chip, datatype: int32}
 # - {name: gain, unit: electron / adu, datatype: float64}
 # - {name: rdnoise, unit: electron, datatype: float64}
+# - {name: gain_flux, unit: electron / adu, datatype: float64}
 # - {name: mjd_start, datatype: float64}
 # - {name: mjd_end, datatype: float64}
 # - {name: source, datatype: string}
 # meta: !!omap
-# - comments: ['LBC per-chip detector parameters: gain [e-/ADU], read noise [e-].', 'channel: LBCB or LBCR. mjd_start inclusive, mjd_end
-#       exclusive; nan = open-ended.', Chips/channels without a matching row use the GAIN/RDNOISE image headers., 'LBCB rows: published
-#       2006 commissioning values (Giallongo et al. 2008, Table 1),', seeded until measured values exist (LBCgo.detector.measure_gain_rdnoise_files).,
-#     'LBCR: no published per-chip values; header values are used.']
+# - comments: ['LBC per-chip detector parameters: gain [e-/ADU] (per pixel), read noise [e-], gain_flux [e-/ADU].', 'gain_flux: gain for
+#       fluxes summed over pixels (covariances included); nan = unknown, use gain. See LBCgo.detector.OPTIONAL_TABLE_COLUMNS.', 'channel:
+#       LBCB or LBCR. mjd_start inclusive, mjd_end exclusive; nan = open-ended.', Chips/channels without a matching row use the GAIN/RDNOISE
+#       image headers., 'LBCB rows: published 2006 commissioning values (Giallongo et al. 2008, Table 1),', seeded until measured values
+#       exist (LBCgo.detector.measure_gain_rdnoise_files)., 'LBCR: no published per-chip values; header values are used.']
 # schema: astropy-2.0
-channel chip gain rdnoise mjd_start mjd_end source
-LBCB 1 1.96 11.4 nan nan "Giallongo et al. 2008, A&A 482, 349, Table 1 (variance method, 2006 commissioning)"
-LBCB 2 2.09 11.6 nan nan "Giallongo et al. 2008, A&A 482, 349, Table 1 (variance method, 2006 commissioning)"
-LBCB 3 2.06 11.6 nan nan "Giallongo et al. 2008, A&A 482, 349, Table 1 (variance method, 2006 commissioning)"
-LBCB 4 1.98 11.2 nan nan "Giallongo et al. 2008, A&A 482, 349, Table 1 (variance method, 2006 commissioning)"
+channel chip gain rdnoise gain_flux mjd_start mjd_end source
+LBCB 1 1.96 11.4 nan nan nan "Giallongo et al. 2008, A&A 482, 349, Table 1 (variance method, 2006 commissioning)"
+LBCB 2 2.09 11.6 nan nan nan "Giallongo et al. 2008, A&A 482, 349, Table 1 (variance method, 2006 commissioning)"
+LBCB 3 2.06 11.6 nan nan nan "Giallongo et al. 2008, A&A 482, 349, Table 1 (variance method, 2006 commissioning)"
+LBCB 4 1.98 11.2 nan nan nan "Giallongo et al. 2008, A&A 482, 349, Table 1 (variance method, 2006 commissioning)"

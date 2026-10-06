@@ -26,9 +26,10 @@ EXAMPLE = REPO / 'calibration' / 'gain_rdnoise_example'
 TRUTH = {'LBCB': ([1.96, 2.09, 2.06, 1.98], [11.4, 11.6, 11.6, 11.2]),
          'LBCR': ([2.08, 2.14, 2.13, 2.09], [9.8, 9.5, 9.9, 9.6])}
 INSTRUME = {'LBCB': 'LBC_BLUE', 'LBCR': 'LBC-RED '}
-# (channel, mjd, flat signal [e-]) per set
-SETS = [('LBCB', 56981.3, 10000.0), ('LBCB', 56981.3, 20000.0),
-        ('LBCB', 56981.3, 40000.0), ('LBCR', 57020.6, 30000.0)]
+# (channel, mjd, flat signal [e-], seconds between the two flats) per set;
+# LBCB set 2 is too far apart for gain_flux (flux_max_dt = 60 s)
+SETS = [('LBCB', 56981.3, 10000.0, 45.0), ('LBCB', 56981.3, 20000.0, 200.0),
+        ('LBCB', 56981.3, 40000.0, 50.0), ('LBCR', 57020.6, 30000.0, 40.0)]
 
 
 def _write_raw(path, frames, instrume, mjd, imagetyp):
@@ -63,7 +64,7 @@ def example_run(tmp_path):
     rows = []
     prnu = {c: [1 + 0.01 * rng.standard_normal(shape) for _ in range(4)]
             for c in TRUTH}
-    for set_id, (channel, mjd, level) in enumerate(SETS, start=1):
+    for set_id, (channel, mjd0, level, dt) in enumerate(SETS, start=1):
         gains, rns = TRUTH[channel]
         for role, signals in (('flat', (level, 1.05 * level)),
                               ('bias', (0.0, 0.0))):
@@ -73,6 +74,7 @@ def example_run(tmp_path):
                     e = rng.poisson(signal * p) if signal > 0 else 0.0
                     frames.append(1000.0 + (e + rng.normal(0, rn, shape)) / g)
                 name = f'{channel.lower()}.set{set_id}.{role}{k}.fits'
+                mjd = mjd0 + (k * dt / 86400.0 if role == 'flat' else 0.0)
                 _write_raw(rawdir / name, frames, INSTRUME[channel], mjd,
                            'flat' if role == 'flat' else 'zero')
                 rows.append((name, f'{channel}{set_id}{role}{k}', mjd,
@@ -118,6 +120,18 @@ def test_example_fits_gain_against_level(example_run):
             assert abs(f['slope_pct_per_10k']) < 3 * f['slope_pct_err'] + 1
         else:
             assert f['model'] == 'median' and f['n'] == 1
+        # gain_flux: median gain_sum of the close pairs only
+        assert f['n_flux'] == (2 if f['channel'] == 'LBCB' else 1)
+        assert np.isclose(row['gain_flux'], f['gain_flux'])
+        # no correlations in the simulation: gain_flux ~ gain (noisy on
+        # 300 x 300 px: ~2 % per set)
+        gains, _ = TRUTH[row['channel']]
+        assert abs(row['gain_flux'] / gains[row['chip'] - 1] - 1) < 0.08
+    per_set = Table.read(example_run / 'results_per_set.ecsv',
+                         format='ascii.ecsv')
+    lbcb = per_set[per_set['channel'] == 'LBCB']
+    np.testing.assert_allclose(sorted(set(lbcb['flat_dt'])),
+                               [45.0, 50.0, 200.0], atol=0.01)
 
 
 def test_example_writes_provenance(example_run):
@@ -128,6 +142,7 @@ def test_example_writes_provenance(example_run):
     assert log['params']['cell'] == 50
     assert log['params']['gain_model'] == 'linear'
     assert log['params']['max_lag'] == 3 and log['params']['box'] == 1000
+    assert log['params']['flux_max_dt'] == 60.0
     assert set(log['outputs_sha256']) == {'results_per_set.ecsv',
                                           'gain_fit.ecsv',
                                           'detector_rows.ecsv'}
