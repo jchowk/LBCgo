@@ -1,7 +1,7 @@
 {
-  "date_utc": "2026-10-05T01:48:21.704913+00:00",
+  "date_utc": "2026-10-06T14:54:59.876156+00:00",
   "lbcgo_version": "0.1.6",
-  "lbcgo_commit": "5068d5db11041a2353ba16aae1036ebf1dad3415",
+  "lbcgo_commit": "e483600d71874c8164956773fb9b437d317761ff",
   "params": {
     "box": 1000,
     "sigma": 4.0,
@@ -52,7 +52,7 @@
     "lbcr.20250527.024836.fits.gz": "7ce862e758d5ec78b9789483631c9887499bc371f55a495bbaefcfdc3a246718"
   },
   "outputs_sha256": {
-    "results_per_set.ecsv": "46bc4f97666b1a5e32da60175ed55a53cdf2ccefff1d0df0c503f264131fbe09",
-    "detector_rows.ecsv": "97385bb0e4280a099850a149da4029187ff16677dc7bc6e4a251957eaa3143c1"
+    "results_per_set.ecsv": "82de71ff1e6c2d19489db70473939491b81ce670109b53b5b9cb041c0e05d317",
+    "detector_rows.ecsv": "ef5df431d4b71e7b2183ae837dbf58c8146304c6c946ecc8d5e5cfe59449a827"
   }
 }
