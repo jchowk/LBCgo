@@ -12,7 +12,12 @@ LBCgo.detector.summarize_gain_rdnoise (both tested in tests/test_detector.py).
 The apparent photon-transfer gain rises with flat level (brighter-fatter
 effect), so with PARAMS['gain_model'] = 'linear' the product gain is the
 zero-level intercept of a straight-line fit of gain against level per chip,
-and the read noise is that gain times the median read noise in ADU.
+and the read noise is that gain times the median read noise in ADU. That
+per-pixel gain sets the per-pixel variance (weight maps). The flux gain
+gain_flux (electrons per ADU of a flux summed over pixels) is the median
+gain_sum of the sets whose two flats are at most PARAMS['flux_max_dt']
+seconds apart; it differs from the per-pixel gain where the readout
+correlates neighbouring pixels.
 It writes, next to itself:
   results_per_set.ecsv   every measurement (one row per set and chip, with
                          level, read noise in ADU and correlation diagnostics)
@@ -21,8 +26,9 @@ It writes, next to itself:
                          gain_sum (covariances summed to max_lag added back)
                          separates brighter-fatter (slope ~0) from
                          non-linearity (slope ~ that of gain)
-  detector_rows.ecsv     one row per channel/chip, ready to be reviewed and
-                         merged into conf/lbc_detector.ecsv
+  detector_rows.ecsv     one row per channel/chip (gain, rdnoise, gain_flux),
+                         ready to be reviewed and merged into
+                         conf/lbc_detector.ecsv
   run_log.json           LBCgo version/commit, parameters, input checksums
 Installing the rows into the package table is a separate, reviewed step.
 """
@@ -51,6 +57,8 @@ PARAMS = {
     'sigma': 4.0,         # clipping threshold
     'cell': 50,           # block size for the variances [px]
     'max_lag': 3,         # lags summed for gain_sum (0 = skip)
+    'flux_max_dt': 60.0,  # gain_flux: only pairs with flats <= this many
+                          # seconds apart (None = all pairs)
     'gain_model': 'linear',  # 'linear': intercept of gain vs level;
                              # 'median': median over sets
     'min_sets': 3,        # fewer sets per chip -> median instead of the fit
@@ -113,6 +121,14 @@ def main():
             max_lag=params['max_lag'])
         t['set'] = set_id
         t['mjd'] = float(np.mean(rows['mjd_obs']))
+        flat_mjd = rows['mjd_obs'][rows['role'] == 'flat']
+        t['flat_dt'] = float(abs(flat_mjd[1] - flat_mjd[0]) * 86400.0)
+        t['flat_dt'].unit = 's'
+        if 'lbcobnam' in rows.colnames:
+            obs = set(rows['lbcobnam'][rows['role'] == 'flat'])
+            if len(obs) > 1:
+                print(f'WARNING set {set_id}: flats from different OBs '
+                      f'{sorted(obs)} (rotator angle?)')
         results.append(t)
         print(f'set {set_id}:', ', '.join(
             f"chip {r['chip']} level={r['level']:.0f} g={r['gain']:.3f} "
@@ -129,7 +145,7 @@ def main():
     product, fit = detector.summarize_gain_rdnoise(
         results, model=params['gain_model'], min_sets=params['min_sets'],
         source=source, mjd_start=params['mjd_start'],
-        mjd_end=params['mjd_end'])
+        mjd_end=params['mjd_end'], flux_max_dt=params['flux_max_dt'])
     fit.write(HERE / 'gain_fit.ecsv', format='ascii.ecsv', overwrite=True)
     for r in fit:
         print(f"{r['channel']} chip {r['chip']}: {r['model']} n={r['n']} "
@@ -138,7 +154,8 @@ def main():
               f"(gain_nn {r['gain_nn_slope_pct_per_10k']:+.2f}, gain_sum "
               f"{r['gain_sum_slope_pct_per_10k']:+.2f}"
               f"+-{r['gain_sum_slope_pct_err']:.2f} %/10k) "
-              f"RN={r['rdnoise']:.2f} e-")
+              f"RN={r['rdnoise']:.2f} e- gain_flux={r['gain_flux']:.3f}"
+              f"+-{r['gain_flux_err']:.3f} (n={r['n_flux']})")
     detector.write_detector_table(product, str(HERE / 'detector_rows.ecsv'),
                                   overwrite=True)
 

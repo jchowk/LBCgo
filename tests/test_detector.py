@@ -104,8 +104,13 @@ GIALLONGO_LBCB = {1: (1.96, 11.4), 2: (2.09, 11.6), 3: (2.06, 11.6),
 
 def test_packaged_table_seeded_with_lbcb_values():
     table = detector.read_detector_table()
-    assert list(table.colnames) == detector.TABLE_COLUMNS
+    assert set(table.colnames) == set(detector.TABLE_COLUMNS
+                                      + detector.OPTIONAL_TABLE_COLUMNS)
     assert len(table) == 4
+    # No flux gain for the 2006 values: lookup falls back to the gain
+    assert np.all(np.isnan(table['gain_flux']))
+    assert detector.lookup_gain_flux(table, 'LBCB', 2, 56981.3) == \
+        (2.09, 'gain')
     assert set(table['channel']) == {'LBCB'}
     for chip, (gain, rn) in GIALLONGO_LBCB.items():
         # Open-ended rows match any date, and an unknown date
@@ -461,8 +466,10 @@ def test_summarize_gain_rdnoise_linear_and_median():
                 _results(levels[:2], [2.0, 2.1], [6.0, 6.0], chip=2)])
     rows, fit = detector.summarize_gain_rdnoise(r, source='test',
                                                 mjd_start=60000.)
-    assert list(rows.colnames) == detector.TABLE_COLUMNS
+    assert list(rows.colnames) == (detector.TABLE_COLUMNS[:4] + ['gain_flux']
+                                   + detector.TABLE_COLUMNS[4:])
     assert list(fit.colnames) == detector.FIT_COLUMNS
+    assert np.all(np.isnan(rows['gain_flux']))     # no gain_sum column
     assert str(rows['gain'].unit) == 'electron / adu'
     assert str(rows['rdnoise'].unit) == 'electron'
     assert rows['source'][0] == 'test' and rows['mjd_start'][0] == 60000.
@@ -652,3 +659,67 @@ def test_summarize_without_gain_sum_columns():
     assert np.isnan(fit['gain_sum_slope_pct_per_10k'][0])
     assert np.isnan(fit['gain_sum_median'][0])
     assert list(fit.colnames) == detector.FIT_COLUMNS
+
+
+# ---------------------------------------------------------------------------
+# Flux gain (gain_flux): summary, table column, lookup
+# ---------------------------------------------------------------------------
+
+def _results_with_sum(dts, gsum, gsum_err=0.006):
+    n = len(dts)
+    r = _results(np.linspace(5e3, 25e3, n), np.full(n, 1.80),
+                 np.full(n, 5.0))
+    r['gain_sum'] = gsum
+    r['gain_sum_err'] = np.full(n, gsum_err)
+    r['flat_dt'] = dts
+    return r
+
+
+def test_summarize_gain_flux_uses_close_pairs():
+    # Two pairs far apart in time read low, as in the 2025-05 data
+    r = _results_with_sum([45., 48., 145., 41., 212.],
+                          [1.760, 1.770, 1.740, 1.765, 1.730])
+    rows, fit = detector.summarize_gain_rdnoise(r)
+    assert fit['n_flux'][0] == 3
+    assert np.isclose(rows['gain_flux'][0], 1.765)
+    assert np.isclose(fit['gain_flux'][0], 1.765)
+    assert str(rows['gain_flux'].unit) == 'electron / adu'
+    expected_err = max(np.std([1.760, 1.770, 1.765], ddof=1) / np.sqrt(3),
+                       0.006 / np.sqrt(3))
+    assert np.isclose(fit['gain_flux_err'][0], expected_err)
+    # flux_max_dt=None, or no flat_dt column: all sets
+    rows_all, fit_all = detector.summarize_gain_rdnoise(r, flux_max_dt=None)
+    assert fit_all['n_flux'][0] == 5
+    assert np.isclose(rows_all['gain_flux'][0], 1.760)
+    r.remove_column('flat_dt')
+    assert detector.summarize_gain_rdnoise(r)[1]['n_flux'][0] == 5
+    # No qualifying pair: NaN, not a fallback to distant pairs
+    far = _results_with_sum([150., 160., 170.], [1.74, 1.75, 1.73])
+    rows_far, fit_far = detector.summarize_gain_rdnoise(far)
+    assert fit_far['n_flux'][0] == 0 and np.isnan(rows_far['gain_flux'][0])
+
+
+def test_detector_table_gain_flux_roundtrip_and_lookup(tmp_path):
+    t = Table(rows=[('LBCR', 1, 1.742, 9.75, 1.664, 60822.0, np.nan, 'x'),
+                    ('LBCR', 2, 1.704, 12.4, np.nan, 60822.0, np.nan, 'x')],
+              names=['channel', 'chip', 'gain', 'rdnoise', 'gain_flux',
+                     'mjd_start', 'mjd_end', 'source'])
+    out = detector.write_detector_table(t, str(tmp_path / 'd.ecsv'))
+    back = detector.read_detector_table(out)
+    assert detector.lookup_gain_flux(back, 'LBCR', 1, 60900.) == \
+        (1.664, 'gain_flux')
+    assert detector.lookup_gain_flux(back, 'LBCR', 2, 60900.) == \
+        (1.704, 'gain')
+    assert detector.lookup_gain_flux(back, 'LBCR', 1, 60000.) is None
+    # The per-pixel lookup is unchanged
+    assert detector.lookup_detector_params(back, 'LBCR', 1, 60900.) == \
+        (1.742, 9.75)
+
+
+def test_read_detector_table_adds_missing_gain_flux(tmp_path):
+    t = Table(rows=[('LBCB', 1, 1.8, 8.7, np.nan, np.nan, 'old')],
+              names=detector.TABLE_COLUMNS)
+    out = detector.write_detector_table(t, str(tmp_path / 'old.ecsv'))
+    back = detector.read_detector_table(out)
+    assert 'gain_flux' in back.colnames and np.isnan(back['gain_flux'][0])
+    assert detector.lookup_gain_flux(back, 'LBCB', 1) == (1.8, 'gain')
