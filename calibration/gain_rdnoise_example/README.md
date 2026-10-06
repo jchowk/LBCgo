@@ -30,7 +30,7 @@ g0; read noise = g0 × median read noise in ADU. With fewer than
 |---|---|
 | `results_per_set.ecsv` | every measurement: one row per set and chip, with `level` [ADU], `rdnoise_adu`, `k`, `rho_x`, `rho_y`, `bias_rho_x`, `bias_rho_y`, `gain_nn`, `rho_sum`, `rho_sum_err`, `bias_rho_sum`, `gain_sum`, `gain_sum_err` |
 | `gain_fit.ecsv` | one row per channel and chip: `model` (`linear`/`median`), `n`, `gain0` ± `gain0_err`, slope in % per 10,000 ADU ± error, residual `rms`, level range, median gain for comparison, read noise, and the brighter-fatter diagnostics `rho_slope_per_10k`, `gain_nn_slope_pct_per_10k`, `rho_sum_slope_per_10k`, `gain_sum_median`, `gain_sum_slope_pct_per_10k` ± `gain_sum_slope_pct_err` |
-| `detector_rows.ecsv` | one row per channel and chip (gain = `gain0`), in the format of `LBCgo/conf/lbc_detector.ecsv`, with `source` naming this directory and the LBCgo commit |
+| `detector_rows.ecsv` | one row per channel and chip (`gain` = `gain0`, `rdnoise`, `gain_flux`), in the format of `LBCgo/conf/lbc_detector.ecsv`, with `source` naming this directory and the LBCgo commit |
 | `run_log.json` | date, LBCgo version and commit (`+dirty` if the imported code has uncommitted changes), parameters, SHA-256 of every input and output |
 
 Reading `gain_fit.ecsv`: if the brighter-fatter effect explains the slope,
@@ -46,6 +46,29 @@ leaves `gain_sum` flat; non-linearity creates no covariances and gives
 `gain_sum_slope_pct_per_10k` ± `gain_sum_slope_pct_err` with
 `slope_pct_per_10k`. Summing 48 lags is noisy (~1 % per set for the default
 1000-px box), so for this test run on the whole chip: `run.py --box 0`.
+
+### Two gains
+
+- `gain` (the zero-level intercept g0) is the **per-pixel** gain: it sets
+  the per-pixel variance and is what the weight maps use.
+- `gain_flux` is the median `gain_sum` and is the gain for a **flux summed
+  over pixels** (Poisson errors of sources, converting fluxes to
+  electrons). For a readout that spreads charge with a kernel whose
+  weights sum to H (charge-transfer inefficiency: H = 1; a video-chain
+  undershoot: H < 1), the mean of an aperture sum scales as H and its
+  variance as H², so mean/variance of aperture sums is the flux gain; with
+  the brighter-fatter effect gone, `gain_sum` is that quantity.
+
+They agree where pixels are uncorrelated at zero signal. In the 2025-05
+data they differ by −4.6 % (LBCR chip 1) and +2.8 % (LBCR chip 2), and by
+≤ 1.2 % elsewhere. `gain_sum` is sensitive to changes of the twilight
+between the two exposures (pairs 140–210 s apart read 0.5–0.8 % low), so
+`gain_flux` uses only pairs whose flats are at most `PARAMS['flux_max_dt']`
+(60 s) apart (`flat_dt` in `results_per_set.ecsv`; `n_flux` in
+`gain_fit.ecsv`; NaN if no pair qualifies). `run.py` also warns when the
+two flats of a set come from different OBs (`lbcobnam`, e.g. rotator angle
+pa0 vs pa180). In the package, `detector.lookup_gain_flux` returns
+`gain_flux`, or `gain` where it is unknown.
 
 It does **not** edit `LBCgo/conf/lbc_detector.ecsv`. Review
 `detector_rows.ecsv` (e.g. against Giallongo et al. 2008 Table 1 for LBCB),
@@ -75,6 +98,7 @@ z- and Y-band twilight flats: fringing changes through twilight on scales
 the 50-px blocks do not remove. Use several pairs per channel at different
 levels: the fit needs the spread, and its residuals show the uncertainty.
 
+For `gain_flux`, take the two flats of a pair consecutively (≤ 60 s apart).
 The two flats of a pair should be at similar levels; across pairs, spread
 the levels over roughly 5,000–35,000 ADU above bias (at least three pairs
 per chip, for the fit), well below saturation (`measure_gain_rdnoise_files` refuses flats above 70 %
