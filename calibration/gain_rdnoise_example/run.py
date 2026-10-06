@@ -6,11 +6,19 @@ Inputs:  inputs.ecsv in this directory. One row per raw frame, with a `set`
 Usage:   LBCGO_RAW=/path/to/raw python run.py [--raw DIR] [--box 1000]
 
 This script only orchestrates: the measurement is
-LBCgo.detector.measure_gain_rdnoise_files (tested in tests/test_detector.py).
+LBCgo.detector.measure_gain_rdnoise_files and the combination of sets is
+LBCgo.detector.summarize_gain_rdnoise (both tested in tests/test_detector.py).
+The apparent photon-transfer gain rises with flat level (brighter-fatter
+effect), so with PARAMS['gain_model'] = 'linear' the product gain is the
+zero-level intercept of a straight-line fit of gain against level per chip,
+and the read noise is that gain times the median read noise in ADU.
 It writes, next to itself:
-  results_per_set.ecsv   every measurement (one row per set and chip)
-  detector_rows.ecsv     one row per channel/chip (median over sets), ready
-                         to be reviewed and merged into conf/lbc_detector.ecsv
+  results_per_set.ecsv   every measurement (one row per set and chip, with
+                         level, read noise in ADU and correlation diagnostics)
+  gain_fit.ecsv          the fit per channel/chip: intercept, slope, scatter,
+                         and the brighter-fatter diagnostics
+  detector_rows.ecsv     one row per channel/chip, ready to be reviewed and
+                         merged into conf/lbc_detector.ecsv
   run_log.json           LBCgo version/commit, parameters, input checksums
 Installing the rows into the package table is a separate, reviewed step.
 """
@@ -23,7 +31,6 @@ import os
 import subprocess
 from pathlib import Path
 
-import astropy.units as u
 import numpy as np
 from astropy.io import fits
 from astropy.table import Table, vstack
@@ -38,6 +45,9 @@ PARAMS = {
     'box': 1000,          # central region of each trimmed chip [px]
     'sigma': 4.0,         # clipping threshold
     'cell': 50,           # block size for the variances [px]
+    'gain_model': 'linear',  # 'linear': intercept of gain vs level;
+                             # 'median': median over sets
+    'min_sets': 3,        # fewer sets per chip -> median instead of the fit
     'mjd_start': np.nan,  # validity range written to the product rows
     'mjd_end': np.nan,
 }
@@ -96,27 +106,28 @@ def main():
         t['mjd'] = float(np.mean(rows['mjd_obs']))
         results.append(t)
         print(f'set {set_id}:', ', '.join(
-            f"chip {r['chip']} g={r['gain']:.3f} RN={r['rdnoise']:.2f}"
+            f"chip {r['chip']} level={r['level']:.0f} g={r['gain']:.3f} "
+            f"RN={r['rdnoise']:.2f}"
             for r in t))
 
     results = vstack(results)
     results.write(HERE / 'results_per_set.ecsv', format='ascii.ecsv',
                   overwrite=True)
 
-    # One product row per channel/chip: median over sets
-    product = Table(names=detector.TABLE_COLUMNS,
-                    dtype=['U4', 'i4', 'f8', 'f8', 'f8', 'f8', 'U200'])
+    # One product row per channel/chip (see the module docstring)
     commit = git_commit()
     source = f'calibration/{HERE.name} (LBCgo {commit[:10]})'
-    for channel in sorted(set(results['channel'])):
-        for chip in sorted(set(results['chip'])):
-            sel = (results['channel'] == channel) & (results['chip'] == chip)
-            product.add_row((channel, chip,
-                             float(np.median(results['gain'][sel])),
-                             float(np.median(results['rdnoise'][sel])),
-                             params['mjd_start'], params['mjd_end'], source))
-    product['gain'].unit = u.electron / u.adu
-    product['rdnoise'].unit = u.electron
+    product, fit = detector.summarize_gain_rdnoise(
+        results, model=params['gain_model'], min_sets=params['min_sets'],
+        source=source, mjd_start=params['mjd_start'],
+        mjd_end=params['mjd_end'])
+    fit.write(HERE / 'gain_fit.ecsv', format='ascii.ecsv', overwrite=True)
+    for r in fit:
+        print(f"{r['channel']} chip {r['chip']}: {r['model']} n={r['n']} "
+              f"g0={r['gain0']:.3f}+-{r['gain0_err']:.3f} "
+              f"slope={r['slope_pct_per_10k']:+.2f}%/10k ADU "
+              f"(gain_nn {r['gain_nn_slope_pct_per_10k']:+.2f}%/10k) "
+              f"RN={r['rdnoise']:.2f} e-")
     detector.write_detector_table(product, str(HERE / 'detector_rows.ecsv'),
                                   overwrite=True)
 
@@ -129,7 +140,8 @@ def main():
         'inputs_sha256': {str(f): sha256(raw / f)
                           for f in inputs['filename']},
         'outputs_sha256': {name: sha256(HERE / name) for name in
-                           ('results_per_set.ecsv', 'detector_rows.ecsv')},
+                           ('results_per_set.ecsv', 'gain_fit.ecsv',
+                            'detector_rows.ecsv')},
     }
     (HERE / 'run_log.json').write_text(json.dumps(log, indent=2) + '\n')
     print(f'wrote {len(product)} rows to detector_rows.ecsv')
