@@ -1,11 +1,13 @@
 {
-  "date_utc": "2026-10-06T14:54:59.876156+00:00",
+  "date_utc": "2026-10-06T15:10:03.192529+00:00",
   "lbcgo_version": "0.1.6",
-  "lbcgo_commit": "e483600d71874c8164956773fb9b437d317761ff",
+  "lbcgo_commit": "d82b7f59c36e1743af6f94fd5d87bd4bd5e74eba",
   "params": {
     "box": 1000,
     "sigma": 4.0,
     "cell": 50,
+    "gain_model": "linear",
+    "min_sets": 3,
     "mjd_start": null,
     "mjd_end": null
   },
@@ -53,6 +55,7 @@
   },
   "outputs_sha256": {
     "results_per_set.ecsv": "82de71ff1e6c2d19489db70473939491b81ce670109b53b5b9cb041c0e05d317",
-    "detector_rows.ecsv": "ef5df431d4b71e7b2183ae837dbf58c8146304c6c946ecc8d5e5cfe59449a827"
+    "gain_fit.ecsv": "2d42a157172bb900018fe36d80dcfd16f1a77a1730b849062671a07a1e0f4d05",
+    "detector_rows.ecsv": "4f425cf4eea13a8b500f871cc2744b88c2a5e8b4a21fe0e4bb479aefae7575a5"
   }
 }
