@@ -1,11 +1,12 @@
 {
-  "date_utc": "2026-10-06T15:10:03.192529+00:00",
+  "date_utc": "2026-10-06T15:55:28.719924+00:00",
   "lbcgo_version": "0.1.6",
-  "lbcgo_commit": "d82b7f59c36e1743af6f94fd5d87bd4bd5e74eba",
+  "lbcgo_commit": "2bde24c4a1b200ddab871aa952c76f3d0f7cc13f",
   "params": {
-    "box": 1000,
+    "box": null,
     "sigma": 4.0,
     "cell": 50,
+    "max_lag": 3,
     "gain_model": "linear",
     "min_sets": 3,
     "mjd_start": null,
@@ -54,8 +55,8 @@
     "lbcr.20250527.024836.fits.gz": "7ce862e758d5ec78b9789483631c9887499bc371f55a495bbaefcfdc3a246718"
   },
   "outputs_sha256": {
-    "results_per_set.ecsv": "82de71ff1e6c2d19489db70473939491b81ce670109b53b5b9cb041c0e05d317",
-    "gain_fit.ecsv": "2d42a157172bb900018fe36d80dcfd16f1a77a1730b849062671a07a1e0f4d05",
-    "detector_rows.ecsv": "4f425cf4eea13a8b500f871cc2744b88c2a5e8b4a21fe0e4bb479aefae7575a5"
+    "results_per_set.ecsv": "1be950a1c567b7a4f81055c39fc30c35dde88c1048d8745f16009337a194db5c",
+    "gain_fit.ecsv": "e03458b4eaafebb946ab8e33b7ff247fe7176b6e187a72593f1a30bce6a2a06a",
+    "detector_rows.ecsv": "7401885293d7afe9292b4257fcaad2f8279d1d1638a475988ea4228353e1f983"
   }
 }
