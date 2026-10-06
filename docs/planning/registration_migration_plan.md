@@ -339,6 +339,77 @@ Purpose: a fair benchmark and an immediate improvement for users.
       angle; avoid z/Y-band flats (fringing). `lookup_detector_params` warns
       when two matching rows share `mjd_start` (`detector_table_conflicts`
       lists them): give new rows a finite `mjd_start`.
+- [x] Level dependence of the photon-transfer gain. The second real run
+      (branch `202505_calibration`, commit `83d8100`, several flat pairs per
+      chip at different levels) shows the apparent gain rising linearly with
+      flat level: +1.8–2.1 % per 10,000 ADU on LBCB and +2.9–5.1 % on LBCR,
+      with residuals of 0.1–0.4 %. On LBCB that is several times what the
+      < 1 % linearity residuals of Giallongo et al. (2008) allow, and is the
+      signature of the brighter-fatter effect: charge pushed into
+      neighbouring pixels lowers the per-pixel variance, raises the
+      apparent gain, and leaves positive nearest-neighbour covariances in
+      the flat difference (Antilogus et al. 2014, JINST 9, C03048; Astier
+      et al. 2019, A&A 629, A36). (An earlier version of this item called
+      the LBCR CCDs "thick, deep-depletion"; none of the references read
+      for this plan says so. Unverified.) A median over sets therefore depends on which
+      levels were observed. Adopted method (`detector.summarize_gain_rdnoise`):
+      per channel/chip, fit gain = g0 + slope × level and adopt the
+      zero-level intercept g0 as the conversion gain (median if fewer than
+      3 sets or no spread in level); read noise = g0 × median read noise in
+      ADU (the ADU value does not depend on the gain). `measure_ptc` also
+      reports `rho_x`, `rho_y` (lag-1 correlation of the flat difference,
+      in 50-px blocks) and `gain_nn`, the gain with those covariances added
+      back to the variance. If the brighter-fatter effect explains the
+      trend, `rho` grows with level and `gain_nn` is nearly flat (verified
+      on a simulation in `tests/test_detector.py`: true gain 1.75, apparent
+      1.79–2.00, intercept 1.749, `gain_nn` 1.75–1.77). `gain_nn` ignores
+      longer-range covariances, so it is a test, not the adopted value.
+      For the weight maps the intercept is the right value: sky levels are
+      low, and the conversion gain sets the Poisson term.
+- [x] Re-run of `202505_calibration` with the new `run.py` (commit
+      `eede421`, five sets per chip; assessed 2026-10-06): nearest-neighbour
+      covariances explain 75–103 % of the LBCB slope (`gain_nn` slope
+      −0.05 to +0.51 %/10k ADU), i.e. brighter-fatter, but only 11–30 % of
+      the LBCR slope (`gain_nn` keeps +2.5 to +4.0 %/10k ADU), although
+      LBCR's ρ_y grows no faster than LBCB's. Other findings:
+      (a) a lag-1 anti-correlation along x (ρ_x down to −0.019 on LBCR
+      chip 2, roughly level-independent, so proportional to shot noise and
+      apparently electronic; the same chip has the high read noise and
+      `bias_rho_x` ≈ −0.05), which pushes `gain_nn` 1–8 % above the
+      intercept; (b) the intercept moves by up to 1.1 % between a linear
+      and a quadratic fit, so the systematic uncertainty (1–3 %) exceeds
+      `gain0_err` (0.1–0.4 %); (c) LBCB chips 2 and 3 read noise rises
+      ~5 % through the bias sequence (01:28–01:41 UT; these are the
+      start-of-night `biascheck` frames, to be replaced); (d) LBCB read
+      noise in ADU agrees with Giallongo Table 1 (RN/gain) for chip 2 and
+      within 4–8 % for chips 3–4, while the gains are 16–18 % lower: the
+      two measurements differ in electron scale rather than in ADC
+      conversion; compare with the `GAIN` keywords of 2025 headers.
+- [x] Covariance sum to separate brighter-fatter from non-linearity:
+      `measure_ptc(max_lag=3)` sums the correlation coefficients of the
+      flat difference over all lags with |dx|, |dy| ≤ 3 (`rho_sum`;
+      `_cell_covariance_sum`, removing a plane per 50-px block and
+      correcting the −3(1 + S)/n bias of each lag) and reports
+      `gain_sum` = gain with var × (1 + `rho_sum`). Charge conservation
+      makes `gain_sum` free of the brighter-fatter effect (within the lag
+      range); non-linearity creates no covariances and survives.
+      `gain_fit.ecsv` gains `rho_sum_slope_per_10k`, `gain_sum_median`,
+      `gain_sum_slope_pct_per_10k` ± err (err: the larger of the residual
+      and propagated errors). Simulations (`tests/test_detector.py`): with
+      half the charge sharing at 2 px, the gain slope 5.6 %/10k ADU leaves
+      2.4 in `gain_nn` and 0.1 ± 0.5 in `gain_sum`; with a sublinear
+      response the gain slope 4.9 stays 4.9 ± 0.6 in `gain_sum`. Noise:
+      ~1 % per set for a 1000 × 1000 box (48 lags), so run this test with
+      the whole chip (`run.py --box 0`, ~0.3 %).
+- [ ] Re-run `202505_calibration` (without the `biascheck` biases) with
+      `--box 0` and read `gain_sum_slope_pct_per_10k` for LBCR: ≈ 0 →
+      brighter-fatter with covariances beyond lag 1; ≈ the gain slope →
+      non-linearity (~1 % at 10k ADU, 2–3 % at 22k ADU), which then needs
+      an LBCR linearity test (exposure-time sequence on a stable source)
+      and a correction for bright-source photometry. Either way the
+      zero-level intercept stays the conversion gain. Then check the LBT
+      logs/headers for a controller change before date-limiting the
+      seeded LBCB rows.
 - [ ] Measure gain/read noise per chip for LBCB and LBCR from real bias and
       flat pairs (several epochs; run locally) and populate
       `conf/lbc_detector.ecsv` with validity ranges. Check the LBCB results
