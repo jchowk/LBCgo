@@ -23,7 +23,7 @@ access re-run the fit.
 Name it after the product and its version, e.g. `distortion_lbcb_v1/`,
 `gain_rdnoise_lbcr_2027a/`. A new version gets a new directory; old ones
 stay, so earlier reductions remain traceable. Copy
-[`NEW_PRODUCT.md`](NEW_PRODUCT.md) as the starting `README.md`.
+[`NEW_PRODUCT_TEMPLATE.md`](NEW_PRODUCT_TEMPLATE.md) as the starting `README.md`.
 
 Contents:
 
@@ -31,7 +31,7 @@ Contents:
   the LBCgo commit (`git rev-parse HEAD`), the product file(s) it wrote and
   their SHA-256 checksums, and the main results (e.g. fit rms) with any
   caveats.
-- `inputs.ecsv`: one row per input frame (columns in `NEW_PRODUCT.md`).
+- `inputs.ecsv`: one row per input frame (columns in `NEW_PRODUCT_TEMPLATE.md`).
   Archive filenames and `OBS_ID`s, not local paths. Build a first version
   from a directory of raw frames with [`make_inputs.py`](make_inputs.py)
   (ccdproc `ImageFileCollection`, same globs and keywords as `lbcgo()`),
