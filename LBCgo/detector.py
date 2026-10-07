@@ -48,6 +48,16 @@ PTC_COLUMNS = ['level', 'rdnoise_adu', 'k', 'rho_x', 'rho_y', 'bias_rho_x',
 TABLE_COLUMNS = ['channel', 'chip', 'gain', 'rdnoise', 'mjd_start',
                  'mjd_end', 'source']
 
+# Optional detector-table columns (NaN when absent or unknown).
+# gain_flux: electrons per ADU of a flux summed over several pixels, i.e.
+# the gain with the pixel-to-pixel covariances included (median gain_sum of
+# measure_ptc over suitable flat pairs). It differs from the per-pixel
+# ``gain`` where the readout correlates pixels even at zero signal
+# (charge-transfer inefficiency, video-chain undershoot). Use it for
+# Poisson errors of source fluxes; ``gain`` sets the per-pixel variance
+# (weight maps).
+OPTIONAL_TABLE_COLUMNS = ['gain_flux']
+
 
 def lbc_channel(header, filename=None):
     """Return 'LBCB', 'LBCR' or None for a header (and optional filename).
@@ -84,20 +94,16 @@ def read_detector_table(filename=None):
         filename = DEFAULT_TABLE
     elif not os.path.exists(filename):
         raise FileNotFoundError('Detector table {0} not found.'.format(filename))
-    return Table.read(filename, format='ascii.ecsv')
+    table = Table.read(filename, format='ascii.ecsv')
+    for col in OPTIONAL_TABLE_COLUMNS:
+        if col not in table.colnames:
+            table[col] = np.full(len(table), np.nan)
+            table[col].unit = u.electron / u.adu
+    return table
 
 
-def lookup_detector_params(table, channel, chip, mjd=None):
-    """Return (gain, rdnoise) from ``table`` for a channel/chip/date, or None.
-
-    If several rows match, the one with the latest ``mjd_start`` wins, so a
-    newer row with a finite ``mjd_start`` supersedes an open-ended older one.
-    If the latest ``mjd_start`` is shared by more than one matching row
-    (e.g. two open-ended rows), the choice is ambiguous: the first such row
-    is used and a ``UserWarning`` is issued (see
-    :func:`detector_table_conflicts`). A row matches an unknown date
-    (``mjd=None``) only if it covers all dates.
-    """
+def _lookup_row(table, channel, chip, mjd=None):
+    """The matching row of ``table`` (see :func:`lookup_detector_params`)."""
     if table is None or channel is None or len(table) == 0:
         return None
     rows = table[(np.char.upper(np.asarray(table['channel'], dtype=str))
@@ -121,9 +127,41 @@ def lookup_detector_params(table, channel, chip, mjd=None):
                       'row a finite mjd_start or end the older one.'.format(
                           channel, chip, int(best.sum()),
                           'open' if np.isinf(start.max()) else start.max()),
-                      UserWarning, stacklevel=2)
-    row = rows[np.argmax(best)]
+                      UserWarning, stacklevel=3)
+    return rows[np.argmax(best)]
+
+
+def lookup_detector_params(table, channel, chip, mjd=None):
+    """Return (gain, rdnoise) from ``table`` for a channel/chip/date, or None.
+
+    If several rows match, the one with the latest ``mjd_start`` wins, so a
+    newer row with a finite ``mjd_start`` supersedes an open-ended older one.
+    If the latest ``mjd_start`` is shared by more than one matching row
+    (e.g. two open-ended rows), the choice is ambiguous: the first such row
+    is used and a ``UserWarning`` is issued (see
+    :func:`detector_table_conflicts`). A row matches an unknown date
+    (``mjd=None``) only if it covers all dates.
+    """
+    row = _lookup_row(table, channel, chip, mjd)
+    if row is None:
+        return None
     return float(row['gain']), float(row['rdnoise'])
+
+
+def lookup_gain_flux(table, channel, chip, mjd=None):
+    """Flux gain (e-/ADU) for a channel/chip/date, with its source.
+
+    Same row selection as :func:`lookup_detector_params`. Returns
+    ``(gain_flux, 'gain_flux')`` if the row has a finite ``gain_flux``,
+    ``(gain, 'gain')`` (the per-pixel gain) if it does not, and None if no
+    row matches. See :data:`OPTIONAL_TABLE_COLUMNS` for the difference.
+    """
+    row = _lookup_row(table, channel, chip, mjd)
+    if row is None:
+        return None
+    if 'gain_flux' in row.colnames and np.isfinite(float(row['gain_flux'])):
+        return float(row['gain_flux']), 'gain_flux'
+    return float(row['gain']), 'gain'
 
 
 def detector_table_conflicts(table):
@@ -598,11 +636,13 @@ FIT_COLUMNS = ['channel', 'chip', 'model', 'n', 'gain0', 'gain0_err',
                'level_max', 'gain_median', 'rdnoise_adu', 'rdnoise_adu_std',
                'rdnoise', 'rho_slope_per_10k', 'gain_nn_slope_pct_per_10k',
                'rho_sum_slope_per_10k', 'gain_sum_median',
-               'gain_sum_slope_pct_per_10k', 'gain_sum_slope_pct_err']
+               'gain_sum_slope_pct_per_10k', 'gain_sum_slope_pct_err',
+               'gain_flux', 'gain_flux_err', 'n_flux']
 
 
 def summarize_gain_rdnoise(results, model='linear', min_sets=3,
-                           source='', mjd_start=np.nan, mjd_end=np.nan):
+                           source='', mjd_start=np.nan, mjd_end=np.nan,
+                           flux_max_dt=60.0):
     """Combine per-set measurements into detector-table rows.
 
     Parameters
@@ -616,12 +656,21 @@ def summarize_gain_rdnoise(results, model='linear', min_sets=3,
         'median': median over sets (ignores any level dependence).
     source, mjd_start, mjd_end
         Written into the product rows.
+    flux_max_dt : float or None, optional
+        ``gain_flux`` uses only sets whose two flats were taken at most
+        this many seconds apart (``flat_dt`` column of ``results``; all
+        sets if that column is absent or ``flux_max_dt`` is None). In the
+        2025-05 data, pairs 140-210 s apart gave gain_sum 0.5-0.8 % low,
+        presumably because the twilight changes between the exposures and
+        leaves small-scale structure that the covariance sum counts.
+        Default: 60
 
     Returns
     -------
     rows : astropy.table.Table
-        :data:`TABLE_COLUMNS`, one row per channel/chip, with
-        rdnoise = gain x median(rdnoise_adu).
+        :data:`TABLE_COLUMNS` plus ``gain_flux`` (after ``rdnoise``), one
+        row per channel/chip, with rdnoise = gain x median(rdnoise_adu) and
+        gain_flux = median gain_sum of the selected sets (NaN if none).
     fit : astropy.table.Table
         :data:`FIT_COLUMNS`: the fit and diagnostics per channel/chip
         (slopes in percent of gain0 per 10,000 ADU; rho_slope is the change
@@ -632,7 +681,9 @@ def summarize_gain_rdnoise(results, model='linear', min_sets=3,
         fit-residual error and the error propagated from gain_sum_err.
         gain_sum_slope near zero means the trend is
         the brighter-fatter effect; a gain_sum_slope close to the gain
-        slope means non-linearity).
+        slope means non-linearity). gain_flux_err is the scatter of the
+        selected gain_sum values / sqrt(n_flux), or their propagated
+        error if larger.
     """
     for col in ('level', 'rdnoise_adu'):
         if col not in results.colnames:
@@ -687,8 +738,24 @@ def summarize_gain_rdnoise(results, model='linear', min_sets=3,
                 gsum_slope_err = max(gsum_slope_err,
                                      1e6 * prop / gsum0)
 
-            rows.append((channel, int(chip), g0, rdnoise, mjd_start, mjd_end,
-                         source))
+            # Flux gain: gain_sum is level-independent, so take the median
+            # over the sets whose flats are close in time
+            sel = np.isfinite(gsum)
+            if flux_max_dt is not None and 'flat_dt' in r.colnames:
+                sel &= column('flat_dt') <= flux_max_dt
+            n_flux = int(sel.sum())
+            gain_flux = float(np.median(gsum[sel])) if n_flux else np.nan
+            if n_flux > 1:
+                gain_flux_err = max(
+                    float(np.std(gsum[sel], ddof=1) / np.sqrt(n_flux)),
+                    float(np.sqrt(np.nansum(gsum_err[sel] ** 2)) / n_flux))
+            elif n_flux == 1:
+                gain_flux_err = float(gsum_err[sel][0])
+            else:
+                gain_flux_err = np.nan
+
+            rows.append((channel, int(chip), g0, rdnoise, gain_flux,
+                         mjd_start, mjd_end, source))
             fit_rows.append((
                 channel, int(chip), f['model'], f['n'], g0, f['gain0_err'],
                 1e4 * f['slope'] / g0 * 100, 1e4 * f['slope_err'] / g0 * 100,
@@ -701,14 +768,18 @@ def summarize_gain_rdnoise(results, model='linear', min_sets=3,
                 slope_per_10k(column('rho_sum')),
                 float(np.nanmedian(gsum)) if np.isfinite(gsum).any()
                 else np.nan,
-                gsum_slope, gsum_slope_err))
+                gsum_slope, gsum_slope_err, gain_flux, gain_flux_err,
+                n_flux))
 
-    product = Table(rows=rows, names=TABLE_COLUMNS,
-                    dtype=['U4', 'i4', 'f8', 'f8', 'f8', 'f8', 'U200'])
+    names = TABLE_COLUMNS[:4] + ['gain_flux'] + TABLE_COLUMNS[4:]
+    product = Table(rows=rows, names=names,
+                    dtype=['U4', 'i4', 'f8', 'f8', 'f8', 'f8', 'f8', 'U200'])
     product['gain'].unit = u.electron / u.adu
+    product['gain_flux'].unit = u.electron / u.adu
     product['rdnoise'].unit = u.electron
     fit = Table(rows=fit_rows, names=FIT_COLUMNS)
-    for col in ('gain0', 'gain0_err', 'gain_median', 'gain_sum_median'):
+    for col in ('gain0', 'gain0_err', 'gain_median', 'gain_sum_median',
+                'gain_flux', 'gain_flux_err'):
         fit[col].unit = u.electron / u.adu
     for col in ('level_min', 'level_max', 'rdnoise_adu', 'rdnoise_adu_std'):
         fit[col].unit = u.adu
