@@ -2,7 +2,7 @@
 
 Uses ccdproc's ImageFileCollection, the same way lbcgo() organises raw data
 (same file globs, header keywords, and SkyFlatTest exclusion), and writes one
-row per frame with the columns calibration/NEW_PRODUCT.md asks for:
+row per frame with the columns calibration/NEW_PRODUCT_TEMPLATE.md asks for:
 
     filename obs_id mjd_obs channel filter exptime role set notes
 

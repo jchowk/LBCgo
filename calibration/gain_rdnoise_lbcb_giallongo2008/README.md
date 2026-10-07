@@ -35,5 +35,12 @@ Measure per chip and per channel with
 `LBCgo.detector.measure_gain_rdnoise_files(flat1, flat2, bias1, bias2)`
 (two raw flats at similar, unsaturated levels and two raw biases), at several
 epochs. Record those runs in a new directory (e.g. `gain_rdnoise_2027a/`)
-following [`../NEW_PRODUCT.md`](../NEW_PRODUCT.md), compare with the table
+following [`../NEW_PRODUCT_TEMPLATE.md`](../NEW_PRODUCT_TEMPLATE.md), compare with the table
 above, and replace or date-limit these rows.
+
+**Status (2026-10-07):** measured rows from
+[`../gain_rdnoise_lbc_202505/`](../gain_rdnoise_lbc_202505/README.md)
+(`mjd_start` = 60822) supersede these from MJD 60822 on. These rows stay
+in force for earlier dates and when the date is unknown. The 2025 LBCB
+gains are 0.82–0.92 × these values, while read noise in ADU agrees for
+chip 2; the difference is not yet explained.

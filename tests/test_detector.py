@@ -106,18 +106,48 @@ def test_packaged_table_seeded_with_lbcb_values():
     table = detector.read_detector_table()
     assert set(table.colnames) == set(detector.TABLE_COLUMNS
                                       + detector.OPTIONAL_TABLE_COLUMNS)
-    assert len(table) == 4
+    old = table[~np.isfinite(table['mjd_start'])]
+    assert len(old) == 4 and set(old['channel']) == {'LBCB'}
     # No flux gain for the 2006 values: lookup falls back to the gain
-    assert np.all(np.isnan(table['gain_flux']))
+    assert np.all(np.isnan(old['gain_flux']))
     assert detector.lookup_gain_flux(table, 'LBCB', 2, 56981.3) == \
         (2.09, 'gain')
-    assert set(table['channel']) == {'LBCB'}
     for chip, (gain, rn) in GIALLONGO_LBCB.items():
-        # Open-ended rows match any date, and an unknown date
+        # Open-ended rows match earlier dates, and an unknown date
         assert detector.lookup_detector_params(table, 'LBCB', chip,
                                                56981.3) == (gain, rn)
         assert detector.lookup_detector_params(table, 'LBCB', chip,
                                                None) == (gain, rn)
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+PRODUCT_2025 = (REPO_ROOT / 'calibration' / 'gain_rdnoise_lbc_202505'
+                / 'detector_rows.ecsv')
+
+
+@pytest.mark.skipif(not PRODUCT_2025.exists(),
+                    reason='calibration/ not in this checkout')
+def test_packaged_table_has_2025_rows_from_product():
+    """The rows from MJD 60822 are the product's rows, unchanged."""
+    table = detector.read_detector_table()
+    product = Table.read(PRODUCT_2025, format='ascii.ecsv')
+    assert len(product) == 8 and np.all(product['mjd_start'] == 60822)
+    for row in product:
+        mjd = 60822.5
+        assert detector.lookup_detector_params(
+            table, row['channel'], row['chip'], mjd) == \
+            (row['gain'], row['rdnoise'])
+        assert detector.lookup_gain_flux(
+            table, row['channel'], row['chip'], mjd) == \
+            (row['gain_flux'], 'gain_flux')
+        # Before the product's start date: 2006 values (LBCB) or none
+        before = detector.lookup_detector_params(
+            table, row['channel'], row['chip'], 60821.9)
+        if row['channel'] == 'LBCB':
+            assert before == GIALLONGO_LBCB[row['chip']]
+        else:
+            assert before is None
+    assert len(table) == 4 + len(product)
 
 
 def test_packaged_table_lbcr_falls_back_to_header():
