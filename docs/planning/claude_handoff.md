@@ -38,9 +38,9 @@ code, the plan or the commit history. Read it before working here.
   something is wrong. Give references (paper, table, section) so results
   can be checked.
 - **Branches.** Each task goes on a new `claude/<topic>` branch made from
-  the current `origin/main`. The PI opens the PR from the UI; do not open
-  PRs unless asked. Never add commits to a branch whose PR is merged: start
-  a new branch instead. `git checkout -B` on an existing branch has been
+  the current `origin/main`. Starting a fresh branch after a PR merges is
+  the practice, not a PI requirement. Ask before opening a PR; once the PI
+  agrees, open it. `git checkout -B` on an existing branch has been
   refused as destructive.
 - **Real data.** Real-data runs happen on the PI's machine; raw data are
   not in the repo (e.g. `LBCGO_RAW=/Users/howk/Dropbox/Data/LBT/Raw/2025.05_calib/`).
