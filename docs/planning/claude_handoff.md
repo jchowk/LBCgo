@@ -25,11 +25,15 @@ code, the plan or the commit history. Read it before working here.
   (SExtractor/SCAMP/SWarp), still the default.
 - `calibration/`: one directory per calibration product (README,
   `inputs.ecsv`, `run.py`, outputs, `run_log.json`). See
-  `calibration/README.md` and the README skeleton, `NEW_PRODUCT.md`. On
-  branch `202505_calibration` the skeleton is renamed
-  `NEW_PRODUCT_TEMPLATE.md`, with every reference updated; use that name
-  once the branch is merged. `make_inputs.py` builds `inputs.ecsv` with
-  ccdproc `ImageFileCollection`.
+  `calibration/README.md` and the README skeleton,
+  `NEW_PRODUCT_TEMPLATE.md` (renamed from `NEW_PRODUCT.md` on 2026-10-07).
+  `make_inputs.py` builds `inputs.ecsv` with ccdproc
+  `ImageFileCollection`. `gain_rdnoise_lbc_202505/` is the first real
+  product.
+- These notes describe `main` after branch `202505_calibration` is merged.
+  If `calibration/gain_rdnoise_lbc_202505/` is missing on `main`, that
+  branch is still unmerged: the 2025 detector rows and the template rename
+  are there.
 
 ## How the PI works
 
@@ -109,9 +113,10 @@ Details are in plan §5.2 and `calibration/gain_rdnoise_lbc_202505/README.md`.
   It reads 0.5–0.8 % low for pairs taken 140–210 s apart.
 - `conf/lbc_detector.ecsv`: the 2006 LBCB rows (Giallongo et al. 2008,
   Table 1; open-ended) plus 8 rows measured on 2025-05-27, valid from MJD
-  60822. The latest `mjd_start` wins. Those rows are on branch
-  `202505_calibration` (commit `f5f099f`), **not yet merged to main**
-  as of 2026-10-08.
+  60822. The latest `mjd_start` wins. They are copied unchanged from
+  `calibration/gain_rdnoise_lbc_202505/detector_rows.ecsv` (a test
+  checks this). The 2006 rows still apply before MJD 60822 and for an
+  unknown date; LBCR before 60822 uses header values.
 - Unresolved: the 2025 LBCB gains are 0.82–0.92 × the 2006 values, while
   the read noise in ADU agrees for chip 2, so the electron scales differ.
   Next: check the `GAIN` keywords in 2025 headers and the LBT team's
