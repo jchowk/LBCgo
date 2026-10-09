@@ -93,7 +93,7 @@ Not part of the installed package. One subdirectory per calibration product *ver
 
 ## Packaging
 
-- Version is defined in `pyproject.toml` (and `release` in `docs/conf.py`); `main` carries a `.devN` version (currently 0.2.0.dev0) between releases. PyPI has 0.1.6 (exact commit unknown; it predates the 2026-10 changes). Release from `main` at milestones (e.g. 0.2.0 after stages A–B), tag `vX.Y.Z` on the released commit, then bump `main` to the next `.dev0`. `LBCgo.__version__` comes from installed metadata: re-run `pip install -e .` after a bump.
+- Version is defined in `pyproject.toml` (and `release` in `docs/conf.py`); `main` carries a `.devN` version (currently 0.2.0.dev0) between releases. PyPI has 0.1.6 (uploaded 2025-05-26 15:36 UTC), built from commit `0e823fc` ("Version number fix for pypi."): every tracked file in the sdist matches it; the sdist also carried the git-ignored `LBCgo/examples/` and `LBCgo/whatidid.astrom.py` from the local working tree. Release from `main` at milestones (e.g. 0.2.0 after stages A–B), tag `vX.Y.Z` on the released commit, then bump `main` to the next `.dev0`. `LBCgo.__version__` comes from installed metadata: re-run `pip install -e .` after a bump.
 - Published on PyPI as `LBCgo`
 - Uses Poetry as build backend; Python ≥ 3.11, numpy ≥ 2
 
