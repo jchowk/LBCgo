@@ -11,29 +11,31 @@ code, the plan or the commit history. Read it before working here.
 
 ## Where things are
 
-- `docs/planning/registration_migration_plan.md` is the master plan. §2
-  records PI decisions that are not to be re-litigated without the PI. The
-  checkboxes in §5–§6 are the current state. (The "Status: not yet
-  implemented" line at the top is stale; Phase 0 work and the
-  detector/gain work are done.) §3.3 holds the verified facts about LBC
-  data, §9.1 the calibration provenance rules, §11 the open items for the
-  PI, and §12 the references.
+- `docs/planning/registration_migration_plan.md` is the master plan
+  (planning only). §1.1 gives the order of work agreed on 2026-10-09; §2
+  records PI decisions that are not to be re-litigated without the PI
+  (D8 is the order of work). §3.3 holds the verified facts about LBC data,
+  §6 the native back-end design (stage D, last), §9.1 the calibration
+  provenance rules, §11 the open items for the PI, and §12 the references.
+- `docs/planning/astromatic_path_plan.md`: the current work. Record of
+  Phase 0 (§2), then stage A (robustness to known failure modes, items
+  A1–A14), stage B (validation harness and baseline on V1–V6), stage C
+  (extended-target mode on the astromatic path). Its checkboxes are the
+  current state.
+- `docs/detector_gain_rdnoise.md`: the gain/read-noise work (method,
+  results by epoch, open measurements), split out of the plan on
+  2026-10-09.
 - `LBCgo/detector.py`: the detector table (`conf/lbc_detector.ecsv`), its
   lookups, and the photon-transfer measurement and summary.
   `LBCgo/masks.py`: weight and mask maps. `LBCgo/lbcproc.py`: the
   reduction steps. `LBCgo/lbcregister.py`: the astromatic path
-  (SExtractor/SCAMP/SWarp), still the default.
+  (SExtractor/SCAMP/SWarp), the working path until stage D.
 - `calibration/`: one directory per calibration product (README,
   `inputs.ecsv`, `run.py`, outputs, `run_log.json`). See
   `calibration/README.md` and the README skeleton,
-  `NEW_PRODUCT_TEMPLATE.md` (renamed from `NEW_PRODUCT.md` on 2026-10-07).
-  `make_inputs.py` builds `inputs.ecsv` with ccdproc
-  `ImageFileCollection`. `gain_rdnoise_lbc_202505/` is the first real
-  product.
-- These notes describe `main` after branch `202505_calibration` is merged.
-  If `calibration/gain_rdnoise_lbc_202505/` is missing on `main`, that
-  branch is still unmerged: the 2025 detector rows and the template rename
-  are there.
+  `NEW_PRODUCT_TEMPLATE.md`. `make_inputs.py` builds `inputs.ecsv`, reading
+  only the needed header keywords (raw frames can carry invalid cards).
+  Measured products: `gain_rdnoise_lbc_201003/`, `gain_rdnoise_lbc_202505/`.
 
 ## How the PI works
 
@@ -89,47 +91,31 @@ code, the plan or the commit history. Read it before working here.
 - Environment, D5: Python ≥ 3.11, numpy ≥ 2. Keep SCAMP and SWarp as an
   optional back-end; SourceXtractor++ is not in the core path.
 
-## Gain and read noise: state at 2026-10-08
+## Gain and read noise: state at 2026-10-09
 
-Details are in plan §5.2 and `calibration/gain_rdnoise_lbc_202505/README.md`.
+Details are in `docs/detector_gain_rdnoise.md` and the product READMEs.
 
-- Method (`detector.measure_ptc`): photon transfer with unequal flat
-  levels (k = μ1/μ2), variances measured in 50-px blocks (whole-region
-  variances bias the gain low by 6–12 % on real twilight pairs). Also
-  reports nearest-neighbour correlations, `gain_nn`, and `gain_sum` (the
-  covariances summed over lags ≤ 3 px and added back). Plane removal per
-  block and a −3(1+S)/n bias correction per lag are both required.
-- The apparent gain rises linearly with level: +2 % per 10k ADU on LBCB
-  and +3–5 % on LBCR. This is the **brighter-fatter effect**, confirmed:
-  `gain_sum` is flat on every chip. LBCR non-linearity is ≲ 0.7 % at
-  22k ADU.
-- **Two gains.** `gain` is the zero-level intercept, per pixel: it sets
-  the per-pixel variance and weight maps. `gain_flux` is the median
-  `gain_sum` of flat pairs ≤ 60 s apart: use it for Poisson errors of
-  fluxes. They differ by −4.4 % (LBCR chip 1, CTI-like positive serial
-  correlation) and +3.4 % (LBCR chip 2, electronic anti-correlation;
-  this chip also has the high read noise, 12.4 e⁻).
-- `gain_sum` is noise-limited: run on the whole chip (`run.py --box 0`).
-  It reads 0.5–0.8 % low for pairs taken 140–210 s apart.
-- `conf/lbc_detector.ecsv`: the 2006 LBCB rows (Giallongo et al. 2008,
-  Table 1; open-ended) plus 8 rows measured on 2025-05-27, valid from MJD
-  60822. The latest `mjd_start` wins. They are copied unchanged from
-  `calibration/gain_rdnoise_lbc_202505/detector_rows.ecsv` (a test
-  checks this). The 2006 rows still apply before MJD 60822 and for an
-  unknown date; LBCR before 60822 uses header values.
-- Unresolved: the 2025 LBCB gains are 0.82–0.92 × the 2006 values, while
-  the read noise in ADU agrees for chip 2, so the electron scales differ.
-  Next: check the `GAIN` keywords in 2025 headers and the LBT team's
-  values. More epochs are planned by the PI: move `mjd_start` earlier if
-  they agree.
-- Realistic uncertainty of `gain` is about 1 % (fit model), not
-  `gain0_err`.
+- `gain` (zero-level intercept of gain vs flat level; per pixel; weight
+  maps) and `gain_flux` (median `gain_sum`; Poisson errors of fluxes).
+  The level dependence is the brighter-fatter effect. Realistic `gain`
+  uncertainty ~1 %. Run measurements on the whole chip (`run.py --box 0`).
+- `conf/lbc_detector.ecsv`: 2006 LBCB rows (Giallongo et al. 2008, open),
+  2010-03 rows (both channels, from MJD 55273), 2025-05 rows (from MJD
+  60822). Latest `mjd_start` wins; a test checks the rows against each
+  product's `detector_rows.ecsv`.
+- LBCB changed between 2010 and 2025 (gains up to 15 %, read noise 15–35 %)
+  with no known hardware change (PI, 2026-10-09); the PI is measuring
+  intermediate epochs to bracket it. LBCR is roughly stable.
+- For registration, the gain is good enough; further gain work is epoch
+  tracking, not a blocker.
 
 ## Other open work
 
-- Phase 0 astromatic improvements, plan §5.3–5.5: done, except
-  extended-target mode for SExtractor (§5.3, partial).
-- Not started: the validation harness (§5.6) and the native back-end (§6;
-  §6.6 is the switch to the native default).
-- The V1–V6 validation datasets will come from the PI (§11). Real-data registration work needs
-network access to Gaia/VizieR, which cloud sessions have blocked (§10).
+Order of work (PI, 2026-10-09; plan §1.1, D8): astromatic path first,
+distortion last.
+- Phase 0 astromatic improvements: done on synthetic tests.
+- Stage A (robustness), B (harness + baseline, needs the PI's V1–V6
+  datasets and Gaia/VizieR access, i.e. local runs; plan §10, §11) and C
+  (extended-target mode): open; see `docs/planning/astromatic_path_plan.md`.
+- Stage D (static distortion model, native back-end, plan §6): deferred;
+  to be carved out into its own plan when started.

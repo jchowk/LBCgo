@@ -285,7 +285,7 @@ def test_register_subset_chips(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# go_sextractor — Phase 0 §5.3: weights, flags, tunables, tool names
+# go_sextractor — Phase 0 (astromatic plan §2.3): weights, flags, tunables, tool names
 # ---------------------------------------------------------------------------
 
 def _run_sextractor(tmp_path, which=lambda n: '/usr/bin/' + n, **kwargs):
@@ -436,7 +436,7 @@ def test_register_passes_sextractor_args(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# Joint SCAMP — Phase 0 §5.4
+# Joint SCAMP — Phase 0 (astromatic plan §2.4)
 # ---------------------------------------------------------------------------
 
 FIXTURES = Path(__file__).parent / 'fixtures' / 'scamp'
@@ -677,7 +677,7 @@ def test_scamp_legacy_passes_mosaic_type(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# go_swarp — §5.5 options (weights, flux scale, combine type, background)
+# go_swarp — astromatic plan §2.5 options (weights, flux scale, combine type, background)
 # ---------------------------------------------------------------------------
 
 def _swarp_cmd(tmp_path, names=('img1_1.fits',), sidecars=(), heads=(),
