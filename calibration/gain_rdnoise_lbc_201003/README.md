@@ -15,11 +15,13 @@
 - **Supersedes:** nothing for LBCR (header values before); for LBCB, the
   Giallongo et al. (2008) rows (`../gain_rdnoise_lbcb_giallongo2008/`) from
   MJD 55273 on. They remain in force for earlier dates. These rows are in
-  turn superseded by `../gain_rdnoise_lbc_202505/` from MJD 60822.
+  turn superseded by `../gain_rdnoise_lbc_201406/` from MJD 56830 (and
+  that product by `../gain_rdnoise_lbc_202505/` from MJD 60822).
 - **Valid for:** LBCB and LBCR, MJD ≥ 55273 (2010-03-18 UT). `mjd_end` is
-  open: until further epochs are measured, the rows are applied up to MJD
-  60822, on the assumption that the detectors did not change (see Results
-  for how much the 2010 and 2025 values differ).
+  open in `detector_rows.ecsv`; in the packaged table the rows are in force
+  until MJD 56830, when the 2014 rows take over (see Results for how much
+  the 2010, 2014 and 2025 values differ; the LBCB gains of chips 2–4 are
+  8–12 % higher in 2010 than in 2014 and 2025).
 
 ## Purpose
 

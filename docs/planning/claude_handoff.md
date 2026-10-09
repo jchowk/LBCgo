@@ -112,11 +112,14 @@ Details are in plan §5.2 and `calibration/gain_rdnoise_lbc_202505/README.md`.
 - `gain_sum` is noise-limited: run on the whole chip (`run.py --box 0`).
   It reads 0.5–0.8 % low for pairs taken 140–210 s apart.
 - `conf/lbc_detector.ecsv`: the 2006 LBCB rows (Giallongo et al. 2008,
-  Table 1; open-ended) plus 8 rows measured on 2025-05-27, valid from MJD
-  60822. The latest `mjd_start` wins. They are copied unchanged from
-  `calibration/gain_rdnoise_lbc_202505/detector_rows.ecsv` (a test
-  checks this). The 2006 rows still apply before MJD 60822 and for an
-  unknown date; LBCR before 60822 uses header values.
+  Table 1; open-ended) plus 8 rows each measured 2010-03 (MJD 55273),
+  2014-06/07 (MJD 56830) and 2025-05-27 (MJD 60822). The latest
+  `mjd_start` wins. Each block is copied unchanged from
+  `calibration/gain_rdnoise_lbc_<YYYYMM>/detector_rows.ecsv` (tests check
+  this). The 2006 rows still apply before MJD 55273 and for an unknown
+  date; LBCR before 55273 uses header values. The 2014 LBCR rows rest on
+  three flat pairs only (provisional); the 2014 LBCB rows agree with 2025
+  to ~1 % but not with 2010 (chips 2–4 differ by 8–12 %).
 - Unresolved: the 2025 LBCB gains are 0.82–0.92 × the 2006 values, while
   the read noise in ADU agrees for chip 2, so the electron scales differ.
   Next: check the `GAIN` keywords in 2025 headers and the LBT team's

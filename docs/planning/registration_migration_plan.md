@@ -457,6 +457,11 @@ Purpose: a fair benchmark and an immediate improvement for users.
       LBCR before 60822 uses header values. Expected uncertainty of
       `gain`: ~1 % (linear vs quadratic fit), not the 0.1–0.4 % of
       `gain0_err`.
+- [x] 2014-06/07 rows merged into `conf/lbc_detector.ecsv` (PI decision
+      2026-10-09): 8 rows from `calibration/gain_rdnoise_lbc_201406/`,
+      `mjd_start` = 56830 (2014-06-22 UT, earliest flats used), open-ended
+      in the product, superseded by the 2025 rows at 60822. LBCB agrees with
+      2025 to ~1 %; LBCR uses three flat pairs only (provisional).
 - [ ] Measure further epochs (the PI plans several soon): move
       `mjd_start` earlier if older data agree, add date-limited rows if
       they do not. Before date-limiting the seeded LBCB rows, compare

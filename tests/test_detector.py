@@ -124,11 +124,15 @@ def test_packaged_table_seeded_with_lbcb_values():
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PRODUCT_2010 = (REPO_ROOT / 'calibration' / 'gain_rdnoise_lbc_201003'
                 / 'detector_rows.ecsv')
+PRODUCT_2014 = (REPO_ROOT / 'calibration' / 'gain_rdnoise_lbc_201406'
+                / 'detector_rows.ecsv')
 PRODUCT_2025 = (REPO_ROOT / 'calibration' / 'gain_rdnoise_lbc_202505'
                 / 'detector_rows.ecsv')
+PRODUCTS_PRESENT = (PRODUCT_2010.exists() and PRODUCT_2014.exists()
+                    and PRODUCT_2025.exists())
 
 
-@pytest.mark.skipif(not (PRODUCT_2010.exists() and PRODUCT_2025.exists()),
+@pytest.mark.skipif(not PRODUCTS_PRESENT,
                     reason='calibration/ not in this checkout')
 def test_packaged_table_has_2010_rows_from_product():
     """The rows from MJD 55273 are the product's rows, unchanged."""
@@ -137,7 +141,7 @@ def test_packaged_table_has_2010_rows_from_product():
     assert len(product) == 8 and np.all(product['mjd_start'] == 55273)
     assert np.all(np.isnan(product['mjd_end']))
     for row in product:
-        for mjd in (55273.5, 57000.0, 60821.9):   # up to the 2025 rows
+        for mjd in (55273.5, 56000.0, 56829.9):   # up to the 2014 rows
             assert detector.lookup_detector_params(
                 table, row['channel'], row['chip'], mjd) == \
                 (row['gain'], row['rdnoise'])
@@ -153,13 +157,39 @@ def test_packaged_table_has_2010_rows_from_product():
             assert before is None
 
 
-@pytest.mark.skipif(not (PRODUCT_2010.exists() and PRODUCT_2025.exists()),
+@pytest.mark.skipif(not PRODUCTS_PRESENT,
+                    reason='calibration/ not in this checkout')
+def test_packaged_table_has_2014_rows_from_product():
+    """The rows from MJD 56830 are the product's rows, unchanged."""
+    table = detector.read_detector_table()
+    product = Table.read(PRODUCT_2014, format='ascii.ecsv')
+    earlier = Table.read(PRODUCT_2010, format='ascii.ecsv')
+    assert len(product) == 8 and np.all(product['mjd_start'] == 56830)
+    assert np.all(np.isnan(product['mjd_end']))
+    for row in product:
+        for mjd in (56830.5, 58000.0, 60821.9):   # up to the 2025 rows
+            assert detector.lookup_detector_params(
+                table, row['channel'], row['chip'], mjd) == \
+                (row['gain'], row['rdnoise'])
+            assert detector.lookup_gain_flux(
+                table, row['channel'], row['chip'], mjd) == \
+                (row['gain_flux'], 'gain_flux')
+        # Before the product's start date: the 2010 rows stay in force
+        prev = earlier[(earlier['channel'] == row['channel'])
+                       & (earlier['chip'] == row['chip'])][0]
+        assert detector.lookup_detector_params(
+            table, row['channel'], row['chip'], 56829.9) == \
+            (prev['gain'], prev['rdnoise'])
+
+
+@pytest.mark.skipif(not PRODUCTS_PRESENT,
                     reason='calibration/ not in this checkout')
 def test_packaged_table_has_2025_rows_from_product():
     """The rows from MJD 60822 are the product's rows, unchanged."""
     table = detector.read_detector_table()
     product = Table.read(PRODUCT_2025, format='ascii.ecsv')
-    earlier = Table.read(PRODUCT_2010, format='ascii.ecsv')
+    earlier = Table.read(PRODUCT_2014, format='ascii.ecsv')
+    older = Table.read(PRODUCT_2010, format='ascii.ecsv')
     assert len(product) == 8 and np.all(product['mjd_start'] == 60822)
     for row in product:
         mjd = 60822.5
@@ -169,13 +199,13 @@ def test_packaged_table_has_2025_rows_from_product():
         assert detector.lookup_gain_flux(
             table, row['channel'], row['chip'], mjd) == \
             (row['gain_flux'], 'gain_flux')
-        # Before the product's start date: the 2010 rows stay in force
+        # Before the product's start date: the 2014 rows stay in force
         prev = earlier[(earlier['channel'] == row['channel'])
                        & (earlier['chip'] == row['chip'])][0]
         assert detector.lookup_detector_params(
             table, row['channel'], row['chip'], 60821.9) == \
             (prev['gain'], prev['rdnoise'])
-    assert len(table) == 4 + len(earlier) + len(product)
+    assert len(table) == 4 + len(older) + len(earlier) + len(product)
 
 
 def test_packaged_table_lbcr_falls_back_to_header():
