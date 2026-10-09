@@ -4,7 +4,7 @@
 in `inputs.ecsv` are illustrative, not real archive frames. To make a real
 product, copy this directory to a new name (e.g. `gain_rdnoise_2027a/`),
 replace `inputs.ecsv` with the real frames, rewrite this README from
-[`../NEW_PRODUCT.md`](../NEW_PRODUCT.md), and run it.
+[`../NEW_PRODUCT_TEMPLATE.md`](../NEW_PRODUCT_TEMPLATE.md), and run it.
 
 ## What `run.py` does
 

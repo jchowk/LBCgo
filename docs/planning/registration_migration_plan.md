@@ -253,7 +253,7 @@ LBCgo/
     lbcr_<version>.fits
 calibration/            (top level, not shipped in the package; §9.1)
   README.md             provenance convention
-  NEW_PRODUCT.md        README skeleton for a new calibration product
+  NEW_PRODUCT_TEMPLATE.md  README skeleton for a new calibration product
   <product>_<version>/  README.md, inputs.ecsv, run.py per product
 ```
 
@@ -449,13 +449,19 @@ Purpose: a fair benchmark and an immediate improvement for users.
       pairs ≤ 60 s apart for `gain_flux` (NaN if none), with an error
       from the scatter of those pairs; `run.py` records `flat_dt` per set
       and warns when the two flats come from different OBs (`lbcobnam`).
-- [ ] Re-run `202505_calibration` with the current `run.py` (writes
-      `gain_flux`) and review `detector_rows.ecsv` for merging into
-      `conf/lbc_detector.ecsv` with a finite `mjd_start` (e.g. 60822).
-      Expected uncertainty of `gain`: ~1 % (linear vs quadratic fit),
-      not the 0.1–0.4 % of `gain0_err`. Before date-limiting the seeded
-      LBCB rows, compare with the `GAIN` keywords of the 2025 headers and
-      the LBT/LBC team's current values: both gains are 0.82–0.92 × the
+- [x] 2025-05-27 rows merged into `conf/lbc_detector.ecsv` (PI decision
+      2026-10-07): 8 rows (LBCB + LBCR, `gain`, `rdnoise`, `gain_flux`)
+      from `calibration/gain_rdnoise_lbc_202505/`, `mjd_start` = 60822,
+      open-ended. They supersede the 2006 LBCB rows from MJD 60822; the
+      2006 rows still apply to earlier dates and to an unknown date, and
+      LBCR before 60822 uses header values. Expected uncertainty of
+      `gain`: ~1 % (linear vs quadratic fit), not the 0.1–0.4 % of
+      `gain0_err`.
+- [ ] Measure further epochs (the PI plans several soon): move
+      `mjd_start` earlier if older data agree, add date-limited rows if
+      they do not. Before date-limiting the seeded LBCB rows, compare
+      with the `GAIN` keywords of the 2025 headers and the LBT/LBC
+      team's current values: both gains are 0.82–0.92 × the
       2006 values while read noise in ADU agrees for chip 2, i.e. the
       electron scales differ.
 - [ ] More data: flat pairs at 1–4k ADU (shorter extrapolation to zero
