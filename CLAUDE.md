@@ -74,7 +74,7 @@ Not part of the installed package. One subdirectory per calibration product *ver
 
 ## Planning docs
 
-`docs/planning/registration_migration_plan.md` is the master plan (§2 = PI decisions not to re-litigate; §5–6 checkboxes = current state). `docs/planning/claude_handoff.md` holds working notes and verified LBC facts (e.g. chip 4 is rotated only in its WCS; the raw readout layout and `overscan_axis=1` are the same for all chips). Read both before registration or detector work.
+`docs/planning/registration_migration_plan.md` is the master plan, planning only (§1.1 = order of work; §2 = PI decisions not to re-litigate, D8 = astromatic path first, distortion last). `docs/planning/astromatic_path_plan.md` holds the current work (stages A–C) and its checkboxes. `docs/detector_gain_rdnoise.md` is the record of the gain/read-noise work. `docs/planning/claude_handoff.md` holds working notes and verified LBC facts (e.g. chip 4 is rotated only in its WCS; the raw readout layout and `overscan_axis=1` are the same for all chips). Read the plan, the astromatic plan and the handoff before registration or detector work.
 
 `CLAUDE.md` is git-ignored here.
 
@@ -93,7 +93,7 @@ Not part of the installed package. One subdirectory per calibration product *ver
 
 ## Packaging
 
-- Version is defined in `pyproject.toml` (currently 0.1.6) — update there for releases
+- Version is defined in `pyproject.toml` (and `release` in `docs/conf.py`); `main` carries a `.devN` version (currently 0.2.0.dev0) between releases. PyPI has 0.1.6 (uploaded 2025-05-26 15:36 UTC), built from commit `0e823fc` ("Version number fix for pypi."): every tracked file in the sdist matches it; the sdist also carried the git-ignored `LBCgo/examples/` and `LBCgo/whatidid.astrom.py` from the local working tree. Release from `main` at milestones (e.g. 0.2.0 after stages A–B), tag `vX.Y.Z` on the released commit, then bump `main` to the next `.dev0`. `LBCgo.__version__` comes from installed metadata: re-run `pip install -e .` after a bump.
 - Published on PyPI as `LBCgo`
 - Uses Poetry as build backend; Python ≥ 3.11, numpy ≥ 2
 
