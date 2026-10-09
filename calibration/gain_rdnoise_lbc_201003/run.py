@@ -62,7 +62,8 @@ PARAMS = {
     'gain_model': 'linear',  # 'linear': intercept of gain vs level;
                              # 'median': median over sets
     'min_sets': 3,        # fewer sets per chip -> median instead of the fit
-    'mjd_start': np.nan,  # validity range written to the product rows
+    'mjd_start': 55273.0,  # validity range written to the product rows
+                           # (2010-03-18 UT, first night of the data)
     'mjd_end': np.nan,
 }
 

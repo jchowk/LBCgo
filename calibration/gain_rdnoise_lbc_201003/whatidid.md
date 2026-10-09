@@ -1,12 +1,12 @@
 # Data in the directory: 
 
 ```
-export LBCGO_RAW='/Users/howk/Dropbox/Data/LBT/Raw/2010.03/'
+export LBCGO_RAW='/Users/howk/Dropbox/Data/LBT/Raw/2010.03/Calibration/'
 ```
 
 # Create inputs.ecsv:
 ```
-python ~/python/LBCgo/calibration/make_inputs.py ./ -o inputs_full.ecsv --overwrite --levels
+python ~/python/LBCgo/calibration/make_inputs.py $LBCGO_RAW -o inputs_full.ecsv --overwrite --levels
 ```
 
 The final `inputs.ecsv` is an edited version of the original output removing saturated flats and extraneous biases. 

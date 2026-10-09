@@ -110,27 +110,56 @@ def test_packaged_table_seeded_with_lbcb_values():
     assert len(old) == 4 and set(old['channel']) == {'LBCB'}
     # No flux gain for the 2006 values: lookup falls back to the gain
     assert np.all(np.isnan(old['gain_flux']))
-    assert detector.lookup_gain_flux(table, 'LBCB', 2, 56981.3) == \
+    # (MJD 54000 = 2006-09, before the first measured rows at MJD 55273)
+    assert detector.lookup_gain_flux(table, 'LBCB', 2, 54000.0) == \
         (2.09, 'gain')
     for chip, (gain, rn) in GIALLONGO_LBCB.items():
         # Open-ended rows match earlier dates, and an unknown date
         assert detector.lookup_detector_params(table, 'LBCB', chip,
-                                               56981.3) == (gain, rn)
+                                               54000.0) == (gain, rn)
         assert detector.lookup_detector_params(table, 'LBCB', chip,
                                                None) == (gain, rn)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+PRODUCT_2010 = (REPO_ROOT / 'calibration' / 'gain_rdnoise_lbc_201003'
+                / 'detector_rows.ecsv')
 PRODUCT_2025 = (REPO_ROOT / 'calibration' / 'gain_rdnoise_lbc_202505'
                 / 'detector_rows.ecsv')
 
 
-@pytest.mark.skipif(not PRODUCT_2025.exists(),
+@pytest.mark.skipif(not (PRODUCT_2010.exists() and PRODUCT_2025.exists()),
+                    reason='calibration/ not in this checkout')
+def test_packaged_table_has_2010_rows_from_product():
+    """The rows from MJD 55273 are the product's rows, unchanged."""
+    table = detector.read_detector_table()
+    product = Table.read(PRODUCT_2010, format='ascii.ecsv')
+    assert len(product) == 8 and np.all(product['mjd_start'] == 55273)
+    assert np.all(np.isnan(product['mjd_end']))
+    for row in product:
+        for mjd in (55273.5, 57000.0, 60821.9):   # up to the 2025 rows
+            assert detector.lookup_detector_params(
+                table, row['channel'], row['chip'], mjd) == \
+                (row['gain'], row['rdnoise'])
+            assert detector.lookup_gain_flux(
+                table, row['channel'], row['chip'], mjd) == \
+                (row['gain_flux'], 'gain_flux')
+        # Before the product's start date: 2006 values (LBCB) or none
+        before = detector.lookup_detector_params(
+            table, row['channel'], row['chip'], 55272.9)
+        if row['channel'] == 'LBCB':
+            assert before == GIALLONGO_LBCB[row['chip']]
+        else:
+            assert before is None
+
+
+@pytest.mark.skipif(not (PRODUCT_2010.exists() and PRODUCT_2025.exists()),
                     reason='calibration/ not in this checkout')
 def test_packaged_table_has_2025_rows_from_product():
     """The rows from MJD 60822 are the product's rows, unchanged."""
     table = detector.read_detector_table()
     product = Table.read(PRODUCT_2025, format='ascii.ecsv')
+    earlier = Table.read(PRODUCT_2010, format='ascii.ecsv')
     assert len(product) == 8 and np.all(product['mjd_start'] == 60822)
     for row in product:
         mjd = 60822.5
@@ -140,21 +169,25 @@ def test_packaged_table_has_2025_rows_from_product():
         assert detector.lookup_gain_flux(
             table, row['channel'], row['chip'], mjd) == \
             (row['gain_flux'], 'gain_flux')
-        # Before the product's start date: 2006 values (LBCB) or none
-        before = detector.lookup_detector_params(
-            table, row['channel'], row['chip'], 60821.9)
-        if row['channel'] == 'LBCB':
-            assert before == GIALLONGO_LBCB[row['chip']]
-        else:
-            assert before is None
-    assert len(table) == 4 + len(product)
+        # Before the product's start date: the 2010 rows stay in force
+        prev = earlier[(earlier['channel'] == row['channel'])
+                       & (earlier['chip'] == row['chip'])][0]
+        assert detector.lookup_detector_params(
+            table, row['channel'], row['chip'], 60821.9) == \
+            (prev['gain'], prev['rdnoise'])
+    assert len(table) == 4 + len(earlier) + len(product)
 
 
 def test_packaged_table_lbcr_falls_back_to_header():
-    hdr = fits.Header({'INSTRUME': 'LBC-RED ', 'MJD_OBS': 57020.56,
+    # LBCR has no rows before the 2010 measurement (MJD 55273)
+    hdr = fits.Header({'INSTRUME': 'LBC-RED ', 'MJD_OBS': 54000.0,
                        'GAIN': 1.75, 'RDNOISE': 12.0})
     assert detector.gain_rdnoise(2, [hdr]) == (1.75, 12.0, 'header')
-    hdr_b = fits.Header({'INSTRUME': 'LBC_BLUE', 'MJD_OBS': 56981.3,
+    # ... and the 2010 rows after it
+    hdr_after = fits.Header({'INSTRUME': 'LBC-RED ', 'MJD_OBS': 57020.56,
+                             'GAIN': 1.75, 'RDNOISE': 12.0})
+    assert detector.gain_rdnoise(2, [hdr_after])[2] == 'table'
+    hdr_b = fits.Header({'INSTRUME': 'LBC_BLUE', 'MJD_OBS': 54000.0,
                          'GAIN': 1.75, 'RDNOISE': 12.0})
     assert detector.gain_rdnoise(2, [hdr_b]) == (2.09, 11.6, 'table')
 
@@ -270,12 +303,12 @@ def test_measure_rejects_saturated_flats(tmp_path):
 # go_flatfield integration
 # ---------------------------------------------------------------------------
 
-def _flatfield_with_table(raw_dir, work_dir, table_path):
+def _flatfield_with_table(raw_dir, work_dir, table_path, mjd=56981.3):
     from LBCgo.lbcproc import go_overscan, go_flatfield
     path = write_lbc_file(raw_dir, 'lbcb.20230101.000001.fits')
     with fits.open(path, mode='update') as hdul:
         hdul[0].header['INSTRUME'] = 'LBC_BLUE'
-        hdul[0].header['MJD_OBS'] = 56981.3
+        hdul[0].header['MJD_OBS'] = mjd
         hdul[0].header['GAIN'] = 1.75
         hdul[0].header['RDNOISE'] = 12.0
     ic = ImageFileCollection(str(raw_dir), keywords=LBC_KEYWORDS)
@@ -310,7 +343,8 @@ def test_flatfield_uses_table_then_header(raw_dir, work_dir, tmp_path):
 
 def test_flatfield_default_table_uses_seeded_lbcb(raw_dir, work_dir):
     """LBCB data with the packaged table: every chip gets Table 1 values."""
-    with _flatfield_with_table(raw_dir, work_dir, None) as wh:
+    # MJD 54000 (2006-09) is before the first measured rows (MJD 55273)
+    with _flatfield_with_table(raw_dir, work_dir, None, mjd=54000.0) as wh:
         for ext in range(1, N_CHIPS + 1):
             gain, rn = GIALLONGO_LBCB[ext]
             assert wh[ext].header['GAINSRC'] == 'table'
