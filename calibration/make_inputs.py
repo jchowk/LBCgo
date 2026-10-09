@@ -33,7 +33,6 @@ from pathlib import Path
 import numpy as np
 from astropy.io import fits
 from astropy.table import Table
-from ccdproc import ImageFileCollection
 from ccdproc.utils.slices import slice_from_string
 
 from LBCgo.detector import lbc_channel
@@ -52,9 +51,33 @@ COLUMNS = ['filename', 'obs_id', 'mjd_obs', 'channel', 'filter', 'exptime',
            'imagetyp', 'airmass']
 
 
+def _scan_headers(directory, pattern, keywords=KEYWORDS):
+    """Primary-header summary of the frames in `directory` matching `pattern`.
+
+    Replaces ccdproc's ImageFileCollection, which parses *every* card in each
+    header and so fails on frames with an invalid card (e.g. 2010-03-18 LBCB
+    frames have an unquoted ``PA_PNT = nan``). Here only the requested
+    keywords are parsed. Returns a list of dicts keyed by lower-case keyword,
+    plus 'file'; keywords absent from (or unparsable in) a header are omitted.
+    """
+    rows = []
+    for path in sorted(directory.glob(pattern)):
+        header = fits.getheader(path)
+        row = {'file': path.name}
+        for key in keywords:
+            try:
+                value = header[key]
+            except (KeyError, fits.verify.VerifyError):
+                continue
+            if isinstance(value, (str, int, float, np.number)):
+                row[key] = value
+        rows.append(row)
+    return rows
+
+
 def _value(row, key, default=''):
-    """Header value from a summary row, with masked/missing -> default."""
-    if key not in row.colnames or np.ma.is_masked(row[key]):
+    """Header value from a summary row, with missing -> default."""
+    if key not in row:
         return default
     value = row[key]
     return value.strip() if isinstance(value, str) else value
@@ -88,11 +111,8 @@ def build_inputs(directory, channels=('LBCB', 'LBCR'), imagetyp=None,
     directory = Path(directory)
     rows = []
     for channel in channels:
-        ic = ImageFileCollection(str(directory), keywords=KEYWORDS,
-                                 glob_include=GLOBS[channel])
-        if ic.summary is None or len(ic.summary) == 0:
-            continue
-        for row in ic.summary:
+        summary = _scan_headers(directory, GLOBS[channel])
+        for row in summary:
             lbcobnam = _value(row, 'lbcobnam')
             if not keep_tests and str(lbcobnam).startswith('SkyFlatTest'):
                 continue
