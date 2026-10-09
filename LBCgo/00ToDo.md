@@ -2,6 +2,8 @@
 
 - [ ] Identify high background images?
 
+- [ ] Make `lbcproc.py` robust to invalid FITS header cards. `ImageFileCollection` (ccdproc) parses every card in each header, so one bad card kills the whole scan. Known case: the 2010-03-18 LBCB frames (20 files, e.g. `lbcb.20100318.223618.fits.gz`) have an unquoted `PA_PNT = nan`, giving `VerifyError: Unparsable card (PA_PNT)`. `calibration/make_inputs.py` already works around this by reading only the needed keywords with `fits.getheader` (`_scan_headers`). Goal: do the same (or equivalent) wherever `lbcproc.py` / `lbcregister.py` build an `ImageFileCollection` from raw frames, and test with a 2010.03 frame.
+
 - [ ] FIXPIX
 - [ ] Auto-identify bad astrometric fits.
 
