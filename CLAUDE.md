@@ -93,7 +93,7 @@ Not part of the installed package. One subdirectory per calibration product *ver
 
 ## Packaging
 
-- Version is defined in `pyproject.toml` (currently 0.1.6) — update there for releases
+- Version is defined in `pyproject.toml` (and `release` in `docs/conf.py`); `main` carries a `.devN` version (currently 0.2.0.dev0) between releases. PyPI has 0.1.6 (exact commit unknown; it predates the 2026-10 changes). Release from `main` at milestones (e.g. 0.2.0 after stages A–B), tag `vX.Y.Z` on the released commit, then bump `main` to the next `.dev0`. `LBCgo.__version__` comes from installed metadata: re-run `pip install -e .` after a bump.
 - Published on PyPI as `LBCgo`
 - Uses Poetry as build backend; Python ≥ 3.11, numpy ≥ 2
 
