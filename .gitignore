@@ -13,7 +13,6 @@ build/
 _*
 references/*
 lbcgo_environment.yaml
-CLAUDE.md
 00TestPlanPrompt.md
 00DocumentationPlan.md
 py_runtests.sh
