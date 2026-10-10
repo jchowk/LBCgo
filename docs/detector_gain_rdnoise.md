@@ -32,12 +32,13 @@ nominal defaults. Weight headers record `GAINSRC` (`table`/`header`/
 `default`). `gain` is per pixel (variance, weights); `gain_flux` is for
 Poisson errors of summed fluxes (nothing in the pipeline uses it yet).
 
-## 2. Current table (2026-10-09)
+## 2. Current table (2026-10-10)
 
 | Rows | Source | Valid |
 |---|---|---|
 | LBCB chips 1–4 | Giallongo et al. (2008, Table 1), 2006 commissioning | open (applies before MJD 55273 and when the date is unknown) |
-| LBCB + LBCR chips 1–4 | `calibration/gain_rdnoise_lbc_201003/` | MJD 55273 → (superseded at 60822) |
+| LBCB + LBCR chips 1–4 | `calibration/gain_rdnoise_lbc_201003/` | MJD 55273 → (superseded at 56830) |
+| LBCB + LBCR chips 1–4 | `calibration/gain_rdnoise_lbc_201406/` (LBCR provisional: three flat pairs) | MJD 56830 → (superseded at 60822) |
 | LBCB + LBCR chips 1–4 | `calibration/gain_rdnoise_lbc_202505/` | MJD ≥ 60822 |
 
 LBCR before MJD 55273 uses header values (`GAIN = 1.75`, `RDNOISE = 12`,
@@ -49,30 +50,50 @@ nominal and identical on every chip of both cameras).
 |---|---|---|---|---|
 | LBCB gain 2006 (Giallongo) | 1.96 | 2.09 | 2.06 | 1.98 |
 | LBCB gain 2010-03 | 1.80 | 1.97 | 1.93 | 1.82 |
+| LBCB gain 2014-06 | 1.81 | 1.74 | 1.75 | 1.67 |
 | LBCB gain 2025-05 | 1.80 | 1.72 | 1.74 | 1.66 |
 | LBCB read noise 2006 (e⁻) | 11.4 | 11.6 | 11.6 | 11.2 |
 | LBCB read noise 2010-03 (e⁻) | 11.7 | 11.0 | 10.9 | 10.4 |
+| LBCB read noise 2014-06 (e⁻) | 8.8 | 9.8 | 9.1 | 9.4 |
 | LBCB read noise 2025-05 (e⁻) | 8.7 | 9.6 | 9.0 | 9.0 |
 | LBCR gain 2010-03 | 1.64 | 1.71 | 1.59 | 1.74 |
+| LBCR gain 2014-07 (provisional) | 1.74 | 1.76 | 1.73 | 1.78 |
 | LBCR gain 2025-05 | 1.74 | 1.70 | 1.69 | 1.75 |
 | LBCR read noise 2010-03 (e⁻) | 9.7 | 9.6 | 8.9 | 9.3 |
+| LBCR read noise 2014-07 (e⁻) | 8.3 | 8.1 | 8.4 | 7.9 |
 | LBCR read noise 2025-05 (e⁻) | 9.8 | 12.4 | 9.5 | 9.3 |
 
 (Gains in e⁻/ADU, zero-level intercepts; see the product READMEs for errors
 and `gain_flux`.)
 
-- **LBCB changed between 2010 and 2025.** Gains 2010/2025 = 1.00, 1.15,
-  1.11, 1.10; read noise 15–35 % higher in 2010. The 2010 chip-to-chip
+- **LBCB: 2014 agrees with 2025, 2010 does not.** 2014 and 2025 agree to
+  ~1 % (`gain` +0.5 to +1.3 %, `gain_flux` ≤ 0.3 %, read noise in ADU the
+  same), from different flats and biases 11 years apart. The 2010 gains of
+  chips 2–4 are 8–12 % higher than 2014 (chip 1 the same); 2010/2025 =
+  1.00, 1.15, 1.11, 1.10, read noise 15–35 % higher in 2010. So whatever
+  differs lies between 2010-03 and 2014-06: a change in the detectors or
+  electronics, or a biased 2010 measurement. The 2010 chip-to-chip
   pattern (chip 2 highest, chip 1 lowest) matches 2006, not 2025. The 2010
   values are 0.92–0.94 × the 2006 ones, partly explainable by the level at
   which Giallongo et al. measured (§4, brighter-fatter). Read noise in ADU
   in 2025 agrees with 2006 for chip 2 while the gains differ by 16–18 %:
   the electron scales differ, not the ADC conversion alone.
-- **LBCR is roughly stable:** gains agree within ~6 %, read noise within
-  ~6 % except chip 2 (9.6 → 12.4 e⁻).
-- No known hardware or controller change (PI, 2026-10-09). The PI is
-  measuring intermediate epochs to see whether the LBCB change is a step or
-  a drift (§5).
+- **Read noise in ADU is the stable quantity.** It comes from the biases
+  alone, independent of the flats. LBCB chips 2 and 4 read 5.6–5.7 ADU in
+  all four epochs (2006, 2010, 2014, 2025; chip 4 5.4 in 2025), while
+  their flat-based gains fall by 12–17 % between 2010 and 2014. Either the
+  dominant read noise arises after the stage whose gain changed, or the
+  2006 and 2010 flat-based gains are biased high in the same way. Chip 1 is
+  the exception: same gain in every epoch, but 6.5 ADU in 2010 against
+  4.8 in 2014 and 2025. Worth checking against the raw 2010 flats before
+  attributing the difference to the instrument.
+- **LBCR gains are roughly stable:** 2014 `gain_flux` agrees with 2025
+  within 1 % on every chip, `gain` within 0.2–3.2 %; 2010 is 2–9 % lower.
+  **LBCR read noise varies:** 2014 reads 4.4–4.9 ADU (7.9–8.4 e⁻), 11–16 %
+  below 2025 (chip 2: 35 %, since 2025 has 12.4 e⁻ there) and 5–16 % below
+  2010. The same method reproduces the LBCB read noise between 2014 and
+  2025, so this is probably real; not checked.
+- No known hardware or controller change (PI, 2026-10-09).
 
 ## 4. Method and what was learned
 
@@ -141,16 +162,42 @@ and `gain_flux`.)
   was replaced; four of six LBCR sets are I band (fringing may bias the
   variances); LBCR flats span only 13–27k ADU, so the intercept has 2–3 %
   errors.
+- **2014 findings** (selection lessons for future epochs):
+  - All LBCB flats of 2014-06-25 (3.28 s and 1.28 s pairs) had strongly
+    spatially correlated differences (`rho_sum` 0.4–2.3, against 0.03–0.08
+    for good pairs), giving `gain_sum` ≈ 0.5–0.7; they were excluded.
+    Cause unknown. `rho_sum` is a useful screen for bad pairs.
+  - LBCR pairs more than 50 s apart (sky level changing 18–24 % between
+    the two) gave low `gain_sum`; pairs ≤ 38 s apart were consistent. This
+    supports, and may argue for tightening, the 60 s `flux_max_dt` cut.
+  - Nights without biases: biases can be fetched from the LBT archive
+    (`archive.lbto.org`); the 2014 product used a 2014-06-24 bias sequence
+    for flats up to 7 days away, assuming bias level and read noise are
+    constant.
+  - Three sets is the minimum for `summarize_gain_rdnoise` (`min_sets`);
+    with three the line has one degree of freedom and the quoted `gain0`
+    errors are not meaningful.
 - Raw frames may carry invalid header cards (`PA_PNT = nan`, 2010-03);
   `make_inputs.py` reads only the needed keywords.
 
 ## 5. Open work
 
-- [ ] **Bracket the LBCB change** (PI, in progress): measure epochs between
-      2010 and 2025. If a step is found, give the 2010 rows a finite
-      `mjd_end` and add rows for the new state; if a drift, add rows per
-      epoch. Until then, the 2010 rows apply up to MJD 60822, which is
-      well supported for LBCR and doubtful for LBCB.
+- [x] 2014-06/07 epoch measured and merged (`calibration/gain_rdnoise_lbc_201406/`,
+      rows from MJD 56830).
+- [ ] **Bracket the LBCB change** (PI, in progress), now within 2010-03 →
+      2014-06 (MJD 55273–56830). Measure epochs in that window. A step →
+      the 2010 rows end at the step (they already yield to the 2014 rows
+      from 56830); no step anywhere in the window, and a re-check of the
+      2010 flats finds a bias → replace the 2010 LBCB rows.
+- [ ] Re-check the 2010 LBCB measurement (single filter, `SDT_Uspec`;
+      chip 1 read noise in ADU 35 % above other epochs): look for flat
+      structure or bias problems as in the 2014-06-25 flats.
+- [ ] LBCR read noise: 2014 is 11–16 % below 2025 and 5–16 % below 2010.
+      Check the bias frames of each epoch (bias-difference rms vs overscan
+      rms, as done for 2010 set 10) before treating it as an instrument
+      change.
+- [ ] LBCR 2014 rows are provisional (three flat pairs): replace with a
+      deeper LBCR set from the same period if one exists.
 - [ ] Compare with the `GAIN`/`RDNOISE` keywords of the 2025 headers and any
       values the LBT/LBC team publishes (the 2010 commissioning table seen
       only in search snippets: LBCB gains as Giallongo, LBCR 2.08–2.14

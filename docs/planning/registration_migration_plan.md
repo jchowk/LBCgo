@@ -178,10 +178,10 @@ says otherwise.
   the primary and chip headers of **both** cameras, identical on every chip
   seen → nominal values, not per-chip measurements. Measured values (from
   Giallongo et al. 2008, Table 1, and LBCgo's own photon-transfer
-  measurements of 2010-03 and 2025-05) are in `conf/lbc_detector.ecsv`,
+  measurements of 2010-03, 2014-06/07 and 2025-05) are in `conf/lbc_detector.ecsv`,
   read by `LBCgo/detector.py`; header values are the fallback. The record of
-  that work, including an unexplained change of the LBCB gains and read
-  noise between 2010 and 2025, is `docs/detector_gain_rdnoise.md`.
+  that work, including an unexplained difference of the LBCB gains
+  between 2010 and 2014–2025, is `docs/detector_gain_rdnoise.md`.
   Impact on registration: in the sky-limited regime a gain error rescales
   all exposures of a chip alike (coadd weights barely change); it matters
   where read noise is not negligible (LBCB U band) and for absolute flux
@@ -700,10 +700,11 @@ Convention set out in `calibration/README.md` (PI decision 2026-10-04):
    the sky with the same readout layout (Speziali et al. 2008; PI). Left: the
    low-priority header check (astromatic plan A14). We will need to examine the headers from all four chips to verify their known locations with respect to the central chip (chip #2 in extension 2). 
 3. There are no hardware changes that should affect the result over time (other than perhaps some natural drift that could change things over time).
-   Caveat (2026-10-09): the LBCB gains changed by up to 15 % and the read
-   noise by 15–35 % between 2010 and 2025 with no known hardware or controller change; the
-   PI is measuring intermediate epochs to see whether it is a step
-   (`docs/detector_gain_rdnoise.md` §3, §5). This concerns the electronics;
+   Caveat (2026-10-10): the LBCB flat-based gains of chips 2–4 are 8–12 %
+   higher in 2010 than in 2014 and 2025 (which agree to ~1 %), with no
+   known hardware or controller change. It is either a change between
+   2010-03 and 2014-06 or a biased 2010 measurement; the PI is measuring
+   epochs in that window (`docs/detector_gain_rdnoise.md` §3, §5). This concerns the electronics;
    it says nothing yet about the optics/distortion.
 4. Preferred coadd flux unit is ADU/s.
 5. Bias and flat pairs (per channel, several epochs) for the gain/read-noise
