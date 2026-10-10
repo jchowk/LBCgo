@@ -76,8 +76,6 @@ Not part of the installed package. One subdirectory per calibration product *ver
 
 `docs/planning/registration_migration_plan.md` is the master plan, planning only (§1.1 = order of work; §2 = PI decisions not to re-litigate, D8 = astromatic path first, distortion last). `docs/planning/astromatic_path_plan.md` holds the current work (stages A–C) and its checkboxes. `docs/detector_gain_rdnoise.md` is the record of the gain/read-noise work. `docs/planning/claude_handoff.md` holds working notes and verified LBC facts (e.g. chip 4 is rotated only in its WCS; the raw readout layout and `overscan_axis=1` are the same for all chips). Read the plan, the astromatic plan and the handoff before registration or detector work.
 
-`CLAUDE.md` is git-ignored here.
-
 ## Known Limitations (from README/ToDo)
 
 - V-BESSEL filter is shared between LBCB and LBCR; handling requires separate pipeline runs per camera

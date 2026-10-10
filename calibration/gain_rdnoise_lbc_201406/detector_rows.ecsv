@@ -1,0 +1,21 @@
+# %ECSV 1.0
+# ---
+# datatype:
+# - {name: channel, datatype: string}
+# - {name: chip, datatype: int32}
+# - {name: gain, unit: electron / adu, datatype: float64}
+# - {name: rdnoise, unit: electron, datatype: float64}
+# - {name: gain_flux, unit: electron / adu, datatype: float64}
+# - {name: mjd_start, datatype: float64}
+# - {name: mjd_end, datatype: float64}
+# - {name: source, datatype: string}
+# schema: astropy-2.0
+channel chip gain rdnoise gain_flux mjd_start mjd_end source
+LBCB 1 1.8094605658734702 8.751021171968775 1.7963525841434618 56830 nan "calibration/gain_rdnoise_lbc_201406 (LBCgo e0c2e98e8d)"
+LBCB 2 1.7435087449854592 9.782460885703458 1.7487805690409282 56830 nan "calibration/gain_rdnoise_lbc_201406 (LBCgo e0c2e98e8d)"
+LBCB 3 1.7549242304078125 9.074709154617084 1.7561523964180603 56830 nan "calibration/gain_rdnoise_lbc_201406 (LBCgo e0c2e98e8d)"
+LBCB 4 1.6667721640701454 9.42965718115168 1.6597247306252945 56830 nan "calibration/gain_rdnoise_lbc_201406 (LBCgo e0c2e98e8d)"
+LBCR 1 1.7392292337998558 8.251243211629678 1.6810122325448205 56830 nan "calibration/gain_rdnoise_lbc_201406 (LBCgo e0c2e98e8d)"
+LBCR 2 1.7583819451251166 8.089356612510109 1.7587820478330296 56830 nan "calibration/gain_rdnoise_lbc_201406 (LBCgo e0c2e98e8d)"
+LBCR 3 1.7310403957907823 8.4067855329652 1.6645276409282705 56830 nan "calibration/gain_rdnoise_lbc_201406 (LBCgo e0c2e98e8d)"
+LBCR 4 1.7779390524212497 7.85005656302005 1.7775703779404046 56830 nan "calibration/gain_rdnoise_lbc_201406 (LBCgo e0c2e98e8d)"
