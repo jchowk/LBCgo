@@ -1,0 +1,36 @@
+{
+  "date_utc": "2026-10-10T13:22:34.616876+00:00",
+  "lbcgo_version": "0.1.6",
+  "lbcgo_commit": "18ed5ba0a851f206c6874a3f7a0189a0780048cb",
+  "params": {
+    "box": null,
+    "sigma": 4.0,
+    "cell": 50,
+    "max_lag": 3,
+    "flux_max_dt": 60.0,
+    "gain_model": "linear",
+    "min_sets": 3,
+    "mjd_start": null,
+    "mjd_end": null
+  },
+  "inputs_sha256": {
+    "lbcb.20080705.115248.fits.gz": "489453c675df79e55a6bb640421d4a15b4097771217d26da9ed02b2e9c677f56",
+    "lbcb.20080705.115328.fits.gz": "cc3897117411997755f3438427935982da2fd8b363bf6085a2876aa3e4193d7e",
+    "lbcb.20080705.063036.fits.gz": "a2c1569f744e06f015660990d81f39abbfc2b5c939a8ab4aa47f60063f887c4c",
+    "lbcb.20080705.063111.fits.gz": "f4b0a3f7018f0eedafe6af61d75c150922014471d7e33044951021228f05da88",
+    "lbcb.20080705.115408.fits.gz": "a7abdb07608c988d39d3febfed461a7fbd9cddce6e6f46efe349d5f9c59bad29",
+    "lbcb.20080705.063146.fits.gz": "36fdc5242d87ad1805f99a830a4514112316025f83a400230a40428d083e9c3c",
+    "lbcb.20080705.063221.fits.gz": "4e8c81038a7bd54f3d24e8a47669309c5314655c48f9480f42847ed16c292bf3",
+    "lbcb.20080705.115448.fits.gz": "68704cbcd3e0a44c5776e1b81d6323398017bf03843b4c4d8db7c65c34513d29",
+    "lbcb.20080705.063256.fits.gz": "d41ac763f7348b13d58122a89c1e62016f7cd52bf40a088c4cfa2d16133021c5",
+    "lbcb.20080705.063331.fits.gz": "f10421f52bc4df573a52fe97308e2816ddbe51ac421ebcab105319200bae9d6e",
+    "lbcb.20080705.115528.fits.gz": "726a92e216522c862607c7704f37c9512aaac33e1c78e5427e10fb3dda8ed679",
+    "lbcb.20080705.063406.fits.gz": "eefe9d64130bdcef9973cac861ed3f7cc23d47ba2566c1ff84393a3ed325c104",
+    "lbcb.20080705.063441.fits.gz": "6cebae703829ae39a989a157e6321672ab848339145a31dbe43afa602f0fe520"
+  },
+  "outputs_sha256": {
+    "results_per_set.ecsv": "72c2e5fa46f603349ff53e41015131a91c25675cdcb3a293737d64ed82e823db",
+    "gain_fit.ecsv": "c47386dd43b87f2524423c6ec41fa9b6dc5ff0919f32066835026ceba240d196",
+    "detector_rows.ecsv": "d40d9b3156017411e9513b8c117fcb66f0bdfcca22759eb45b4cc843a479a0ba"
+  }
+}

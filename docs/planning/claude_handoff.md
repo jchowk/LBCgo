@@ -99,11 +99,12 @@ Details are in `docs/detector_gain_rdnoise.md` and the product READMEs.
   The level dependence is the brighter-fatter effect. Realistic `gain`
   uncertainty ~1 %. Run measurements on the whole chip (`run.py --box 0`).
 - `conf/lbc_detector.ecsv`: 2006 LBCB rows (Giallongo et al. 2008, open),
-  then LBCB-only 2009-06 (MJD 55003; LBCR 2009 unusable), 2010-03 (MJD 55273), 2014-06/07 (MJD 56830) and 2025-05 (MJD 60822)
+  then LBCB-only 2008-07 (MJD 54652) and 2009-06 (MJD 55003) (LBCR before
+  2010-03 unusable: anti-correlated flat differences), 2010-03 (MJD 55273), 2014-06/07 (MJD 56830) and 2025-05 (MJD 60822)
   rows for both channels. Latest `mjd_start` wins; tests check each block
   against its product's `detector_rows.ecsv`.
 - LBCB: 2014 agrees with 2025 to ~1 %; 2010 differs (chips 2–4 gain 8–12 %
-  higher, read noise higher), and 2009-06 reproduces the 2010 gains. So the
+  higher, read noise higher), and 2008-07 and 2009-06 reproduce the 2010 gains. So the
   change lies between 2010-03 and 2014-06; no known hardware change (PI,
   2026-10-09).
 - LBCR: 2014 rows rest on three flat pairs (provisional); 2014 read noise

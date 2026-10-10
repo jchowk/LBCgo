@@ -1,0 +1,41 @@
+# %ECSV 1.0
+# ---
+# datatype:
+# - {name: filename, datatype: string}
+# - {name: obs_id, datatype: string}
+# - {name: mjd_obs, datatype: float64}
+# - {name: channel, datatype: string}
+# - {name: filter, datatype: string}
+# - {name: exptime, datatype: float64}
+# - {name: role, datatype: string}
+# - {name: set, datatype: int64}
+# - {name: notes, datatype: string}
+# - {name: object, datatype: string}
+# - {name: propid, datatype: string}
+# - {name: lbcobnam, datatype: string}
+# - {name: imagetyp, datatype: string}
+# - {name: airmass, datatype: float64}
+# - {name: median_adu, datatype: float64}
+# meta: !!omap
+# - comments: ['2008-07 LBC gain/read-noise inputs: LBCB only, sets 1-4 (SDT_Uspec SkyFlat_Usr_rot180, 1.48 s, 2008-07-05 11:52-11:55
+#       UT). Only 5 usable flats were in the archive tars, so the 4 consecutive pairs SHARE frames (only sets 1 and 3 are disjoint). Biases:
+#       consecutive 25Bias_Bino pairs of 2008-07-05 06:29-06:34 UT (first two skipped; disjoint pairs), ~5 h before the flats. LBCR sets
+#       tried (inputs_lbcr_rejected.ecsv) were rejected; see README. Culled from inputs_full.ecsv.']
+# schema: astropy-2.0
+filename obs_id mjd_obs channel filter exptime role set notes object propid lbcobnam imagetyp airmass median_adu
+lbcb.20080705.115248.fits.gz lbcb1215258741 54652.49501 LBCB SDT_Uspec 1.485 flat 1 "flat pair; shares a frame with adjacent sets" SkyFlat flatcalib SkyFlat_Usr_rot180 flat 1.01045 23627.0
+lbcb.20080705.115328.fits.gz lbcb1215258773 54652.49547 LBCB SDT_Uspec 1.475 flat 1 "flat pair; shares a frame with adjacent sets" SkyFlat flatcalib SkyFlat_Usr_rot180 flat 1.01066 27239.0
+lbcb.20080705.063036.fits.gz lbcb1215239402 54652.27126 LBCB U-BESSEL 0.0 bias 1 "bias pair" BinoBias biascheck 25Bias_Bino zero -1067827.94 -1.0
+lbcb.20080705.063111.fits.gz lbcb1215239437 54652.27166 LBCB U-BESSEL 0.0 bias 1 "bias pair" BinoBias biascheck 25Bias_Bino zero -1067827.94 0.0
+lbcb.20080705.115328.fits.gz lbcb1215258773 54652.49547 LBCB SDT_Uspec 1.475 flat 2 "flat pair; shares a frame with adjacent sets" SkyFlat flatcalib SkyFlat_Usr_rot180 flat 1.01066 27239.0
+lbcb.20080705.115408.fits.gz lbcb1215258813 54652.49593 LBCB SDT_Uspec 1.485 flat 2 "flat pair; shares a frame with adjacent sets" SkyFlat flatcalib SkyFlat_Usr_rot180 flat 1.01095 31391.0
+lbcb.20080705.063146.fits.gz lbcb1215239472 54652.27207 LBCB U-BESSEL 0.0 bias 2 "bias pair" BinoBias biascheck 25Bias_Bino zero -1067827.94 0.0
+lbcb.20080705.063221.fits.gz lbcb1215239507 54652.27248 LBCB U-BESSEL 0.0 bias 2 "bias pair" BinoBias biascheck 25Bias_Bino zero -1067827.94 -1.0
+lbcb.20080705.115408.fits.gz lbcb1215258813 54652.49593 LBCB SDT_Uspec 1.485 flat 3 "flat pair; shares a frame with adjacent sets" SkyFlat flatcalib SkyFlat_Usr_rot180 flat 1.01095 31391.0
+lbcb.20080705.115448.fits.gz lbcb1215258853 54652.4964 LBCB SDT_Uspec 1.477 flat 3 "flat pair; shares a frame with adjacent sets" SkyFlat flatcalib SkyFlat_Usr_rot180 flat 1.0113 36103.0
+lbcb.20080705.063256.fits.gz lbcb1215239542 54652.27288 LBCB U-BESSEL 0.0 bias 3 "bias pair" BinoBias biascheck 25Bias_Bino zero -1067827.94 -1.0
+lbcb.20080705.063331.fits.gz lbcb1215239577 54652.27328 LBCB U-BESSEL 0.0 bias 3 "bias pair" BinoBias biascheck 25Bias_Bino zero -1067827.94 0.0
+lbcb.20080705.115448.fits.gz lbcb1215258853 54652.4964 LBCB SDT_Uspec 1.477 flat 4 "flat pair; shares a frame with adjacent sets" SkyFlat flatcalib SkyFlat_Usr_rot180 flat 1.0113 36103.0
+lbcb.20080705.115528.fits.gz lbcb1215258893 54652.49686 LBCB SDT_Uspec 1.485 flat 4 "flat pair; shares a frame with adjacent sets" SkyFlat flatcalib SkyFlat_Usr_rot180 flat 1.01157 41365.0
+lbcb.20080705.063406.fits.gz lbcb1215239612 54652.27369 LBCB U-BESSEL 0.0 bias 4 "bias pair" BinoBias biascheck 25Bias_Bino zero -1067827.94 0.0
+lbcb.20080705.063441.fits.gz lbcb1215239647 54652.27409 LBCB U-BESSEL 0.0 bias 4 "bias pair" BinoBias biascheck 25Bias_Bino zero -1067827.94 0.0
