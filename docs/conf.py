@@ -5,7 +5,7 @@ import sys
 project = 'LBCgo'
 author = 'Chris Howk'
 copyright = '2024, Chris Howk'
-release = '0.1.6'
+release = '0.2.0.dev0'
 
 # -- General configuration -----------------------------------------------------
 extensions = [

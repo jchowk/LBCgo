@@ -20,7 +20,7 @@ Use `superpowers:test-driven-development` skill if available.
 
 ## Codebase Context
 
-**Package:** LBCgo (`pyproject.toml`, Poetry, version 0.1.6)
+**Package:** LBCgo (`pyproject.toml`, Poetry, version 0.2.0.dev0)
 **Key source files:**
 - `LBCgo/lbcproc.py` — main pipeline (~1200 lines)
 - `LBCgo/lbcregister.py` — astrometric registration (~440 lines)

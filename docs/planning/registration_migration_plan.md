@@ -1,9 +1,20 @@
 # LBCgo registration & coaddition: migration plan
 
-Status: **agreed plan, not yet implemented** (written 2026-10-04).
+Status (2026-10-09): Phase 0 code done on synthetic tests; work order
+revised by the PI (§1.1, D8): the astromatic path is made robust and gains
+an extended-target mode first, the static distortion model and native
+back-end come last. Written 2026-10-04 as the agreed plan.
 Audience: a later implementation session (human or Claude). Read this whole
 document before writing code; section 2 records decisions that are not to be
 re-litigated without the PI (J. C. Howk).
+
+This document is planning only. Companion documents:
+- `docs/planning/astromatic_path_plan.md`: the Phase 0 record and the
+  current work on the astromatic path (robustness, validation harness,
+  extended-target mode), with checkboxes.
+- `docs/detector_gain_rdnoise.md`: the per-chip gain and read-noise work
+  (method, results by epoch, open measurements).
+- `docs/planning/claude_handoff.md`: working notes for Claude sessions.
 
 ---
 
@@ -23,6 +34,21 @@ validation. The new path must:
    without losing the point sources needed for alignment.
 4. (Secondary) Produce final source catalogs from the coadd.
 
+### 1.1 Order of work (PI, 2026-10-09)
+
+| Stage | Content | Where | Status |
+|---|---|---|---|
+| Phase 0 | Astromatic path at its best on synthetic tests (§5) | astromatic plan §2 | done |
+| A | Astromatic path robust to the known failure modes (bad header cards, missing chips, saturated/unmatched flats, epoch keywords, flux scale, bad-fit handling, …) | astromatic plan §3 | open |
+| B | Validation harness (`register/qa.py`, `register/refcat.py`) and baseline numbers on V1–V6 | astromatic plan §4 | open |
+| C | Extended-target mode on the astromatic path (`register/sky.py` feeding SExtractor and SWarp) | astromatic plan §5 | open |
+| D | Static distortion model (§6.3.2), then the native back-end (§6) and the switch of default (§6.6) | this plan §6; to be carved out into its own plan | deferred |
+
+The distortion model is last because it is the most time-consuming item
+(calibration data selection, 20–50 exposures per channel, local runs).
+The native back-end's astrometry depends on it; the shared pieces built in
+B and C (`refcat.py`, `qa.py`, `sky.py`) are reused there unchanged.
+
 ## 2. Decisions already made
 
 | # | Decision |
@@ -34,31 +60,37 @@ validation. The new path must:
 | D5 | Minimum environment: **Python ≥ 3.11, numpy ≥ 2**. |
 | D6 | Phase 0 first: bring the existing astromatic path to its best state so it is a fair benchmark for the Python path. |
 | D7 | SourceXtractor++ is **not** used in the core path (conda-only, its docs recommend a separate environment; it replaces only SExtractor). It may later be an optional back-end for science catalogs. |
+| D8 | Order of work (2026-10-09): the astromatic path stays the working path until the native back-end exists. First make it robust to the known failure modes and able to combine extended-target fields (§1.1 stages A–C); the static distortion model and the native back-end come last. D1 stands as the end state. |
 
-## 3. Current state (verified 2026-10-04, commit `4b9efbc`)
+## 3. Current state (verified 2026-10-04, commit `4b9efbc`; §3.1–3.2 updated 2026-10-09)
 
 ### 3.1 Pipeline flow
 `lbcgo()` → `go_overscan` → `go_flatfield` → `make_targetdirectories` →
-`go_extractchips` (writes `<base>_<chip>.fits`, single-extension, one per chip;
-moves the MEF `*_flat.fits` into `data/`) → `go_register(fltr_dirs, …)`.
+`go_extractchips` (writes `<base>_<chip>.fits`, single-extension, one per chip,
+with `.mask.fits`/`.weight.fits` sidecars; moves the MEF `*_flat.fits` into
+`data/`) → `go_register(fltr_dirs, …)`.
 
-`go_register` (`LBCgo/lbcregister.py:421`) loops over chip files and, **for each
-chip file individually**, runs `go_sextractor` then `go_scamp`; then runs
-`go_swarp` on all chip files of the filter directory.
+`go_register` runs `go_sextractor` per chip file, then (default since Phase
+0) one joint SCAMP run per filter directory on per-exposure merged catalogs
+(`go_scamp_joint`; `scamp_joint=False` restores the old per-chip
+`go_scamp`), then `go_swarp` on all chip files of the filter directory.
 
-### 3.2 Defects / limitations in the astromatic usage
-| Location | Issue |
-|----------|-------|
-| `lbcregister.py:537` | SCAMP is invoked **once per chip catalog**, so every chip is solved independently with a 3rd-order polynomial (`scamp.lbc.conf:66`, `DISTORT_DEGREES 3`). No focal-plane or cross-exposure constraint. Under-constrained on star-poor chips → likely source of the "bad astrometric fits" ToDo item. |
-| `lbcregister.py:248` | `-MOSAIC_TYPE` flag commented out; the per-iteration `mosaic_type` values are dead code. `scamp.lbc.conf:48` → `UNCHANGED`. |
-| `lbcregister.py:251` | `cmd_flags.replace('INSTRUMENT','EXPOSURE')` discards its result (and the string never contains `INSTRUMENT`): `astrometric_method` is a no-op. |
-| `lbcregister.py:119` | Command-line `-DETECT_THRESH 5.0 -ANALYSIS_THRESH 8.0` overrides the config's 1.5/1.5. |
-| `sextractor.lbc.conf:23,54` | `DEBLEND_MINCONT 0.005`, `BACK_SIZE 64` (≈14″). Stars on a bright galaxy hold < 0.5 % of the galaxy segment's flux → merged into the galaxy segment, not deblended; galaxy structure inflates the RMS map → raised thresholds. |
-| `swarp.lbc.conf:77,84` | `SUBTRACT_BACK Y`, `BACK_SIZE 128` (≈29″), not overridden in `go_swarp`. **SWarp itself removes extended galaxy light in the coadd**, independent of SExtractor. |
-| `swarp.lbc.conf:13,24`; `lbcregister.py:380` | `WEIGHT_TYPE NONE`, `COMBINE_TYPE MEDIAN`, `FSCALE_KEYWORD NONE`: no weights (vignetted, noisy field corners get full weight), no transparency/exposure scaling (SCAMP's `FLXSCALE` ignored). |
-| `go_scamp` | XML diagnostics are read (`astrometric_dispersion`) but never used. |
-| `lbcproc.py:20` | `from lbcregister import *` (absolute, not relative) → `import LBCgo` fails when installed; tests only pass with `LBCgo/LBCgo` on `PYTHONPATH`. |
-| pipeline | No weight/mask images are produced anywhere (bad columns, saturation, vignetting). |
+### 3.2 Defects / limitations found in the astromatic usage (2026-10-04)
+All fixed in Phase 0 (astromatic plan §2) except where the Status column
+says otherwise.
+
+| Location | Issue | Status |
+|----------|-------|--------|
+| `lbcregister.py:537` | SCAMP is invoked **once per chip catalog**, so every chip is solved independently with a 3rd-order polynomial (`scamp.lbc.conf:66`, `DISTORT_DEGREES 3`). No focal-plane or cross-exposure constraint. Under-constrained on star-poor chips → likely source of the "bad astrometric fits" ToDo item. | fixed: joint SCAMP run |
+| `lbcregister.py:248` | `-MOSAIC_TYPE` flag commented out; the per-iteration `mosaic_type` values are dead code. `scamp.lbc.conf:48` → `UNCHANGED`. | fixed |
+| `lbcregister.py:251` | `cmd_flags.replace('INSTRUMENT','EXPOSURE')` discards its result (and the string never contains `INSTRUMENT`): `astrometric_method` is a no-op. | fixed (removed) |
+| `lbcregister.py:119` | Command-line `-DETECT_THRESH 5.0 -ANALYSIS_THRESH 8.0` overrides the config's 1.5/1.5. | fixed |
+| `sextractor.lbc.conf:23,54` | `DEBLEND_MINCONT 0.005`, `BACK_SIZE 64` (≈14″). Stars on a bright galaxy hold < 0.5 % of the galaxy segment's flux → merged into the galaxy segment, not deblended; galaxy structure inflates the RMS map → raised thresholds. | fixed (alignment defaults) |
+| `swarp.lbc.conf:77,84` | `SUBTRACT_BACK Y`, `BACK_SIZE 128` (≈29″), not overridden in `go_swarp`. **SWarp itself removes extended galaxy light in the coadd**, independent of SExtractor. | partial: `subtract_back`, `back_size=1024`; extended mode is Stage C |
+| `swarp.lbc.conf:13,24`; `lbcregister.py:380` | `WEIGHT_TYPE NONE`, `COMBINE_TYPE MEDIAN`, `FSCALE_KEYWORD NONE`: no weights (vignetted, noisy field corners get full weight), no transparency/exposure scaling (SCAMP's `FLXSCALE` ignored). | fixed: weights, `FLXSCALE`, clipped mean |
+| `go_scamp` | XML diagnostics are read (`astrometric_dispersion`) but never used. | partial: QA table written; `bad` flag not acted on (Stage A9) |
+| `lbcproc.py:20` | `from lbcregister import *` (absolute, not relative) → `import LBCgo` fails when installed; tests only pass with `LBCgo/LBCgo` on `PYTHONPATH`. | fixed |
+| pipeline | No weight/mask images are produced anywhere (bad columns, saturation, vignetting). | fixed (`masks.py`) |
 
 ### 3.3 Verified facts about LBC data (real headers: LBCB NGC 891 `lbcb.20141120.065509.fits`; LBCR sky flat `lbcr.20141229.132703.fits`, chips 1–2 of each)
 - Raw chip: 2304 × 4608, `TRIMSEC [51:2098,1:4608]`, `BIASSEC [2099:2304,…]`.
@@ -116,14 +148,14 @@ chip file individually**, runs `go_sextractor` then `go_scamp`; then runs
   - **The rotation is on the sky only.** In the raw readout frame all four
     chips have the same layout (2304 × 4608, overscan along x), as the PI's
     raw NGC 891 display shows, so `go_overscan`'s `overscan_axis=1` is
-    correct for every chip (verification item in §5.1). Chip 4's rotation
+    correct for every chip (verification item A14 in the astromatic plan). Chip 4's rotation
     lives in its WCS (CD matrix); the distortion model (§6.3.2) must take
     its orientation from the header, not assume it matches chips 1–3.
   - The two correctors were built with "the same focal plane scale and even
     the geometrical distortions ... forced to be the same" (§3.1). But the
     red corrector is BK7 (blue: fused silica) and has a 10 % larger field of
     view, chosen "to remove the small vignetting that affected the LBCB".
-    → Vignetting masks matter mainly for LBCB (§5.2); the LBCB distortion
+    → Vignetting masks matter mainly for LBCB (astromatic plan §2.2, A11); the LBCB distortion
     model is a good starting guess for LBCR but is fitted separately
     (§6.3.2).
   - Detectors are coplanar to ±13.5 µm (one pixel) without shimming.
@@ -144,31 +176,16 @@ chip file individually**, runs `go_sextractor` then `go_scamp`; then runs
   - `TELESCOP` is `LBT-SX` (LBCB) / `LBT-DX` (LBCR).
 - **Gain/read noise:** `GAIN = 1.75` e⁻/ADU and `RDNOISE = 12` e⁻ appear in
   the primary and chip headers of **both** cameras, identical on every chip
-  seen → nominal values, not per-chip measurements.
-  **Measured LBCB values** (Giallongo et al. 2008, Table 1; variance method
-  on flat sequences, 2006 commissioning):
-  | | chip 1 | chip 2 | chip 3 | chip 4 |
-  |---|---|---|---|---|
-  | gain (e⁻/ADU) | 1.96 | 2.09 | 2.06 | 1.98 |
-  | read noise (e⁻) | 11.4 | 11.6 | 11.6 | 11.2 |
-  So the header gain is 11–16 % low for LBCB, while the header read noise
-  (12 e⁻) is close. The paper also gives 11 e⁻ at 500 kpix/s/ch for the
-  controller. **LBCR:** no measured per-chip values in either paper;
-  Speziali et al. (2008) give "< 10 e⁻ @500 Kpix/s/ch" for the red
-  controller. (A per-chip table attributed to 2010 commissioning on LBTO/
-  Arizona pages, seen only in search snippets, gives the same LBCB gains and
-  LBCR gains of 2.08–2.14 e⁻/ADU; its LBCB read-noise values, 4.8–5.2 ADU ≈
-  10 e⁻, do not match Table 1, so treat that table as unverified.)
-  Impact: in the sky-limited regime a gain error rescales all exposures of a
-  chip alike (coadd weights barely change); it matters where read noise is
-  not negligible (LBCB U band: at a 150-ADU sky the header and Table 1
-  values give variances ~20–30 % apart, depending on chip) and for absolute
-  flux errors.
-  Handled by `LBCgo/detector.py`: per-chip table
-  `conf/lbc_detector.ecsv` overrides headers; header values are the
-  fallback (§5.2). PI decision (2026-10-04): seed the table with the LBCB
-  Table 1 values (branch `claude/seed-lbcb-detector-table`); LBCR stays on
-  header values until measured.
+  seen → nominal values, not per-chip measurements. Measured values (from
+  Giallongo et al. 2008, Table 1, and LBCgo's own photon-transfer
+  measurements of 2010-03 and 2025-05) are in `conf/lbc_detector.ecsv`,
+  read by `LBCgo/detector.py`; header values are the fallback. The record of
+  that work, including an unexplained change of the LBCB gains and read
+  noise between 2010 and 2025, is `docs/detector_gain_rdnoise.md`.
+  Impact on registration: in the sky-limited regime a gain error rescales
+  all exposures of a chip alike (coadd weights barely change); it matters
+  where read noise is not negligible (LBCB U band) and for absolute flux
+  errors.
 - Typical observing pattern (from OB `j1419.ob`): `NDIT = 3` dither positions,
   offsets (0,0), (−40,−80), (−20,+60)″; **one exposure per filter per dither
   position** → ~3 exposures per filter per OB (repeated OBs add more).
@@ -200,7 +217,7 @@ chip file individually**, runs `go_sextractor` then `go_scamp`; then runs
   - Linearity residual < 1 % over the full 16-bit range; full well
     > 150,000 e⁻ before blooming, above the ADC limit (65535 ADU ≈ 130,000
     e⁻ at ~2 e⁻/ADU). Saturation is therefore the ADC limit; the 0.9 ×
-    `SATURATE` mask threshold (§5.2) is conservative.
+    `SATURATE` mask threshold (astromatic plan §2.2) is conservative.
   - Bias: they fit pre-scan and over-scan line by line; LBCgo fits a
     4th-order polynomial to the over-scan only.
 
@@ -234,7 +251,9 @@ LBCgo/
                         (done; top level because lbcproc produces them)
   lbcregister.py        (existing astromatic back-end, improved in Phase 0;
                          go_register becomes a dispatcher)
-  register/             (new, in-process back-end)
+  register/             (new, in-process back-end; refcat.py and qa.py are
+                         built in stage B, sky.py in stage C, for the
+                         astromatic path; the rest in stage D)
     __init__.py
     config.py           dataclasses with all tunables + defaults
     detect.py           sep-based detection for alignment
@@ -282,366 +301,21 @@ alternate WCS `O`), `<filterdir>/astrometry_qa.ecsv`.
 
 ## 5. Phase 0 — astromatic path at its best + validation harness
 
-Purpose: a fair benchmark and an immediate improvement for users.
-
-### 5.1 Housekeeping
-- [x] `lbcproc.py:20` → `from .lbcregister import *`; confirm `import LBCgo`
-      works without `PYTHONPATH` hacks; run tests.
-- [x] `pyproject.toml`: `requires-python = ">=3.11"`, `numpy>=2`,
-      `astropy>=6.1.4`, `ccdproc>=2.5`; add `scipy`. (New deps added in later
-      phases.) Update README/`docs/installation.rst`.
-- [ ] Accept both astromatic executable names: Ubuntu/Debian packages
-      install `source-extractor` (2.28.0) and `SWarp` (2.41.5), not `sex`
-      and `swarp` (verified with apt on Ubuntu 24.04, SCAMP 2.10.0 is
-      `scamp`). LBCgo checks/calls only `sex`, `scamp`, `swarp`
-      (`lbcproc.check_external_dependencies`, `lbcregister.go_sextractor`,
-      `go_swarp`), so an apt install is reported as missing even though the
-      README suggests `apt-get`. Check the Homebrew/conda-forge names too.
-
-- [ ] (Low priority; PI expects it to hold.) Confirm from raw headers of
-      both cameras that chips 3 and 4 have the same readout layout as chips
-      1–2 (`NAXIS1/2 = 2304/4608`, `TRIMSEC [51:2098,…]`, `BIASSEC
-      [2099:2304,…]`), i.e. that chip 4's 90° rotation is on the sky only
-      and `go_overscan`'s `overscan_axis=1` is right for all chips. Record
-      chip 4's CD matrix for §6.3.2.
-
-### 5.2 Weight and mask maps (shared by both back-ends)
-- [x] In `go_flatfield`/`go_extractchips`, write per-chip mask + weight
-      (implemented in `LBCgo/masks.py`; the bad-pixel list is an optional
-      user `badpix_file`, none is shipped yet):
-  - saturation: raw ADU ≥ 0.9 × `SATURATE` (must be flagged *before* flat
-    division, i.e. carry a mask through `go_overscan` → `go_flatfield`);
-  - bad columns: static per-chip bad-pixel list in `conf/` (start from the
-    FIXPIX ToDo; derive from flats: pixels deviating > Nσ in the normalized
-    master flat);
-  - vignetting: normalized flat < 0.5 (tunable) → mask; else weight ∝ flat²
-    / sky variance (background-limited inverse variance in flattened units).
-- [x] Unit tests with synthetic chips (known bad column, saturated star):
-      `tests/test_masks.py`.
-- [ ] Tune `badpix_threshold`/`vignette_threshold` on real LBCB/LBCR flats
-      (defaults 0.2 / 0.5 are untested on real data). Tune per camera: the
-      LBCR corrector's larger field was designed to remove the vignetting
-      seen in LBCB (§3.3), so expect the threshold to matter mainly for
-      LBCB.
-- [x] Gain/read-noise source for the weights: `LBCgo/detector.py`. Lookup
-      order: per-chip row of `conf/lbc_detector.ecsv` (channel, chip, MJD
-      validity range) → `GAIN`/`RDNOISE` header keywords → nominal defaults.
-      Weight headers record `GAINSRC` (`table`/`header`/`default`).
-      Photon-transfer measurement `measure_gain_rdnoise_files(flat1, flat2,
-      bias1, bias2)` handles unequal flat levels, and measures the variances
-      in 50-px blocks (`cell`): the first real run (2025-05 flats, branch
-      `202505_calibration`) gave LBCB gains 6–12 % below Giallongo et al.
-      Table 1, consistent with illumination differences between the two
-      twilight flats of a pair (different exposure time, time, rotator
-      angle), which a whole-region variance turns into a low gain (−6 % for
-      a 0.5 % peak-to-peak mismatch over 1000 px in simulation; < 0.5 % with
-      blocks). Pick consecutive flats of one sequence at the same rotator
-      angle; avoid z/Y-band flats (fringing). `lookup_detector_params` warns
-      when two matching rows share `mjd_start` (`detector_table_conflicts`
-      lists them): give new rows a finite `mjd_start`.
-- [x] Level dependence of the photon-transfer gain. The second real run
-      (branch `202505_calibration`, commit `83d8100`, several flat pairs per
-      chip at different levels) shows the apparent gain rising linearly with
-      flat level: +1.8–2.1 % per 10,000 ADU on LBCB and +2.9–5.1 % on LBCR,
-      with residuals of 0.1–0.4 %. On LBCB that is several times what the
-      < 1 % linearity residuals of Giallongo et al. (2008) allow, and is the
-      signature of the brighter-fatter effect: charge pushed into
-      neighbouring pixels lowers the per-pixel variance, raises the
-      apparent gain, and leaves positive nearest-neighbour covariances in
-      the flat difference (Antilogus et al. 2014, JINST 9, C03048; Astier
-      et al. 2019, A&A 629, A36). (An earlier version of this item called
-      the LBCR CCDs "thick, deep-depletion"; none of the references read
-      for this plan says so. Unverified.) A median over sets therefore depends on which
-      levels were observed. Adopted method (`detector.summarize_gain_rdnoise`):
-      per channel/chip, fit gain = g0 + slope × level and adopt the
-      zero-level intercept g0 as the conversion gain (median if fewer than
-      3 sets or no spread in level); read noise = g0 × median read noise in
-      ADU (the ADU value does not depend on the gain). `measure_ptc` also
-      reports `rho_x`, `rho_y` (lag-1 correlation of the flat difference,
-      in 50-px blocks) and `gain_nn`, the gain with those covariances added
-      back to the variance. If the brighter-fatter effect explains the
-      trend, `rho` grows with level and `gain_nn` is nearly flat (verified
-      on a simulation in `tests/test_detector.py`: true gain 1.75, apparent
-      1.79–2.00, intercept 1.749, `gain_nn` 1.75–1.77). `gain_nn` ignores
-      longer-range covariances, so it is a test, not the adopted value.
-      For the weight maps the intercept is the right value: sky levels are
-      low, and the per-pixel gain sets the per-pixel variance. (It is not
-      always the gain for fluxes summed over pixels: see `gain_flux`
-      below.)
-- [x] Re-run of `202505_calibration` with the new `run.py` (commit
-      `eede421`, five sets per chip; assessed 2026-10-06): nearest-neighbour
-      covariances explain 75–103 % of the LBCB slope (`gain_nn` slope
-      −0.05 to +0.51 %/10k ADU), i.e. brighter-fatter, but only 11–30 % of
-      the LBCR slope (`gain_nn` keeps +2.5 to +4.0 %/10k ADU), although
-      LBCR's ρ_y grows no faster than LBCB's. Other findings:
-      (a) a lag-1 anti-correlation along x (ρ_x down to −0.019 on LBCR
-      chip 2, roughly level-independent, so proportional to shot noise and
-      apparently electronic; the same chip has the high read noise and
-      `bias_rho_x` ≈ −0.05), which pushes `gain_nn` 1–8 % above the
-      intercept; (b) the intercept moves by up to 1.1 % between a linear
-      and a quadratic fit, so the systematic uncertainty (1–3 %) exceeds
-      `gain0_err` (0.1–0.4 %); (c) LBCB chips 2 and 3 read noise rises
-      ~5 % through the bias sequence (01:28–01:41 UT; cause unknown —
-      `biascheck` is the PROPID of every LBC bias, not a special
-      start-of-night set (PI, 2026-10-06); compare biases from later in
-      the night); (d) LBCB read
-      noise in ADU agrees with Giallongo Table 1 (RN/gain) for chip 2 and
-      within 4–8 % for chips 3–4, while the gains are 16–18 % lower: the
-      two measurements differ in electron scale rather than in ADC
-      conversion; compare with the `GAIN` keywords of 2025 headers.
-- [x] Covariance sum to separate brighter-fatter from non-linearity:
-      `measure_ptc(max_lag=3)` sums the correlation coefficients of the
-      flat difference over all lags with |dx|, |dy| ≤ 3 (`rho_sum`;
-      `_cell_covariance_sum`, removing a plane per 50-px block and
-      correcting the −3(1 + S)/n bias of each lag) and reports
-      `gain_sum` = gain with var × (1 + `rho_sum`). Charge conservation
-      makes `gain_sum` free of the brighter-fatter effect (within the lag
-      range); non-linearity creates no covariances and survives.
-      `gain_fit.ecsv` gains `rho_sum_slope_per_10k`, `gain_sum_median`,
-      `gain_sum_slope_pct_per_10k` ± err (err: the larger of the residual
-      and propagated errors). Simulations (`tests/test_detector.py`): with
-      half the charge sharing at 2 px, the gain slope 5.6 %/10k ADU leaves
-      2.4 in `gain_nn` and 0.1 ± 0.5 in `gain_sum`; with a sublinear
-      response the gain slope 4.9 stays 4.9 ± 0.6 in `gain_sum`. Noise:
-      ~1 % per set for a 1000 × 1000 box (48 lags), so run this test with
-      the whole chip (`run.py --box 0`, ~0.3 %).
-- [x] Whole-chip re-run of `202505_calibration` (`--box 0`, commit
-      `a2d7108`; assessed 2026-10-06). Adding back the covariances summed
-      to 3 px (`gain_sum`) removes the level dependence on every chip:
-      `gain_sum` slopes −0.78 to +0.05 %/10k ADU (all sets) and −0.65 to
-      +0.67 (close pairs only), against per-pixel gain slopes of +1.9–2.0
-      (LBCB) and +3.2–5.0 (LBCR). So the LBCR trend is the brighter-fatter
-      effect with covariances beyond lag 1 (`rho_sum` grows 0.035–0.054
-      per 10k ADU on LBCR, 0.020–0.026 on LBCB), not non-linearity:
-      LBCR non-linearity ≲ 0.3 % at 10k ADU and ≲ 0.7 % at 22k ADU
-      (from |`gain_sum` slope| ≲ 1 %/10k ADU, apparent gain ∝ 1 + 3βN).
-      No separate LBCR linearity test is needed for the gain. The
-      intercept g0 changes by ≤ 0.13 % when the widely spaced pairs are
-      dropped.
-- [x] Two gains (`detector.OPTIONAL_TABLE_COLUMNS`). Correlations present
-      at zero signal make the per-pixel gain and the flux gain differ:
-      median `gain_sum` / g0 = −4.6 % on LBCR chip 1 (positive serial
-      correlation at low level, falling with level: CTI-like), +2.8 % on
-      LBCR chip 2 (serial anti-correlation, ρ_x ≈ −0.020: electronic),
-      −1.2 to +1.2 % elsewhere. Both differences are reproduced by
-      1/(1 + S) with S the summed correlation extrapolated to zero signal.
-      For any linear readout kernel with weights summing to H (CTI: H = 1;
-      undershoot: H < 1), the mean of an aperture sum scales as H and its
-      variance as H², so mean/variance of aperture sums — `gain_sum` once
-      `max_lag` covers the kernel — is the electrons per ADU of a flux.
-      Hence: `gain` (per pixel, zero-level intercept) for per-pixel
-      variance and weight maps; `gain_flux` (median `gain_sum`) for
-      Poisson errors of source fluxes and flux→electron conversion.
-      `gain_flux` is an optional column of `conf/lbc_detector.ecsv` (NaN =
-      unknown; `read_detector_table` adds it to older tables;
-      `lookup_gain_flux` falls back to `gain` and says so). Nothing in the
-      pipeline uses it yet. Correlated read noise: `bias_rho_sum` 0.03–0.24
-      (LBCR chip 2 negative), so read noise in an aperture is up to ~11 %
-      above the independent-pixel value; per-pixel read noise is
-      unaffected.
-- [x] `gain_sum` depends on the time between the two flats: χ²/dof of
-      `gain_sum` about a line 1.1–12.5; averaged over chips, pairs 41–60 s
-      apart read +0.3 to +0.6 % (sets 7–8: −0.1, −0.3 %) and pairs
-      143–212 s apart −0.5 to −0.8 % (lowest: set 5, which also mixes
-      pa0/pa180). Presumably the twilight changes between exposures and
-      leaves small-scale structure that the 48-lag sum weights heavily;
-      g0 is insensitive. `summarize_gain_rdnoise(flux_max_dt=60)` uses only
-      pairs ≤ 60 s apart for `gain_flux` (NaN if none), with an error
-      from the scatter of those pairs; `run.py` records `flat_dt` per set
-      and warns when the two flats come from different OBs (`lbcobnam`).
-- [x] 2025-05-27 rows merged into `conf/lbc_detector.ecsv` (PI decision
-      2026-10-07): 8 rows (LBCB + LBCR, `gain`, `rdnoise`, `gain_flux`)
-      from `calibration/gain_rdnoise_lbc_202505/`, `mjd_start` = 60822,
-      open-ended. They supersede the 2006 LBCB rows from MJD 60822; the
-      2006 rows still apply to earlier dates and to an unknown date, and
-      LBCR before 60822 uses header values. Expected uncertainty of
-      `gain`: ~1 % (linear vs quadratic fit), not the 0.1–0.4 % of
-      `gain0_err`.
-- [ ] Measure further epochs (the PI plans several soon): move
-      `mjd_start` earlier if older data agree, add date-limited rows if
-      they do not. Before date-limiting the seeded LBCB rows, compare
-      with the `GAIN` keywords of the 2025 headers and the LBT/LBC
-      team's current values: both gains are 0.82–0.92 × the
-      2006 values while read noise in ADU agrees for chip 2, i.e. the
-      electron scales differ.
-- [ ] More data: flat pairs at 1–4k ADU (shorter extrapolation to zero
-      level), consecutive pairs ≤ 60 s apart at the same rotator angle
-      (for `gain_flux`), and biases from later in the night (read-noise
-      drift on LBCB chips 2–3).
-- [ ] Measure gain/read noise per chip for LBCB and LBCR from real bias and
-      flat pairs (several epochs; run locally) and populate
-      `conf/lbc_detector.ecsv` with validity ranges. Check the LBCB results
-      against Giallongo et al. (2008) Table 1 (§3.3), which seeds the
-      LBCB rows for now (open date range, source = the paper; PI decision
-      2026-10-04, PR jchowk/LBCgo#6; provenance in
-      `calibration/gain_rdnoise_lbcb_giallongo2008/`). Replace or
-      date-limit those rows once measured values exist, and record each
-      measurement run in its own `calibration/` directory (§9.1).
-- [ ] (Optional, matters for low-surface-brightness work.) Electronic
-      cross-talk ~3 × 10⁻⁵ (Giallongo et al. 2008): a saturated star
-      imprints ~2 ADU ghosts in the other chips/channels. Either correct it
-      (needs the coefficient matrix) or mask those positions in
-      extended-target mode.
-
-### 5.3 SExtractor improvements
-- [x] Pass `-WEIGHT_TYPE MAP_WEIGHT -WEIGHT_IMAGE <weight>`; `-FLAG_IMAGE`
-      from the mask. (`go_sextractor` picks up the `<base>.weight.fits` /
-      `<base>.mask.fits` sidecars automatically; absent sidecars → unweighted
-      run. With a flag image, `IMAFLAGS_ISO`/`NIMAFLAGS_ISO` are added to a
-      staged copy of the param file: SExtractor fails if they are requested
-      without a `FLAG_IMAGE`, so they cannot be in the default param file.)
-- [x] Alignment run (default): `-BACK_SIZE 32 -BACK_FILTERSIZE 3`,
-      `-DEBLEND_MINCONT 1e-4`, `-DETECT_THRESH 5`, drop the odd
-      `-ANALYSIS_THRESH 8`. Make all of these function arguments.
-      (`ANALYSIS_THRESH` now follows `DETECT_THRESH` unless given; the conf
-      file defaults were changed to match; `go_register(sextractor_args=…)`
-      forwards overrides.)
-- [~] Extended-target mode: `go_sextractor(subtracted_image=…)` runs on a
-      supplied background-subtracted image with `BACK_TYPE MANUAL`,
-      `BACK_VALUE 0`. **Pending:** the producer of that image (§6.2).
-- Found while implementing:
-  - SExtractor does not honour quotes and splits option values at spaces;
-    with a package or data path containing a space (e.g. a Dropbox folder)
-    `-c` was silently dropped ("not found, using internal defaults") or the
-    run failed. `go_sextractor` now stages symlinks in a temp directory in
-    that case.
-  - The conv/nnw/param files were validated but never passed to `sex`
-    (the config's relative `default.conv` only resolved if the cwd held it);
-    now passed explicitly.
-  - Executable names: `sex`/`source-extractor`, `swarp`/`SWarp` accepted
-    via `find_astromatic_tool` (SExtractor, SCAMP, SWarp call sites and
-    `check_external_dependencies`).
-  - Synthetic check (SExtractor 2.28.2): with the old settings
-    (`DEBLEND_MINCONT 0.005`, mesh 64) two stars 40–50 px from a galaxy core
-    stay merged into the galaxy segment; with the new defaults both are
-    recovered. A zero-weight bad column yields no detections.
-
-### 5.4 SCAMP: one joint run per filter directory
-SCAMP's focal-plane modes need one catalog per **exposure** with one
-extension per chip. Implemented in `lbcregister.py` (`go_scamp_joint`,
-default in `go_register`; `scamp_joint=False` restores per-chip solutions).
-**Status: done and validated end to end on a simulated Gaia field with
-SCAMP 2.15.0 (conda-forge); the 2.14.1 binary in `/usr/local/bin` is broken
-(see below).**
-- [x] `merge_ldac(chip_cats, output) -> exposure_cat`: concatenates the
-      (`LDAC_IMHEAD`, `LDAC_OBJECTS`) pairs in chip order (astropy `fits`);
-      written as `<base>_exp.cat`.
-- [x] Run SCAMP **once** on all exposure catalogs of the filter directory:
-      iteration 1 `MOSAIC_TYPE LOOSE`, later `FIX_FOCALPLANE`;
-      `STABILITY_TYPE INSTRUMENT`; `ASTRINSTRU_KEY FILTER` (drop CFHT's
-      `QRUNID`); `-MOSAIC_TYPE` restored (also in the per-chip `go_scamp`);
-      the no-op `replace()` deleted (`astrometric_method` is ignored, kept for
-      compatibility); `DISTORT_DEGREES 3` kept. SCAMP runs with the catalog
-      directory as cwd and relative names (spaces in paths break its option
-      parser too); a non-zero exit status raises `RuntimeError` (it was
-      silently ignored before).
-- [x] `split_head(exposure_head, chip_heads)`: splits the multi-section
-      `.head` (sections separated by `END`) into `<base>_<chip>.head`.
-- [x] Parse SCAMP output into `astrometry_qa.ecsv` (one row per exposure
-      chip: internal/reference rms in arcsec, `FLXSCALE`, `XY_Contrast`,
-      reference-match dof, `bad`/`reason`; SCAMP version, reference catalog
-      and epoch mode in the table metadata). Per-chip rms comes from the
-      `.head` (`ASTIRMS`/`ASTRRMS`, deg), per-exposure numbers from the XML
-      `Fields` table — SCAMP's XML has **no per-chip rows**, and
-      `AstromSigma_*`/`AstromNDets_*` exist only per field group. Thresholds
-      (`max_ref_rms=0.2″`, `min_xy_contrast=2`) are untuned placeholders.
-- [x] Proper motions (SCAMP 2.15.0, recorded in the QA metadata):
-      `ASTREFEPOCH_TYPE FIELDS_AVERAGE` (what `go_scamp_joint` sets) applies
-      Gaia DR3 proper motions from VizieR at the header epoch. Test: 3
-      simulated exposures with real Gaia DR3 stars moved by their PM to
-      2012.0 (rms PM 12.7, max 50 mas/yr): residual vs truth with
-      `FIELDS_AVERAGE` median (−1, +2) mas, same rms as the zero-PM case
-      (23/70 mas, limited by the simulation); with `ORIGINAL` the
-      high-PM stars sit at a median (−48, −35) mas. **Still to check:** that
-      real chip headers carry `DATE-OBS` (the simulation had both it and
-      `MJD-OBS`; LBC headers have `MJD_OBS`, underscore).
-- Validation numbers (2016.0 epoch, no PM, 3 exposures × 2 chips, ~100
-  Gaia stars/chip): median residual vs truth (−1, 0) mas; rms 23 (RA) / 69
-  (Dec) mas, dominated by the simulation's centroiding of ~90 faint stars.
-  QA caveat: SCAMP reports internal rms per instrument and reference rms per
-  exposure, so the per-chip rows repeat those values; they are not
-  independent per-chip fits.
-- **Bugs found while validating:**
-  - *Merged catalogs crashed SCAMP* (SIGSEGV/SIGBUS). Cause 1: chip
-    catalogs all carry `FITSEXT = 1`, `FITSNEXT = 1`; SCAMP needs them to
-    index extensions in the merged file. Cause 2: an astropy round trip of
-    `LDAC_IMHEAD` rewrites SExtractor's space-padded 80-character cards as
-    NUL-padded, which SCAMP also faults on. `merge_ldac` now works on raw
-    FITS bytes and renumbers `FITSFILE/FITSEXT/FITSNEXT` only.
-  - Any code that rewrites an LDAC catalog with astropy must preserve the
-    space padding.
-- **Environment:** `/usr/local/bin/scamp` 2.14.1 (arm64) lacks an
-  `LC_RPATH` for `libcurl` and was unstable; it is superseded by the
-  conda-forge `astromatic-scamp` 2.15.0 (stable: 12/12 repeated runs and the
-  full joint run). See the install notes in the session report.
-- SWarp 2.41.5 accepts the SCAMP heads (`CTYPE TAN` + 20 `PV` terms); output
-  scale 0.2251″/px for a 0.5 % scale error in the simulation. `astropy.wcs`
-  ignores `PV` on `TAN`; astropy consumers must rewrite `CTYPE` to `TPV`
-  (as done in the validation script). `go_swarp` path handling was fixed in §5.5.
-
-### 5.5 SWarp improvements
-Implemented in `go_swarp` (`go_register(swarp_args=dict(...))` forwards
-overrides); the packaged `swarp.lbc.conf` defaults were changed to match.
-- [x] Background: `go_swarp(subtract_back=True, back_size=1024)` by default
-      (standalone use, since `register/sky.py` §6.2 does not exist yet);
-      `subtract_back=False` gives `-SUBTRACT_BACK N` for use once the sky is
-      removed upstream or for extended targets.
-- [x] `-WEIGHT_TYPE MAP_WEIGHT` with the §5.2 `<base>.weight.fits` sidecars
-      (SWarp finds them by suffix and fails if only some exist, so weights
-      are used only when *every* input has one; otherwise unweighted with a
-      message); `-FSCALE_KEYWORD FLXSCALE` when any SCAMP `.head` carries it
-      (SWarp merges the `.head` into the header first); `-COMBINE_TYPE
-      CLIPPED` default (`CLIP_SIGMA 4`, `CLIP_AMPFRAC 0.3`), `combine_type=
-      'MEDIAN'` (also `WEIGHTED`, `AVERAGE`) optional.
-- [x] Paths with spaces: SWarp's option parser splits on whitespace, so
-      `go_swarp` now builds an argument list and, if any path has a space,
-      runs in a temporary directory with symlinked inputs/`.head`/weights/
-      config and moves the products back. A non-zero SWarp exit raises
-      `RuntimeError`.
-- Check (SWarp 2.38.0, synthetic 400² field with a galaxy, a star, a
-  half-flux exposure with `FLXSCALE 2`, a cosmic ray, a zero-weight column,
-  space in the path): flux scaling reproduces the true galaxy profile
-  (`SUBTRACT_BACK N`: r≈120 px level 374 vs 380 true); the cosmic ray is
-  rejected by both `CLIPPED` and `MEDIAN`; `BACK_SIZE 128` removes more
-  galaxy light than 1024 (centre 1784 vs 1847, and both below the unsubtracted
-  2018, as the mesh also removes the galaxy's own pedestal on this small
-  frame). Real-data comparison belongs to the §5.6 harness.
-- **Not verified:** that real SCAMP `FLXSCALE` values are sensible for LBC
-  data (needs PI datasets).
-
-### 5.6 Validation harness (`register/qa.py`, used by every later phase)
-Datasets (PI to provide paths; see §10):
-| ID | Content | Purpose |
-|----|---------|---------|
-| V1 | Many (≥ 20–50) moderately rich, galaxy-free LBCB exposures; selection criteria in §6.3.2 "Calibration data" | distortion calibration + astrometry accuracy |
-| V2 | Same for LBCR | as V1 |
-| V3 | Typical science field (e.g. J1419+4207 OB: 3 dithers × U, g / r, i) | end-to-end regression |
-| V4 | NGC 891 (LBCB, `SDT_Uspec` and others) | extended-target mode |
-| V5 | Data with chip 3 off (2011) | missing-chip handling |
-| V6 | A field with few Gaia stars (high latitude, short exposures) | failure modes |
-
-Metrics written to an ECSV + PDF/PNG figures:
-- **Absolute astrometry**: rms and median residual vs Gaia (mas) per
-  chip/exposure; residual vector map across the focal plane (systematics).
-- **Internal astrometry**: rms of positions of sources matched across
-  exposures (including non-Gaia, fainter sources) after registration.
-- **Photometry**: per-exposure flux scale; star flux ratio coadd vs
-  per-exposure average; agreement native vs SWarp coadd (target < 0.5 %).
-- **Image quality**: stellar FWHM in coadd vs median input (target
-  ≤ 3 % broadening).
-- **Noise**: sky rms in coadd vs prediction from weights; pixel-to-pixel
-  correlation (resampling kernel effect).
-- **Sky**: mean level and gradient in masked empty regions; for V4, minor-
-  and major-axis surface-brightness profiles of NGC 891 compared between
-  methods; no negative "moat" around the galaxy.
-- **Runtime / peak memory** per stage.
-
-Acceptance for Phase 0: improved astromatic path runs end-to-end on V1–V5;
-QA table produced; numbers recorded in `docs/planning/baseline_results.md`.
+Moved to `docs/planning/astromatic_path_plan.md` on 2026-10-09:
+- record of the Phase 0 changes (housekeeping, weight/mask maps,
+  SExtractor, joint SCAMP, SWarp): astromatic plan §2 (all done);
+- remaining work as Stage A (robustness to known failure modes): §3;
+- the validation harness (formerly §5.6: datasets V1–V6, metrics) as
+  Stage B: §4;
+- the gain/read-noise items formerly in §5.2: `docs/detector_gain_rdnoise.md`.
 
 ---
 
-## 6. Phases 1–4 — native back-end
+## 6. Phases 1–4 — native back-end (stage D: after the astromatic stages A–C)
+
+The static distortion model (§6.3.2) is the first and largest part of
+stage D (D8); the native astrometry (§6.3.3) needs it. To be carved out
+into its own planning document when the work starts.
 
 ### 6.1 Phase 1a — detection for alignment (`register/detect.py`)
 Input: chip image (float32), mask, weight; seeing from `LBCFWHM`
@@ -666,36 +340,12 @@ Tests: synthetic chip with injected Gaussian stars on a smooth Sérsic-like
 "galaxy" + sky gradient; require recovery of > 95 % of injected stars with
 SNR > 20 inside and outside the galaxy, centroid error < 0.02 px at SNR 100.
 
+
 ### 6.2 Phase 1b — science sky (`register/sky.py`)
-Default mode (most fields):
-- Source mask: `sep.extract` at 1.5σ with a 2–3× dilated segmentation map
-  (iterate twice: mask → re-estimate rms → re-detect).
-- Model per chip: 2-D polynomial of order ≤ 2 fitted to unmasked pixels
-  (sigma-clipped, on a 16×-binned image), or `photutils.Background2D` with a
-  very large box (≥ 512 px) as an alternative. Subtract before resampling.
+Built in stage C for the astromatic path and reused here unchanged. The
+design (default and extended-target modes, ghosts, references) is in
+`docs/planning/astromatic_path_plan.md` §5.
 
-Extended-target mode (`extended_target=True|dict`):
-- Galaxy mask: user ellipse, else HyperLEDA (`astroquery.vizier` or
-  HyperLEDA query) D25 ellipse scaled × 2 (configurable).
-- Model **per exposure across the focal plane**: one 2-D polynomial
-  (order ≤ 2) in focal-plane coordinates shared by all chips, plus one
-  additive offset per chip, fitted to unmasked pixels of all chips together.
-  (Rationale: in the NGC 891 case chips 1, 3, 4 and the outer parts of chip 2
-  are galaxy-free; dithers are too small to sample the sky under the galaxy.)
-- Diagnostics: fraction of each chip masked; warn if > 60 % of the focal
-  plane is masked (sky then unconstrained → recommend offset sky frames).
-- Optional: inter-exposure additive offset matching in overlaps (Montage-like
-  rectification) to remove residual exposure-to-exposure sky differences.
-- Ghosts (LBCB, Giallongo et al. 2008): with the U-LBC interference filter
-  (header `FILTER = 'SDT_Uspec'`, so this applies to the NGC 891 U data),
-  mask each bright star's ghost (ring 75 px + diffuse 200 px component,
-  shifted radially outward, 2.8 % of the star's flux) before fitting the
-  sky; the ~0.15 % sky ghost near the field centre is part of the sky model
-  or flat, not a source. Not needed for Bessel U, B, V or G, R.
-
-References: Watkins et al. 2024 (masking + parametric modelling vs dithered
-stacking); Borlaff et al. 2019 (over-subtraction of extended outskirts);
-Trujillo & Fliri 2016; Akhlaghi & Ichikawa 2015.
 
 ### 6.3 Phase 2 — astrometry
 
@@ -741,7 +391,7 @@ more than the star density of any single field:
   proper motions applied (§6.3.1). The bright limit is set by LBC
   saturation (exposure time and filter dependent; not known a priori):
   measure the usable G range per exposure from the saturation masks
-  (§5.2) and matched Gaia magnitudes.
+  (astromatic plan §2.2) and matched Gaia magnitudes.
 - **Intermediate Galactic latitude (|b| ≈ 10–30°).** High latitude gives
   too few Gaia stars per chip; the plane and cluster cores give blending
   (biased centroids) and Gaia crowding problems. Cluster outskirts are
@@ -921,7 +571,7 @@ fitted model). Therefore:
    from this.
 4. Resample each exposure (sky-subtracted, scaled; surface-brightness
    units, see above) with `drizzle.resample.Drizzle` (`kernel='square'`, `pixfrac=1.0` default;
-   `lanczos3` optional) using the §5.2 weight maps; write one resampled
+   `lanczos3` optional) using the weight maps (astromatic plan §2.2); write one resampled
    science + weight layer per exposure to disk (`np.memmap` or zarr).
    Expected size: ~7000 × 7000 float32 ≈ 200 MB per layer.
 5. Combine in row blocks: weighted mean with iterative σ-clipping
@@ -950,7 +600,7 @@ Performance target: full V3 dataset (12 exposures × 4 chips) coadded in
 
 ### 6.6 Phase 5 — switch default & clean-up
 - [ ] Native back-end becomes default only after it meets or beats the
-      Phase 0 numbers on V1–V5 (§7).
+      stage B baseline numbers on V1–V5 (§7; `docs/planning/baseline_results.md`).
 - [ ] Update README, `docs/pipeline.rst`, `docs/installation.rst`
       (astromatic tools become optional); add this plan's outcome to docs.
 - [ ] Resolve ToDo items covered: "Auto-identify bad astrometric fits",
@@ -1022,7 +672,7 @@ Convention set out in `calibration/README.md` (PI decision 2026-10-04):
 
 ## 10. Execution environment
 
-- **Calibration (§6.3.2) and real-data validation (§5.6, §7) should run
+- **Calibration (§6.3.2) and real-data validation (astromatic plan §4, §7) should run
   locally** (Claude Code on the PI's machine, or the PI running scripts):
   - data volume: a raw LBC MEF is ~85 MB (4 × 2304 × 4608 × 16 bit);
     calibrated float32 chips ~150 MB per exposure (4 × 2048 × 4608 × 4 bytes); V1–V5 plus intermediates
@@ -1043,15 +693,21 @@ Convention set out in `calibration/README.md` (PI decision 2026-10-04):
 
 ## 11. Open items for the PI
 
-1. Paths/IDs of the V1–V6 datasets (§5.6). This will come later.
+1. Paths/IDs of the V1–V6 datasets (astromatic plan §4). Needed now for
+   stage B (PI agreed 2026-10-09 to run the baseline before native code).
 2. ~~LBCR chip layout~~: resolved for chips 1–2 (§3.3): same CRPIX scheme and
    spacing, reference point offset (+43, −11) px. Chip 4 is rotated 90° on
    the sky with the same readout layout (Speziali et al. 2008; PI). Left: the
-   low-priority header check in §5.1. We will need to examine the headers from all four chips to verify their known locations with respect to the central chip (chip #2 in extension 2). 
+   low-priority header check (astromatic plan A14). We will need to examine the headers from all four chips to verify their known locations with respect to the central chip (chip #2 in extension 2). 
 3. There are no hardware changes that should affect the result over time (other than perhaps some natural drift that could change things over time).
+   Caveat (2026-10-09): the LBCB gains changed by up to 15 % and the read
+   noise by 15–35 % between 2010 and 2025 with no known hardware or controller change; the
+   PI is measuring intermediate epochs to see whether it is a step
+   (`docs/detector_gain_rdnoise.md` §3, §5). This concerns the electronics;
+   it says nothing yet about the optics/distortion.
 4. Preferred coadd flux unit is ADU/s.
 5. Bias and flat pairs (per channel, several epochs) for the gain/read-noise
-   table (§5.2) will be collected. This is a later priority.
+   table will be collected; in progress (`docs/detector_gain_rdnoise.md` §5).
 
 ---
 
