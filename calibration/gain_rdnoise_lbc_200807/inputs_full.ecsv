@@ -1,0 +1,63 @@
+# %ECSV 1.0
+# ---
+# datatype:
+# - {name: filename, datatype: string}
+# - {name: obs_id, datatype: string}
+# - {name: mjd_obs, datatype: float64}
+# - {name: channel, datatype: string}
+# - {name: filter, datatype: string}
+# - {name: exptime, datatype: float64}
+# - {name: role, datatype: string}
+# - {name: set, datatype: int64}
+# - {name: notes, datatype: string}
+# - {name: object, datatype: string}
+# - {name: propid, datatype: string}
+# - {name: lbcobnam, datatype: string}
+# - {name: imagetyp, datatype: string}
+# - {name: airmass, datatype: float64}
+# - {name: median_adu, datatype: float64}
+# meta: !!omap
+# - comments: [Calibration inputs built by calibration/make_inputs.py from raw_2008.07/., role from IMAGETYP; set = channel + UT date.
+#       Review and edit before use (e.g. 2 flats + 2 biases per set for gain/read noise).]
+# schema: astropy-2.0
+filename obs_id mjd_obs channel filter exptime role set notes object propid lbcobnam imagetyp airmass median_adu
+lbcb.20080705.062926.fits.gz lbcb1215239332 54652.27045 LBCB U-BESSEL 0.0 bias 1 "" BinoBias biascheck 25Bias_Bino zero -1067827.94 0.0
+lbcb.20080705.063001.fits.gz lbcb1215239367 54652.27085 LBCB U-BESSEL 0.0 bias 1 "" BinoBias biascheck 25Bias_Bino zero -1067827.94 -1.0
+lbcb.20080705.063036.fits.gz lbcb1215239402 54652.27126 LBCB U-BESSEL 0.0 bias 1 "" BinoBias biascheck 25Bias_Bino zero -1067827.94 -1.0
+lbcb.20080705.063111.fits.gz lbcb1215239437 54652.27166 LBCB U-BESSEL 0.0 bias 1 "" BinoBias biascheck 25Bias_Bino zero -1067827.94 0.0
+lbcb.20080705.063146.fits.gz lbcb1215239472 54652.27207 LBCB U-BESSEL 0.0 bias 1 "" BinoBias biascheck 25Bias_Bino zero -1067827.94 0.0
+lbcb.20080705.063221.fits.gz lbcb1215239507 54652.27248 LBCB U-BESSEL 0.0 bias 1 "" BinoBias biascheck 25Bias_Bino zero -1067827.94 -1.0
+lbcb.20080705.063256.fits.gz lbcb1215239542 54652.27288 LBCB U-BESSEL 0.0 bias 1 "" BinoBias biascheck 25Bias_Bino zero -1067827.94 -1.0
+lbcb.20080705.063331.fits.gz lbcb1215239577 54652.27328 LBCB U-BESSEL 0.0 bias 1 "" BinoBias biascheck 25Bias_Bino zero -1067827.94 0.0
+lbcb.20080705.063406.fits.gz lbcb1215239612 54652.27369 LBCB U-BESSEL 0.0 bias 1 "" BinoBias biascheck 25Bias_Bino zero -1067827.94 0.0
+lbcb.20080705.063441.fits.gz lbcb1215239647 54652.27409 LBCB U-BESSEL 0.0 bias 1 "" BinoBias biascheck 25Bias_Bino zero -1067827.94 0.0
+lbcb.20080705.115248.fits.gz lbcb1215258741 54652.49501 LBCB SDT_Uspec 1.485 flat 1 "" SkyFlat flatcalib SkyFlat_Usr_rot180 flat 1.01045 23627.0
+lbcb.20080705.115328.fits.gz lbcb1215258773 54652.49547 LBCB SDT_Uspec 1.475 flat 1 "" SkyFlat flatcalib SkyFlat_Usr_rot180 flat 1.01066 27239.0
+lbcb.20080705.115408.fits.gz lbcb1215258813 54652.49593 LBCB SDT_Uspec 1.485 flat 1 "" SkyFlat flatcalib SkyFlat_Usr_rot180 flat 1.01095 31391.0
+lbcb.20080705.115448.fits.gz lbcb1215258853 54652.4964 LBCB SDT_Uspec 1.477 flat 1 "" SkyFlat flatcalib SkyFlat_Usr_rot180 flat 1.0113 36103.0
+lbcb.20080705.115528.fits.gz lbcb1215258893 54652.49686 LBCB SDT_Uspec 1.485 flat 1 "" SkyFlat flatcalib SkyFlat_Usr_rot180 flat 1.01157 41365.0
+lbcr.20080705.062910.fits.gz lbcr1215239323 54652.27026 LBCR Y-FAN 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero -1067827.94 0.0
+lbcr.20080705.062939.fits.gz lbcr1215239351 54652.27059 LBCR Y-FAN 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero -1067827.94 1.0
+lbcr.20080705.063007.fits.gz lbcr1215239380 54652.27092 LBCR Y-FAN 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero -1067827.94 1.0
+lbcr.20080705.063036.fits.gz lbcr1215239408 54652.27125 LBCR Y-FAN 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero -1067827.94 0.0
+lbcr.20080705.063103.fits.gz lbcr1215239437 54652.27157 LBCR Y-FAN 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero -1067827.94 0.0
+lbcr.20080705.063131.fits.gz lbcr1215239464 54652.2719 LBCR Y-FAN 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero -1067827.94 0.0
+lbcr.20080705.063201.fits.gz lbcr1215239493 54652.27224 LBCR Y-FAN 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero -1067827.94 0.0
+lbcr.20080705.063240.fits.gz lbcr1215239522 54652.27269 LBCR Y-FAN 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero -1067827.94 2.0
+lbcr.20080705.063320.fits.gz lbcr1215239561 54652.27315 LBCR Y-FAN 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero -1067827.94 1.0
+lbcr.20080705.063348.fits.gz lbcr1215239601 54652.27348 LBCR Y-FAN 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero -1067827.94 0.0
+lbcr.20080705.113321.fits.gz lbcr1215257532 54652.4815 LBCR i-SLOAN 10.234 flat 2 "" SkyFlat flatcalib SkyFlat_Vi_rot180_ flat 1.00532 21636.0
+lbcr.20080705.113403.fits.gz lbcr1215257618 54652.48198 LBCR i-SLOAN 10.237 flat 2 "" SkyFlat flatcalib SkyFlat_Vi_rot180_ flat 1.00547 24635.0
+lbcr.20080705.113452.fits.gz lbcr1215257668 54652.48255 LBCR i-SLOAN 10.234 flat 2 "" SkyFlat flatcalib SkyFlat_Vi_rot180_ flat 1.00559 28812.0
+lbcr.20080705.113541.fits.gz lbcr1215257717 54652.48312 LBCR i-SLOAN 10.237 flat 2 "" SkyFlat flatcalib SkyFlat_Vi_rot180_ flat 1.00575 33871.0
+lbcr.20080705.113630.fits.gz lbcr1215257766 54652.48368 LBCR i-SLOAN 10.233 flat 2 "" SkyFlat flatcalib SkyFlat_Vi_rot180_ flat 1.00585 39898.0
+lbcr.20080705.114213.fits.gz lbcr1215258105 54652.48766 LBCR R-BESSEL 3.239 flat 2 "" SkyFlat flatcalib SkyFlat_BR_rot180_ flat 1.007 27064.0
+lbcr.20080705.114252.fits.gz lbcr1215258148 54652.4881 LBCR R-BESSEL 3.233 flat 2 "" SkyFlat flatcalib SkyFlat_BR_rot180_ flat 1.00718 31240.0
+lbcr.20080705.114334.fits.gz lbcr1215258190 54652.48859 LBCR R-BESSEL 3.239 flat 2 "" SkyFlat flatcalib SkyFlat_BR_rot180_ flat 1.00738 36601.0
+lbcr.20080705.114415.fits.gz lbcr1215258232 54652.48907 LBCR R-BESSEL 3.233 flat 2 "" SkyFlat flatcalib SkyFlat_BR_rot180_ flat 1.00762 42745.0
+lbcr.20080705.114458.fits.gz lbcr1215258274 54652.48956 LBCR R-BESSEL 3.239 flat 2 "" SkyFlat flatcalib SkyFlat_BR_rot180_ flat 1.00778 50296.0
+lbcr.20080705.115246.fits.gz lbcr1215258741 54652.49498 LBCR r-SLOAN 0.539 flat 2 "" SkyFlat flatcalib SkyFlat_Usr_rot180 flat 1.01046 41890.0
+lbcr.20080705.115317.fits.gz lbcr1215258773 54652.49535 LBCR r-SLOAN 0.533 flat 2 "" SkyFlat flatcalib SkyFlat_Usr_rot180 flat 1.01069 47129.0
+lbcr.20080705.115356.fits.gz lbcr1215258813 54652.49579 LBCR r-SLOAN 0.537 flat 2 "" SkyFlat flatcalib SkyFlat_Usr_rot180 flat 1.01099 54632.0
+lbcr.20080705.115436.fits.gz lbcr1215258853 54652.49626 LBCR r-SLOAN 0.533 flat 2 "" SkyFlat flatcalib SkyFlat_Usr_rot180 flat 1.0113 63638.0
+lbcr.20080705.115517.fits.gz lbcr1215258893 54652.49673 LBCR r-SLOAN 0.537 flat 2 "" SkyFlat flatcalib SkyFlat_Usr_rot180 flat 1.01157 64905.0
