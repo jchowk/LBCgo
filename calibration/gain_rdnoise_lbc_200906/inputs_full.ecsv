@@ -1,0 +1,178 @@
+# %ECSV 1.0
+# ---
+# datatype:
+# - {name: filename, datatype: string}
+# - {name: obs_id, datatype: string}
+# - {name: mjd_obs, datatype: float64}
+# - {name: channel, datatype: string}
+# - {name: filter, datatype: string}
+# - {name: exptime, datatype: float64}
+# - {name: role, datatype: string}
+# - {name: set, datatype: int64}
+# - {name: notes, datatype: string}
+# - {name: object, datatype: string}
+# - {name: propid, datatype: string}
+# - {name: lbcobnam, datatype: string}
+# - {name: imagetyp, datatype: string}
+# - {name: airmass, datatype: float64}
+# - {name: median_adu, datatype: float64}
+# meta: !!omap
+# - comments: [Calibration inputs built by calibration/make_inputs.py from 2009.06/., role from IMAGETYP; set = channel + UT date. Review
+#       and edit before use (e.g. 2 flats + 2 biases per set for gain/read noise).]
+# schema: astropy-2.0
+filename obs_id mjd_obs channel filter exptime role set notes object propid lbcobnam imagetyp airmass median_adu
+lbcb.20090621.024324.fits.gz lbcb1245552170 55003.11348 LBCB g-SLOAN 0.729 flat 1 "" SkyFlat flatcalib SkyFlat_gR_5 flat 1.02067 64837.0
+lbcb.20090621.024357.fits.gz lbcb1245552208 55003.11386 LBCB g-SLOAN 0.738 flat 1 "" SkyFlat flatcalib SkyFlat_gR_5 flat 1.02031 64830.0
+lbcb.20090621.024430.fits.gz lbcb1245552241 55003.11425 LBCB g-SLOAN 0.73 flat 1 "" SkyFlat flatcalib SkyFlat_gR_5 flat 1.02 64826.0
+lbcb.20090621.024504.fits.gz lbcb1245552275 55003.11463 LBCB g-SLOAN 0.737 flat 1 "" SkyFlat flatcalib SkyFlat_gR_5 flat 1.01966 64821.0
+lbcb.20090621.024538.fits.gz lbcb1245552309 55003.11502 LBCB g-SLOAN 0.73 flat 1 "" SkyFlat flatcalib SkyFlat_gR_5 flat 1.01936 64818.0
+lbcb.20090621.024647.fits.gz lbcb1245552387 55003.11583 LBCB g-SLOAN 0.737 flat 1 "" SkyFlat flatcalib SkyFlat_gR_5 flat 1.01864 64812.0
+lbcb.20090621.024720.fits.gz lbcb1245552413 55003.11621 LBCB g-SLOAN 0.729 flat 1 "" SkyFlat flatcalib SkyFlat_gR_5 flat 1.01842 64810.0
+lbcb.20090621.024753.fits.gz lbcb1245552444 55003.11659 LBCB g-SLOAN 0.737 flat 1 "" SkyFlat flatcalib SkyFlat_gR_5 flat 1.01812 64808.0
+lbcb.20090621.024827.fits.gz lbcb1245552478 55003.11698 LBCB g-SLOAN 0.73 flat 1 "" SkyFlat flatcalib SkyFlat_gR_5 flat 1.01783 64806.0
+lbcb.20090621.024900.fits.gz lbcb1245552511 55003.11737 LBCB g-SLOAN 0.738 flat 1 "" SkyFlat flatcalib SkyFlat_gR_5 flat 1.01757 64805.0
+lbcb.20090621.025003.fits.gz lbcb1245552583 55003.1181 LBCB g-SLOAN 0.63 flat 1 "" SkyFlat flatcalib SkyFlat_gR_5 flat 1.01697 64803.0
+lbcb.20090621.025036.fits.gz lbcb1245552609 55003.11847 LBCB g-SLOAN 0.637 flat 1 "" SkyFlat flatcalib SkyFlat_gR_5 flat 1.01677 64758.0
+lbcb.20090621.025108.fits.gz lbcb1245552639 55003.11885 LBCB g-SLOAN 0.63 flat 1 "" SkyFlat flatcalib SkyFlat_gR_5 flat 1.01654 64764.0
+lbcb.20090621.025141.fits.gz lbcb1245552672 55003.11923 LBCB g-SLOAN 0.637 flat 1 "" SkyFlat flatcalib SkyFlat_gR_5 flat 1.01628 64770.0
+lbcb.20090621.025213.fits.gz lbcb1245552705 55003.1196 LBCB g-SLOAN 0.629 flat 1 "" SkyFlat flatcalib SkyFlat_gR_5 flat 1.01603 60309.0
+lbcb.20090621.025450.fits.gz lbcb1245552854 55003.12142 LBCB g-SLOAN 0.629 flat 1 "" SkyFlat flatcalib SkyFlat_gR_5 flat 1.01493 34307.0
+lbcb.20090621.025523.fits.gz lbcb1245552894 55003.1218 LBCB g-SLOAN 0.637 flat 1 "" SkyFlat flatcalib SkyFlat_gR_5 flat 1.01464 30604.0
+lbcb.20090621.025556.fits.gz lbcb1245552927 55003.12218 LBCB g-SLOAN 0.629 flat 1 "" SkyFlat flatcalib SkyFlat_gR_5 flat 1.01443 27019.0
+lbcb.20090621.025628.fits.gz lbcb1245552959 55003.12255 LBCB g-SLOAN 0.637 flat 1 "" SkyFlat flatcalib SkyFlat_gR_5 flat 1.01422 24087.0
+lbcb.20090621.025701.fits.gz lbcb1245552992 55003.12293 LBCB g-SLOAN 0.63 flat 1 "" SkyFlat flatcalib SkyFlat_gR_5 flat 1.01399 21290.0
+lbcb.20090621.025758.fits.gz lbcb1245553058 55003.1236 LBCB g-SLOAN 0.837 flat 1 "" SkyFlat flatcalib SkyFlat_gR_5 flat 1.01358 37024.0
+lbcb.20090621.025832.fits.gz lbcb1245553085 55003.12398 LBCB g-SLOAN 0.831 flat 1 "" SkyFlat flatcalib SkyFlat_gR_5 flat 1.01342 32617.5
+lbcb.20090621.025905.fits.gz lbcb1245553116 55003.12437 LBCB g-SLOAN 0.837 flat 1 "" SkyFlat flatcalib SkyFlat_gR_5 flat 1.01324 28672.0
+lbcb.20090621.025939.fits.gz lbcb1245553150 55003.12476 LBCB g-SLOAN 0.83 flat 1 "" SkyFlat flatcalib SkyFlat_gR_5 flat 1.01303 25182.0
+lbcb.20090621.030012.fits.gz lbcb1245553184 55003.12515 LBCB g-SLOAN 0.837 flat 1 "" SkyFlat flatcalib SkyFlat_gR_5 flat 1.01284 22086.0
+lbcb.20090621.030208.fits.gz lbcb1245553302 55003.12649 LBCB r-SLOAN 1.48 flat 1 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.0122 14029.0
+lbcb.20090621.030242.fits.gz lbcb1245553333 55003.12688 LBCB r-SLOAN 1.487 flat 1 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.01203 12227.0
+lbcb.20090621.030315.fits.gz lbcb1245553367 55003.12727 LBCB r-SLOAN 1.48 flat 1 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.01188 10648.0
+lbcb.20090621.030349.fits.gz lbcb1245553400 55003.12765 LBCB r-SLOAN 1.487 flat 1 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.01171 9303.0
+lbcb.20090621.030422.fits.gz lbcb1245553433 55003.12804 LBCB r-SLOAN 1.48 flat 1 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.01155 8125.0
+lbcb.20090621.030548.fits.gz lbcb1245553527 55003.12903 LBCB r-SLOAN 3.487 flat 1 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.01111 17119.0
+lbcb.20090621.030624.fits.gz lbcb1245553558 55003.12945 LBCB r-SLOAN 3.479 flat 1 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.01099 14890.0
+lbcb.20090621.030659.fits.gz lbcb1245553591 55003.12986 LBCB r-SLOAN 3.487 flat 1 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.01088 13035.0
+lbcb.20090621.030735.fits.gz lbcb1245553626 55003.13027 LBCB r-SLOAN 3.479 flat 1 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.01073 11399.0
+lbcb.20090621.030810.fits.gz lbcb1245553662 55003.13068 LBCB r-SLOAN 3.487 flat 1 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.01059 9992.0
+lbcb.20090621.030935.fits.gz lbcb1245553754 55003.13166 LBCB r-SLOAN 6.48 flat 1 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.01026 14715.0
+lbcb.20090621.031014.fits.gz lbcb1245553788 55003.13212 LBCB r-SLOAN 6.487 flat 1 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.01014 12845.0
+lbcb.20090621.031053.fits.gz lbcb1245553825 55003.13256 LBCB r-SLOAN 6.481 flat 1 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.01004 11275.0
+lbcb.20090621.031132.fits.gz lbcb1245553864 55003.13301 LBCB r-SLOAN 6.487 flat 1 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.00993 9957.0
+lbcb.20090621.031211.fits.gz lbcb1245553902 55003.13346 LBCB r-SLOAN 6.479 flat 1 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.00981 8810.0
+lbcb.20090622.012516.fits.gz lbcb1245633883 55004.05922 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 5.75877 1.0
+lbcb.20090622.012545.fits.gz lbcb1245633917 55004.05955 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 5.75877 0.0
+lbcb.20090622.012613.fits.gz lbcb1245633945 55004.05988 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 5.75877 2.0
+lbcb.20090622.012642.fits.gz lbcb1245633974 55004.06022 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 5.75877 0.0
+lbcb.20090622.012711.fits.gz lbcb1245634003 55004.06055 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 5.75877 1.0
+lbcb.20090622.012739.fits.gz lbcb1245634031 55004.06088 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 5.75877 0.0
+lbcb.20090622.012808.fits.gz lbcb1245634060 55004.06121 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 5.75877 1.0
+lbcb.20090622.012837.fits.gz lbcb1245634089 55004.06154 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 5.75877 1.0
+lbcb.20090622.012908.fits.gz lbcb1245634118 55004.0619 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 5.75877 1.0
+lbcb.20090622.012936.fits.gz lbcb1245634148 55004.06223 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 5.75877 1.0
+lbcb.20090622.013005.fits.gz lbcb1245634177 55004.06257 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 5.75877 0.0
+lbcb.20090622.013036.fits.gz lbcb1245634208 55004.06293 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 5.75877 1.0
+lbcb.20090622.013105.fits.gz lbcb1245634237 55004.06326 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 5.75877 0.0
+lbcb.20090622.013134.fits.gz lbcb1245634267 55004.06359 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 5.75877 1.0
+lbcb.20090622.013202.fits.gz lbcb1245634294 55004.06392 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 5.75877 0.0
+lbcb.20090622.013231.fits.gz lbcb1245634323 55004.06425 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 5.75877 1.0
+lbcb.20090622.013259.fits.gz lbcb1245634351 55004.06458 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 5.75877 0.0
+lbcb.20090622.013328.fits.gz lbcb1245634380 55004.06492 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 5.75877 1.0
+lbcb.20090622.013357.fits.gz lbcb1245634409 55004.06525 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 5.75877 0.0
+lbcb.20090622.013426.fits.gz lbcb1245634438 55004.06558 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 5.75877 1.0
+lbcb.20090622.013454.fits.gz lbcb1245634466 55004.06591 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 5.75877 1.0
+lbcb.20090622.013523.fits.gz lbcb1245634495 55004.06624 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 5.75877 1.0
+lbcb.20090622.013552.fits.gz lbcb1245634524 55004.06658 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 5.75877 1.0
+lbcb.20090622.013621.fits.gz lbcb1245634552 55004.06691 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 5.75877 1.0
+lbcb.20090622.013649.fits.gz lbcb1245634581 55004.06724 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 5.75877 0.0
+lbcb.20090622.035629.fits.gz lbcb1245642955 55004.16423 LBCB g-SLOAN 1.484 flat 2 "" SkyFlat flatcalib SkyFlat_gi_5 flat 1.0 18.0
+lbcb.20090622.035703.fits.gz lbcb1245642994 55004.16463 LBCB g-SLOAN 1.481 flat 2 "" SkyFlat flatcalib SkyFlat_gi_5 flat 1.0 18.0
+lbcb.20090622.070604.fits.gz lbcb1245654324 55004.29589 LBCB g-SLOAN 250.483 science 2 "" PG1630+377 ND_whim PG1630whim1 object 1.04182 nan
+lbcb.20090622.080257.fits.gz lbcb1245657744 55004.33539 LBCB g-SLOAN 250.484 science 2 "" PG1630+377 ND_whim PG1630whim1 object 1.12738 nan
+lbcb.20090622.080915.fits.gz lbcb1245658032 55004.33976 LBCB r-SLOAN 250.483 science 2 "" PG1630+377 ND_whim PG1630whim1 object 1.13708 nan
+lbcb.20090622.081402.fits.gz lbcb1245658415 55004.34309 LBCB g-SLOAN 250.484 science 2 "" PG1630+377 ND_whim PG1630whim1 object 1.15146 nan
+lbcb.20090622.081845.fits.gz lbcb1245658696 55004.34636 LBCB r-SLOAN 250.483 science 2 "" PG1630+377 ND_whim PG1630whim1 object 1.16213 nan
+lbcb.20090622.082329.fits.gz lbcb1245658982 55004.34965 LBCB g-SLOAN 250.484 science 2 "" PG1630+377 ND_whim PG1630whim1 object 1.17404 nan
+lbcb.20090622.082812.fits.gz lbcb1245659263 55004.35292 LBCB r-SLOAN 250.482 science 2 "" PG1630+377 ND_whim PG1630whim1 object 1.18594 nan
+lbcb.20090622.084326.fits.gz lbcb1245660172 55004.36351 LBCB g-SLOAN 250.485 science 2 "" PG1630+377 ND_whim PG1630whim2 object 1.22904 nan
+lbcb.20090622.084809.fits.gz lbcb1245660460 55004.36678 LBCB r-SLOAN 250.482 science 2 "" PG1630+377 ND_whim PG1630whim2 object 1.2431 nan
+lbcb.20090622.085252.fits.gz lbcb1245660745 55004.37005 LBCB g-SLOAN 250.483 science 2 "" PG1630+377 ND_whim PG1630whim2 object 1.25883 nan
+lbcb.20090622.085735.fits.gz lbcb1245661026 55004.37332 LBCB r-SLOAN 250.483 science 2 "" PG1630+377 ND_whim PG1630whim2 object 1.27464 nan
+lbcb.20090622.090223.fits.gz lbcb1245661315 55004.37666 LBCB g-SLOAN 250.485 science 2 "" PG1630+377 ND_whim PG1630whim2 object 1.29136 nan
+lbcb.20090622.090705.fits.gz lbcb1245661597 55004.37993 LBCB r-SLOAN 250.484 science 2 "" PG1630+377 ND_whim PG1630whim2 object 1.30832 nan
+lbcb.20090622.091812.fits.gz lbcb1245662249 55004.38765 LBCB g-SLOAN 250.484 science 2 "" PG1630+377 ND_whim PG1630whim3 object 1.35358 nan
+lbcb.20090622.092255.fits.gz lbcb1245662547 55004.39093 LBCB r-SLOAN 250.483 science 2 "" PG1630+377 ND_whim PG1630whim3 object 1.37344 nan
+lbcb.20090622.092739.fits.gz lbcb1245662832 55004.39421 LBCB g-SLOAN 250.483 science 2 "" PG1630+377 ND_whim PG1630whim3 object 1.39569 nan
+lbcb.20090622.093222.fits.gz lbcb1245663113 55004.39748 LBCB r-SLOAN 250.483 science 2 "" PG1630+377 ND_whim PG1630whim3 object 1.41758 nan
+lbcb.20090622.093708.fits.gz lbcb1245663401 55004.40079 LBCB g-SLOAN 250.486 science 2 "" PG1630+377 ND_whim PG1630whim3 object 1.44077 nan
+lbcb.20090622.094150.fits.gz lbcb1245663681 55004.40406 LBCB r-SLOAN 250.483 science 2 "" PG1630+377 ND_whim PG1630whim3 object 1.4645 nan
+lbcr.20090621.030208.fits.gz lbcr1245553302 55003.12649 LBCR i-SLOAN 1.234 flat 3 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.01219 29108.0
+lbcr.20090621.030239.fits.gz lbcr1245553333 55003.12684 LBCR i-SLOAN 1.24 flat 3 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.01201 25740.0
+lbcr.20090621.030310.fits.gz lbcr1245553367 55003.12721 LBCR i-SLOAN 1.235 flat 3 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.01187 22606.0
+lbcr.20090621.030342.fits.gz lbcr1245553400 55003.12757 LBCR i-SLOAN 1.24 flat 3 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.01171 19913.0
+lbcr.20090621.030414.fits.gz lbcr1245553433 55003.12795 LBCR i-SLOAN 1.235 flat 3 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.01155 17526.0
+lbcr.20090621.030551.fits.gz lbcr1245553527 55003.12906 LBCR i-SLOAN 3.239 flat 3 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.01113 34144.0
+lbcr.20090621.030623.fits.gz lbcr1245553558 55003.12944 LBCR i-SLOAN 3.235 flat 3 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.01098 30148.0
+lbcr.20090621.030656.fits.gz lbcr1245553591 55003.12982 LBCR i-SLOAN 3.238 flat 3 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.01086 26750.0
+lbcr.20090621.030729.fits.gz lbcr1245553626 55003.1302 LBCR i-SLOAN 3.235 flat 3 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.01072 23664.0
+lbcr.20090621.030804.fits.gz lbcr1245553662 55003.13061 LBCR i-SLOAN 3.238 flat 3 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.01059 20796.0
+lbcr.20090621.030938.fits.gz lbcr1245553754 55003.13169 LBCR i-SLOAN 6.235 flat 3 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.01026 29637.0
+lbcr.20090621.031013.fits.gz lbcr1245553788 55003.1321 LBCR i-SLOAN 6.238 flat 3 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.01014 26328.0
+lbcr.20090621.031048.fits.gz lbcr1245553825 55003.13251 LBCR i-SLOAN 6.235 flat 3 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.01004 23472.0
+lbcr.20090621.031125.fits.gz lbcr1245553864 55003.13294 LBCR i-SLOAN 6.237 flat 3 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.00992 20924.0
+lbcr.20090621.031205.fits.gz lbcr1245553902 55003.1334 LBCR i-SLOAN 6.234 flat 3 "" SkyFlat flatcalib SkyFlat_ri_5 flat 1.0098 18531.0
+lbcr.20090622.012517.fits.gz lbcr1245633883 55004.05923 LBCR Y-FAN 0.0 bias 4 "" BinoBias biascheck 25Bias_Bino zero 5.75877 1.0
+lbcr.20090622.012542.fits.gz lbcr1245633918 55004.05952 LBCR Y-FAN 0.0 bias 4 "" BinoBias biascheck 25Bias_Bino zero 5.75877 1.0
+lbcr.20090622.012608.fits.gz lbcr1245633943 55004.05982 LBCR Y-FAN 0.0 bias 4 "" BinoBias biascheck 25Bias_Bino zero 5.75877 0.0
+lbcr.20090622.012634.fits.gz lbcr1245633969 55004.06012 LBCR Y-FAN 0.0 bias 4 "" BinoBias biascheck 25Bias_Bino zero 5.75877 1.0
+lbcr.20090622.012659.fits.gz lbcr1245633994 55004.06041 LBCR Y-FAN 0.0 bias 4 "" BinoBias biascheck 25Bias_Bino zero 5.75877 1.0
+lbcr.20090622.012725.fits.gz lbcr1245634020 55004.06071 LBCR Y-FAN 0.0 bias 4 "" BinoBias biascheck 25Bias_Bino zero 5.75877 1.0
+lbcr.20090622.012750.fits.gz lbcr1245634045 55004.061 LBCR Y-FAN 0.0 bias 4 "" BinoBias biascheck 25Bias_Bino zero 5.75877 0.0
+lbcr.20090622.012816.fits.gz lbcr1245634071 55004.0613 LBCR Y-FAN 0.0 bias 4 "" BinoBias biascheck 25Bias_Bino zero 5.75877 0.0
+lbcr.20090622.012841.fits.gz lbcr1245634096 55004.06159 LBCR Y-FAN 0.0 bias 4 "" BinoBias biascheck 25Bias_Bino zero 5.75877 1.0
+lbcr.20090622.012907.fits.gz lbcr1245634122 55004.06189 LBCR Y-FAN 0.0 bias 4 "" BinoBias biascheck 25Bias_Bino zero 5.75877 1.0
+lbcr.20090622.012932.fits.gz lbcr1245634147 55004.06218 LBCR Y-FAN 0.0 bias 4 "" BinoBias biascheck 25Bias_Bino zero 5.75877 0.0
+lbcr.20090622.012958.fits.gz lbcr1245634173 55004.06248 LBCR Y-FAN 0.0 bias 4 "" BinoBias biascheck 25Bias_Bino zero 5.75877 0.0
+lbcr.20090622.013023.fits.gz lbcr1245634198 55004.06277 LBCR Y-FAN 0.0 bias 4 "" BinoBias biascheck 25Bias_Bino zero 5.75877 0.0
+lbcr.20090622.013049.fits.gz lbcr1245634224 55004.06307 LBCR Y-FAN 0.0 bias 4 "" BinoBias biascheck 25Bias_Bino zero 5.75877 1.0
+lbcr.20090622.013114.fits.gz lbcr1245634249 55004.06336 LBCR Y-FAN 0.0 bias 4 "" BinoBias biascheck 25Bias_Bino zero 5.75877 1.0
+lbcr.20090622.013140.fits.gz lbcr1245634275 55004.06366 LBCR Y-FAN 0.0 bias 4 "" BinoBias biascheck 25Bias_Bino zero 5.75877 0.0
+lbcr.20090622.013205.fits.gz lbcr1245634300 55004.06395 LBCR Y-FAN 0.0 bias 4 "" BinoBias biascheck 25Bias_Bino zero 5.75877 1.0
+lbcr.20090622.013231.fits.gz lbcr1245634326 55004.06425 LBCR Y-FAN 0.0 bias 4 "" BinoBias biascheck 25Bias_Bino zero 5.75877 1.0
+lbcr.20090622.013256.fits.gz lbcr1245634352 55004.06455 LBCR Y-FAN 0.0 bias 4 "" BinoBias biascheck 25Bias_Bino zero 5.75877 0.0
+lbcr.20090622.013322.fits.gz lbcr1245634377 55004.06484 LBCR Y-FAN 0.0 bias 4 "" BinoBias biascheck 25Bias_Bino zero 5.75877 0.0
+lbcr.20090622.013347.fits.gz lbcr1245634402 55004.06514 LBCR Y-FAN 0.0 bias 4 "" BinoBias biascheck 25Bias_Bino zero 5.75877 0.0
+lbcr.20090622.013413.fits.gz lbcr1245634428 55004.06543 LBCR Y-FAN 0.0 bias 4 "" BinoBias biascheck 25Bias_Bino zero 5.75877 0.0
+lbcr.20090622.013438.fits.gz lbcr1245634453 55004.06572 LBCR Y-FAN 0.0 bias 4 "" BinoBias biascheck 25Bias_Bino zero 5.75877 0.0
+lbcr.20090622.013504.fits.gz lbcr1245634479 55004.06602 LBCR Y-FAN 0.0 bias 4 "" BinoBias biascheck 25Bias_Bino zero 5.75877 0.0
+lbcr.20090622.013529.fits.gz lbcr1245634504 55004.06631 LBCR Y-FAN 0.0 bias 4 "" BinoBias biascheck 25Bias_Bino zero 5.75877 0.0
+lbcr.20090622.070605.fits.gz lbcr1245654324 55004.2959 LBCR i-SLOAN 0.0 science 4 "" PG1630+377 ND_whim PG1630whim1 object 1.0419 nan
+lbcr.20090622.070631.fits.gz lbcr1245654366 55004.2962 LBCR z-SLOAN 0.0 science 4 "" PG1630+377 ND_whim PG1630whim1 object 1.04222 nan
+lbcr.20090622.080254.fits.gz lbcr1245657744 55004.33535 LBCR i-SLOAN 250.233 science 4 "" PG1630+377 ND_whim PG1630whim1 object 1.12738 nan
+lbcr.20090622.080908.fits.gz lbcr1245658028 55004.33968 LBCR z-SLOAN 250.237 science 4 "" PG1630+377 ND_whim PG1630whim1 object 1.13711 nan
+lbcr.20090622.081404.fits.gz lbcr1245658415 55004.34311 LBCR i-SLOAN 250.232 science 4 "" PG1630+377 ND_whim PG1630whim1 object 1.15154 nan
+lbcr.20090622.081846.fits.gz lbcr1245658699 55004.34637 LBCR z-SLOAN 250.237 science 4 "" PG1630+377 ND_whim PG1630whim1 object 1.16244 nan
+lbcr.20090622.082331.fits.gz lbcr1245658982 55004.34967 LBCR i-SLOAN 250.232 science 4 "" PG1630+377 ND_whim PG1630whim1 object 1.17405 nan
+lbcr.20090622.082813.fits.gz lbcr1245659265 55004.35293 LBCR z-SLOAN 250.237 science 4 "" PG1630+377 ND_whim PG1630whim1 object 1.18597 nan
+lbcr.20090622.084403.fits.gz lbcr1245660214 55004.36392 LBCR z-SLOAN 250.232 science 4 "" PG1630+377 ND_whim PG1630whim2 object 1.23047 nan
+lbcr.20090622.085256.fits.gz lbcr1245660745 55004.3701 LBCR i-SLOAN 250.237 science 4 "" PG1630+377 ND_whim PG1630whim2 object 1.25904 nan
+lbcr.20090622.085738.fits.gz lbcr1245661031 55004.37336 LBCR z-SLOAN 250.232 science 4 "" PG1630+377 ND_whim PG1630whim2 object 1.27497 nan
+lbcr.20090622.090223.fits.gz lbcr1245661315 55004.37666 LBCR i-SLOAN 250.237 science 4 "" PG1630+377 ND_whim PG1630whim2 object 1.29124 nan
+lbcr.20090622.090704.fits.gz lbcr1245661596 55004.37991 LBCR z-SLOAN 250.232 science 4 "" PG1630+377 ND_whim PG1630whim2 object 1.30861 nan
+lbcr.20090622.091813.fits.gz lbcr1245662249 55004.38765 LBCR i-SLOAN 250.237 science 4 "" PG1630+377 ND_whim PG1630whim3 object 1.35386 nan
+lbcr.20090622.092257.fits.gz lbcr1245662547 55004.39094 LBCR z-SLOAN 250.232 science 4 "" PG1630+377 ND_whim PG1630whim3 object 1.37363 nan
+lbcr.20090622.092742.fits.gz lbcr1245662832 55004.39424 LBCR i-SLOAN 250.238 science 4 "" PG1630+377 ND_whim PG1630whim3 object 1.39584 nan
+lbcr.20090622.093223.fits.gz lbcr1245663116 55004.39749 LBCR z-SLOAN 250.233 science 4 "" PG1630+377 ND_whim PG1630whim3 object 1.41795 nan
+lbcr.20090622.093710.fits.gz lbcr1245663401 55004.40081 LBCR i-SLOAN 250.238 science 4 "" PG1630+377 ND_whim PG1630whim3 object 1.44059 nan
+lbcr.20090622.094153.fits.gz lbcr1245663684 55004.40409 LBCR z-SLOAN 250.233 science 4 "" PG1630+377 ND_whim PG1630whim3 object 1.46492 nan
+lbcr.20090622.114329.fits.gz lbcr1245670982 55004.48854 LBCR z-SLOAN 0.531 flat 4 "" SkyFlat flatcalib SkyFlat_Usz_5 flat 1.01734 11783.0
+lbcr.20090622.114359.fits.gz lbcr1245671013 55004.48888 LBCR z-SLOAN 0.536 flat 4 "" SkyFlat flatcalib SkyFlat_Usz_5 flat 1.01709 13295.0
+lbcr.20090622.114429.fits.gz lbcr1245671043 55004.48923 LBCR z-SLOAN 0.532 flat 4 "" SkyFlat flatcalib SkyFlat_Usz_5 flat 1.01687 14883.0
+lbcr.20090622.114459.fits.gz lbcr1245671074 55004.48958 LBCR z-SLOAN 0.536 flat 4 "" SkyFlat flatcalib SkyFlat_Usz_5 flat 1.01661 16844.0
+lbcr.20090622.114530.fits.gz lbcr1245671107 55004.48993 LBCR z-SLOAN 0.532 flat 4 "" SkyFlat flatcalib SkyFlat_Usz_5 flat 1.01636 19061.0
+lbcr.20090622.114634.fits.gz lbcr1245671171 55004.49067 LBCR z-SLOAN 0.535 flat 4 "" SkyFlat flatcalib SkyFlat_Usz_5 flat 1.01584 25007.0
+lbcr.20090622.114703.fits.gz lbcr1245671197 55004.49101 LBCR z-SLOAN 0.532 flat 4 "" SkyFlat flatcalib SkyFlat_Usz_5 flat 1.01566 28418.0
+lbcr.20090622.114733.fits.gz lbcr1245671229 55004.49136 LBCR z-SLOAN 0.534 flat 4 "" SkyFlat flatcalib SkyFlat_Usz_5 flat 1.01543 32577.0
+lbcr.20090622.114805.fits.gz lbcr1245671263 55004.49173 LBCR z-SLOAN 0.533 flat 4 "" SkyFlat flatcalib SkyFlat_Usz_5 flat 1.01517 37414.0
+lbcr.20090622.114839.fits.gz lbcr1245671296 55004.49212 LBCR z-SLOAN 0.534 flat 4 "" SkyFlat flatcalib SkyFlat_Usz_5 flat 1.01493 43404.0

@@ -14,16 +14,21 @@
 #       fluxes summed over pixels (covariances included); nan = unknown, use gain. See LBCgo.detector.OPTIONAL_TABLE_COLUMNS.', 'channel:
 #       LBCB or LBCR. mjd_start inclusive, mjd_end exclusive; nan = open-ended. The matching row with the latest mjd_start wins.', Chips/channels/dates
 #       without a matching row use the GAIN/RDNOISE image headers., 'LBCB open-ended rows: 2006 commissioning values (Giallongo et al.
-#       2008, Table 1); in force before MJD 55273.', 'Rows from MJD 55273: measured 2010-03-18/19, calibration/gain_rdnoise_lbc_201003/
-#       (LBCB and LBCR; in force until MJD 56830).', 'Rows from MJD 56830: measured 2014-06-22 to 2014-07-01, calibration/gain_rdnoise_lbc_201406/
-#       (LBCB and LBCR; LBCR from 3 flat pairs only, provisional). Rows from MJD 60822: measured 2025-05-27, calibration/gain_rdnoise_lbc_202505/.
-#       LBCR before MJD 55273: header values.']
+#       2008, Table 1); in force before MJD 55003.', 'Rows from MJD 55003: measured 2009-06-21/22, calibration/gain_rdnoise_lbc_200906/
+#       (LBCB only; the LBCR data of that epoch were unusable; in force until MJD 55273). Rows from MJD 55273: measured 2010-03-18/19,
+#       calibration/gain_rdnoise_lbc_201003/ (LBCB and LBCR; in force until MJD 56830).', 'Rows from MJD 56830: measured 2014-06-22 to
+#       2014-07-01, calibration/gain_rdnoise_lbc_201406/ (LBCB and LBCR; LBCR from 3 flat pairs only, provisional). Rows from MJD 60822:
+#       measured 2025-05-27, calibration/gain_rdnoise_lbc_202505/. LBCR before MJD 55273: header values.']
 # schema: astropy-2.0
 channel chip gain rdnoise gain_flux mjd_start mjd_end source
 LBCB 1 1.96 11.4 nan nan nan "Giallongo et al. 2008, A&A 482, 349, Table 1 (variance method, 2006 commissioning)"
 LBCB 2 2.09 11.6 nan nan nan "Giallongo et al. 2008, A&A 482, 349, Table 1 (variance method, 2006 commissioning)"
 LBCB 3 2.06 11.6 nan nan nan "Giallongo et al. 2008, A&A 482, 349, Table 1 (variance method, 2006 commissioning)"
 LBCB 4 1.98 11.2 nan nan nan "Giallongo et al. 2008, A&A 482, 349, Table 1 (variance method, 2006 commissioning)"
+LBCB 1 1.7885422462714058 10.199291711304275 1.7443319281272724 55003.0 nan "calibration/gain_rdnoise_lbc_200906 (LBCgo 89091c3817)"
+LBCB 2 1.938086718986702 9.760064948652794 1.9093729541854518 55003.0 nan "calibration/gain_rdnoise_lbc_200906 (LBCgo 89091c3817)"
+LBCB 3 1.9297703984768342 9.846600841898812 1.903267315914675 55003.0 nan "calibration/gain_rdnoise_lbc_200906 (LBCgo 89091c3817)"
+LBCB 4 1.801522960643094 9.483340146312871 1.801162078828284 55003.0 nan "calibration/gain_rdnoise_lbc_200906 (LBCgo 89091c3817)"
 LBCB 1 1.7953531586864526 11.724273155804571 1.7414800762816696 55273.0 nan "calibration/gain_rdnoise_lbc_201003 (LBCgo 91f3fd970d)"
 LBCB 2 1.9733208141151155 11.043350824457372 1.9499647254988242 55273.0 nan "calibration/gain_rdnoise_lbc_201003 (LBCgo 91f3fd970d)"
 LBCB 3 1.9315564922728046 10.94070407999416 1.900368045775562 55273.0 nan "calibration/gain_rdnoise_lbc_201003 (LBCgo 91f3fd970d)"

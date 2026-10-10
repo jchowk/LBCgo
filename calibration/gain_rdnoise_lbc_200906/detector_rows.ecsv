@@ -1,0 +1,17 @@
+# %ECSV 1.0
+# ---
+# datatype:
+# - {name: channel, datatype: string}
+# - {name: chip, datatype: int32}
+# - {name: gain, unit: electron / adu, datatype: float64}
+# - {name: rdnoise, unit: electron, datatype: float64}
+# - {name: gain_flux, unit: electron / adu, datatype: float64}
+# - {name: mjd_start, datatype: float64}
+# - {name: mjd_end, datatype: float64}
+# - {name: source, datatype: string}
+# schema: astropy-2.0
+channel chip gain rdnoise gain_flux mjd_start mjd_end source
+LBCB 1 1.7885422462714058 10.199291711304275 1.7443319281272724 55003 nan "calibration/gain_rdnoise_lbc_200906 (LBCgo 89091c3817)"
+LBCB 2 1.938086718986702 9.760064948652794 1.9093729541854518 55003 nan "calibration/gain_rdnoise_lbc_200906 (LBCgo 89091c3817)"
+LBCB 3 1.9297703984768342 9.846600841898812 1.903267315914675 55003 nan "calibration/gain_rdnoise_lbc_200906 (LBCgo 89091c3817)"
+LBCB 4 1.801522960643094 9.483340146312871 1.801162078828284 55003 nan "calibration/gain_rdnoise_lbc_200906 (LBCgo 89091c3817)"

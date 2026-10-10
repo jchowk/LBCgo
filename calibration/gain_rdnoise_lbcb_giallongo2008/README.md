@@ -38,7 +38,8 @@ epochs. Record those runs in a new directory (e.g. `gain_rdnoise_2027a/`)
 following [`../NEW_PRODUCT_TEMPLATE.md`](../NEW_PRODUCT_TEMPLATE.md), compare with the table
 above, and replace or date-limit these rows.
 
-**Status (2026-10-07):** measured rows from
+**Status (2026-10-10):** measured LBCB rows from [`../gain_rdnoise_lbc_200906/`](../gain_rdnoise_lbc_200906/README.md)
+(`mjd_start` = 55003) supersede these from MJD 55003 on. Measured rows from
 [`../gain_rdnoise_lbc_202505/`](../gain_rdnoise_lbc_202505/README.md)
 (`mjd_start` = 60822) supersede these from MJD 60822 on. These rows stay
 in force for earlier dates and when the date is unknown. The 2025 LBCB

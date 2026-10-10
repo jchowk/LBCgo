@@ -13,8 +13,9 @@
   (see Inputs) postdates this commit; it affects only how `inputs_full.ecsv`
   is built, not the measurement.
 - **Supersedes:** nothing for LBCR (header values before); for LBCB, the
-  Giallongo et al. (2008) rows (`../gain_rdnoise_lbcb_giallongo2008/`) from
-  MJD 55273 on. They remain in force for earlier dates. These rows are in
+  2009-06 rows (`../gain_rdnoise_lbc_200906/`) from MJD 55273 on, which
+  remain in force from MJD 55003 (Giallongo et al. 2008, `../gain_rdnoise_lbcb_giallongo2008/`,
+  before that). These rows are in
   turn superseded by `../gain_rdnoise_lbc_201406/` from MJD 56830 (and
   that product by `../gain_rdnoise_lbc_202505/` from MJD 60822).
 - **Valid for:** LBCB and LBCR, MJD ≥ 55273 (2010-03-18 UT). `mjd_end` is
