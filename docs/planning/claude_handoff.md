@@ -1,8 +1,7 @@
 # Working notes for Claude Code sessions on LBCgo
 
-(`CLAUDE.md` is git-ignored in this repository. To have Claude Code load
-these notes automatically, copy this file to `CLAUDE.md` at the repository
-root, or start a session by asking it to read this file.)
+(`CLAUDE.md` at the repository root is tracked and loaded automatically;
+it points here. Read this file before working on LBCgo.)
 
 LBCgo reduces Large Binocular Camera (LBT) imaging: overscan, bias, flats,
 chip extraction, registration and coaddition. PI and owner: J. C. Howk
@@ -91,7 +90,7 @@ code, the plan or the commit history. Read it before working here.
 - Environment, D5: Python ≥ 3.11, numpy ≥ 2. Keep SCAMP and SWarp as an
   optional back-end; SourceXtractor++ is not in the core path.
 
-## Gain and read noise: state at 2026-10-09
+## Gain and read noise: state at 2026-10-10
 
 Details are in `docs/detector_gain_rdnoise.md` and the product READMEs.
 
@@ -100,12 +99,14 @@ Details are in `docs/detector_gain_rdnoise.md` and the product READMEs.
   The level dependence is the brighter-fatter effect. Realistic `gain`
   uncertainty ~1 %. Run measurements on the whole chip (`run.py --box 0`).
 - `conf/lbc_detector.ecsv`: 2006 LBCB rows (Giallongo et al. 2008, open),
-  2010-03 rows (both channels, from MJD 55273), 2025-05 rows (from MJD
-  60822). Latest `mjd_start` wins; a test checks the rows against each
-  product's `detector_rows.ecsv`.
-- LBCB changed between 2010 and 2025 (gains up to 15 %, read noise 15–35 %)
-  with no known hardware change (PI, 2026-10-09); the PI is measuring
-  intermediate epochs to bracket it. LBCR is roughly stable.
+  then 2010-03 (MJD 55273), 2014-06/07 (MJD 56830) and 2025-05 (MJD 60822)
+  rows for both channels. Latest `mjd_start` wins; tests check each block
+  against its product's `detector_rows.ecsv`.
+- LBCB: 2014 agrees with 2025 to ~1 %; 2010 differs (chips 2–4 gain 8–12 %
+  higher, read noise higher). So the change, or a 2010 bias, lies between
+  2010-03 and 2014-06; no known hardware change (PI, 2026-10-09).
+- LBCR: 2014 rows rest on three flat pairs (provisional); 2014 read noise
+  is 11–16 % below 2025, cause unchecked.
 - For registration, the gain is good enough; further gain work is epoch
   tracking, not a blocker.
 
