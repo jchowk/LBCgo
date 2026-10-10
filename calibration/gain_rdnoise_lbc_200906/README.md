@@ -10,9 +10,9 @@
 - **Made by / date:** J.C. Howk / 2026-10-10 (`run_log.json`)
 - **LBCgo commit:** `89091c38174a0d97ebd1a78c14b50ab7b3676140` (the code
   `run.py` imported, as in `run_log.json`)
-- **Supersedes:** for LBCB, the Giallongo et al. (2008) rows
-  (`../gain_rdnoise_lbcb_giallongo2008/`) from MJD 55003 on. They remain in
-  force for earlier dates. These rows are in turn superseded by
+- **Supersedes:** for LBCB, the 2008-07 rows (`../gain_rdnoise_lbc_200807/`)
+  from MJD 55003 on, which remain in force from MJD 54652 (Giallongo et al.
+  2008, `../gain_rdnoise_lbcb_giallongo2008/`, before that). These rows are in turn superseded by
   `../gain_rdnoise_lbc_201003/` from MJD 55273.
 - **Valid for:** LBCB, all filters, MJD ≥ 55003 (2009-06-21 UT, the date of
   the flats used); the 2010-03 rows take over at MJD 55273. **No LBCR

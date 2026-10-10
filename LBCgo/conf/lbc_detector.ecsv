@@ -14,7 +14,8 @@
 #       fluxes summed over pixels (covariances included); nan = unknown, use gain. See LBCgo.detector.OPTIONAL_TABLE_COLUMNS.', 'channel:
 #       LBCB or LBCR. mjd_start inclusive, mjd_end exclusive; nan = open-ended. The matching row with the latest mjd_start wins.', Chips/channels/dates
 #       without a matching row use the GAIN/RDNOISE image headers., 'LBCB open-ended rows: 2006 commissioning values (Giallongo et al.
-#       2008, Table 1); in force before MJD 55003.', 'Rows from MJD 55003: measured 2009-06-21/22, calibration/gain_rdnoise_lbc_200906/
+#       2008, Table 1); in force before MJD 54652.', 'Rows from MJD 54652: measured 2008-07-05, calibration/gain_rdnoise_lbc_200807/ (LBCB
+#       only; the LBCR data of that epoch were unusable; in force until MJD 55003). Rows from MJD 55003: measured 2009-06-21/22, calibration/gain_rdnoise_lbc_200906/
 #       (LBCB only; the LBCR data of that epoch were unusable; in force until MJD 55273). Rows from MJD 55273: measured 2010-03-18/19,
 #       calibration/gain_rdnoise_lbc_201003/ (LBCB and LBCR; in force until MJD 56830).', 'Rows from MJD 56830: measured 2014-06-22 to
 #       2014-07-01, calibration/gain_rdnoise_lbc_201406/ (LBCB and LBCR; LBCR from 3 flat pairs only, provisional). Rows from MJD 60822:
@@ -25,6 +26,10 @@ LBCB 1 1.96 11.4 nan nan nan "Giallongo et al. 2008, A&A 482, 349, Table 1 (vari
 LBCB 2 2.09 11.6 nan nan nan "Giallongo et al. 2008, A&A 482, 349, Table 1 (variance method, 2006 commissioning)"
 LBCB 3 2.06 11.6 nan nan nan "Giallongo et al. 2008, A&A 482, 349, Table 1 (variance method, 2006 commissioning)"
 LBCB 4 1.98 11.2 nan nan nan "Giallongo et al. 2008, A&A 482, 349, Table 1 (variance method, 2006 commissioning)"
+LBCB 1 1.7918660291386335 10.042442999373591 1.7583786702576205 54652.0 nan "calibration/gain_rdnoise_lbc_200807 (LBCgo 18ed5ba0a8)"
+LBCB 2 1.957419590361702 9.611196032076407 1.9367681929185812 54652.0 nan "calibration/gain_rdnoise_lbc_200807 (LBCgo 18ed5ba0a8)"
+LBCB 3 1.9214426118146872 9.975337065882194 1.902594560300909 54652.0 nan "calibration/gain_rdnoise_lbc_200807 (LBCgo 18ed5ba0a8)"
+LBCB 4 1.8113854881928177 9.365182047914935 1.8013744401965548 54652.0 nan "calibration/gain_rdnoise_lbc_200807 (LBCgo 18ed5ba0a8)"
 LBCB 1 1.7885422462714058 10.199291711304275 1.7443319281272724 55003.0 nan "calibration/gain_rdnoise_lbc_200906 (LBCgo 89091c3817)"
 LBCB 2 1.938086718986702 9.760064948652794 1.9093729541854518 55003.0 nan "calibration/gain_rdnoise_lbc_200906 (LBCgo 89091c3817)"
 LBCB 3 1.9297703984768342 9.846600841898812 1.903267315914675 55003.0 nan "calibration/gain_rdnoise_lbc_200906 (LBCgo 89091c3817)"
