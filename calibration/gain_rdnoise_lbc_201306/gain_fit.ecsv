@@ -1,0 +1,33 @@
+# %ECSV 1.0
+# ---
+# datatype:
+# - {name: channel, datatype: string}
+# - {name: chip, datatype: int64}
+# - {name: model, datatype: string}
+# - {name: n, datatype: int64}
+# - {name: gain0, unit: electron / adu, datatype: float64}
+# - {name: gain0_err, unit: electron / adu, datatype: float64}
+# - {name: slope_pct_per_10k, datatype: float64}
+# - {name: slope_pct_err, datatype: float64}
+# - {name: rms, datatype: float64}
+# - {name: level_min, unit: adu, datatype: float64}
+# - {name: level_max, unit: adu, datatype: float64}
+# - {name: gain_median, unit: electron / adu, datatype: float64}
+# - {name: rdnoise_adu, unit: adu, datatype: float64}
+# - {name: rdnoise_adu_std, unit: adu, datatype: float64}
+# - {name: rdnoise, unit: electron, datatype: float64}
+# - {name: rho_slope_per_10k, datatype: float64}
+# - {name: gain_nn_slope_pct_per_10k, datatype: float64}
+# - {name: rho_sum_slope_per_10k, datatype: float64}
+# - {name: gain_sum_median, unit: electron / adu, datatype: float64}
+# - {name: gain_sum_slope_pct_per_10k, datatype: float64}
+# - {name: gain_sum_slope_pct_err, datatype: float64}
+# - {name: gain_flux, unit: electron / adu, datatype: float64}
+# - {name: gain_flux_err, unit: electron / adu, datatype: float64}
+# - {name: n_flux, datatype: int64}
+# schema: astropy-2.0
+channel chip model n gain0 gain0_err slope_pct_per_10k slope_pct_err rms level_min level_max gain_median rdnoise_adu rdnoise_adu_std rdnoise rho_slope_per_10k gain_nn_slope_pct_per_10k rho_sum_slope_per_10k gain_sum_median gain_sum_slope_pct_per_10k gain_sum_slope_pct_err gain_flux gain_flux_err n_flux
+LBCB 1 linear 7 1.8200978804681336 0.006101438792317609 1.7873367031774487 0.1545702396969097 0.0031850344430999094 15631.0 27447.5 1.89029049362668 5.443436873359555 0.019164113643615265 9.90758791566381 0.007911496722405315 0.1290068835882378 0.023427248658435363 1.7943337085865068 -0.634449021258072 0.4186797270298273 1.7943337085865068 0.003603704791314643 7
+LBCB 2 linear 7 1.7360254366264345 0.008256108664304339 2.152032712184999 0.2034907174084584 0.00429129022083676 16548.5 30361.0 1.821780164779477 6.403550487034516 0.04135852943776328 11.116726530213512 0.00745026852290851 0.5416653308161244 0.01159050281165083 1.7465912659082294 0.7960383107764762 0.5494970198215937 1.7465912659082294 0.004699792134113817 7
+LBCB 3 linear 7 1.7580807098641147 0.008527637324330754 1.992505579283842 0.21683587217674372 0.004363881003295726 16392.5 28356.0 1.8311106408818552 5.941422560296481 0.0317973011191014 10.445500392408704 0.008638774500455781 0.15868384802084337 0.02494638214249125 1.7559510852606997 -0.6175294637221673 0.8889078811419474 1.7559510852606997 0.006551603609176888 7
+LBCB 4 linear 7 1.6617923723932007 0.0033711538420867788 2.079477389117638 0.09168910627136441 0.0017456629362507616 15837.5 28477.5 1.7348014295115157 6.0870542366566776 0.012483554696702377 10.115420300819784 0.008293466716199861 0.33739604211127855 0.024323051106033472 1.6567793311306378 -0.4412429131317469 0.7185612528821156 1.6567793311306378 0.004946571266398668 7

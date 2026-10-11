@@ -17,7 +17,7 @@
 #       2008, Table 1); in force before MJD 54652.', 'Rows from MJD 54652: measured 2008-07-05, calibration/gain_rdnoise_lbc_200807/ (LBCB
 #       only; the LBCR data of that epoch were unusable; in force until MJD 55003). Rows from MJD 55003: measured 2009-06-21/22, calibration/gain_rdnoise_lbc_200906/
 #       (LBCB only; the LBCR data of that epoch were unusable; in force until MJD 55273). Rows from MJD 55273: measured 2010-03-18/19,
-#       calibration/gain_rdnoise_lbc_201003/ (LBCB and LBCR; LBCB in force until MJD 55677, LBCR until MJD 56830). Rows from MJD 55677: measured 2011-04-26 to 2011-04-29, calibration/gain_rdnoise_lbc_201104/ (LBCB only; the LBCR data of that epoch were unusable, chip 3 blank; in force until MJD 56830).', 'Rows from MJD 56830: measured 2014-06-22 to
+#       calibration/gain_rdnoise_lbc_201003/ (LBCB and LBCR; LBCB in force until MJD 55677, LBCR until MJD 56830). Rows from MJD 55677: measured 2011-04-26 to 2011-04-29, calibration/gain_rdnoise_lbc_201104/ (LBCB only; the LBCR data of that epoch were unusable, chip 3 blank; in force until MJD 56449). Rows from MJD 56449: measured 2013-06-06, calibration/gain_rdnoise_lbc_201306/ (LBCB only, dusk flats; the dawn flats and all LBCR data of that epoch were unusable; in force until MJD 56830).', 'Rows from MJD 56830: measured 2014-06-22 to
 #       2014-07-01, calibration/gain_rdnoise_lbc_201406/ (LBCB and LBCR; LBCR from 3 flat pairs only, provisional). Rows from MJD 60822:
 #       measured 2025-05-27, calibration/gain_rdnoise_lbc_202505/. LBCR before MJD 55273: header values.']
 # schema: astropy-2.0
@@ -46,6 +46,10 @@ LBCB 1 1.7925702625909052 10.321634411688578 1.7214039169425697 55677.0 nan "cal
 LBCB 2 1.95080037370882 9.82105433377389 1.9141285861353143 55677.0 nan "calibration/gain_rdnoise_lbc_201104 (LBCgo edcbd0d322)"
 LBCB 3 1.9281596176258786 10.20396409049866 1.8853196864141872 55677.0 nan "calibration/gain_rdnoise_lbc_201104 (LBCgo edcbd0d322)"
 LBCB 4 1.8219692811958823 9.612614057203384 1.8024049763701226 55677.0 nan "calibration/gain_rdnoise_lbc_201104 (LBCgo edcbd0d322)"
+LBCB 1 1.8200978804681336 9.90758791566381 1.7943337085865068 56449.0 nan "calibration/gain_rdnoise_lbc_201306 (LBCgo 4213c7584d)"
+LBCB 2 1.7360254366264345 11.116726530213512 1.7465912659082294 56449.0 nan "calibration/gain_rdnoise_lbc_201306 (LBCgo 4213c7584d)"
+LBCB 3 1.7580807098641147 10.445500392408704 1.7559510852606997 56449.0 nan "calibration/gain_rdnoise_lbc_201306 (LBCgo 4213c7584d)"
+LBCB 4 1.6617923723932007 10.115420300819784 1.6567793311306378 56449.0 nan "calibration/gain_rdnoise_lbc_201306 (LBCgo 4213c7584d)"
 LBCB 1 1.8094605658734702 8.751021171968775 1.7963525841434618 56830.0 nan "calibration/gain_rdnoise_lbc_201406 (LBCgo e0c2e98e8d)"
 LBCB 2 1.7435087449854592 9.782460885703458 1.7487805690409282 56830.0 nan "calibration/gain_rdnoise_lbc_201406 (LBCgo e0c2e98e8d)"
 LBCB 3 1.7549242304078125 9.074709154617084 1.7561523964180603 56830.0 nan "calibration/gain_rdnoise_lbc_201406 (LBCgo e0c2e98e8d)"

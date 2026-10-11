@@ -130,13 +130,16 @@ PRODUCT_2010 = (REPO_ROOT / 'calibration' / 'gain_rdnoise_lbc_201003'
                 / 'detector_rows.ecsv')
 PRODUCT_2011 = (REPO_ROOT / 'calibration' / 'gain_rdnoise_lbc_201104'
                 / 'detector_rows.ecsv')
+PRODUCT_2013 = (REPO_ROOT / 'calibration' / 'gain_rdnoise_lbc_201306'
+                / 'detector_rows.ecsv')
 PRODUCT_2014 = (REPO_ROOT / 'calibration' / 'gain_rdnoise_lbc_201406'
                 / 'detector_rows.ecsv')
 PRODUCT_2025 = (REPO_ROOT / 'calibration' / 'gain_rdnoise_lbc_202505'
                 / 'detector_rows.ecsv')
 PRODUCTS_PRESENT = all(p.exists() for p in (PRODUCT_2008, PRODUCT_2009,
                                             PRODUCT_2010, PRODUCT_2011,
-                                            PRODUCT_2014, PRODUCT_2025))
+                                            PRODUCT_2013, PRODUCT_2014,
+                                            PRODUCT_2025))
 
 
 @pytest.mark.skipif(not PRODUCTS_PRESENT,
@@ -224,7 +227,7 @@ def test_packaged_table_has_2011_rows_from_product():
     assert len(product) == 4 and set(product['channel']) == {'LBCB'}
     assert np.all(product['mjd_start'] == 55677)
     for row in product:
-        for mjd in (55677.5, 56000.0, 56829.9):   # up to the 2014 rows
+        for mjd in (55677.5, 56000.0, 56448.9):   # up to the 2013 rows
             assert detector.lookup_detector_params(
                 table, 'LBCB', row['chip'], mjd) == \
                 (row['gain'], row['rdnoise'])
@@ -246,12 +249,42 @@ def test_packaged_table_has_2011_rows_from_product():
 
 @pytest.mark.skipif(not PRODUCTS_PRESENT,
                     reason='calibration/ not in this checkout')
+def test_packaged_table_has_2013_rows_from_product():
+    """The LBCB rows from MJD 56449 are the product's rows, unchanged."""
+    table = detector.read_detector_table()
+    product = Table.read(PRODUCT_2013, format='ascii.ecsv')
+    earlier = Table.read(PRODUCT_2011, format='ascii.ecsv')
+    older = Table.read(PRODUCT_2010, format='ascii.ecsv')
+    assert len(product) == 4 and set(product['channel']) == {'LBCB'}
+    assert np.all(product['mjd_start'] == 56449)
+    for row in product:
+        for mjd in (56449.5, 56600.0, 56829.9):   # up to the 2014 rows
+            assert detector.lookup_detector_params(
+                table, 'LBCB', row['chip'], mjd) == \
+                (row['gain'], row['rdnoise'])
+            assert detector.lookup_gain_flux(
+                table, 'LBCB', row['chip'], mjd) == \
+                (row['gain_flux'], 'gain_flux')
+        # Before the product's start date: the 2011 rows stay in force
+        prev = earlier[earlier['chip'] == row['chip']][0]
+        assert detector.lookup_detector_params(
+            table, 'LBCB', row['chip'], 56448.9) == \
+            (prev['gain'], prev['rdnoise'])
+    # LBCR is untouched: the 2010 rows stay in force through this epoch
+    for row in older[older['channel'] == 'LBCR']:
+        assert detector.lookup_detector_params(
+            table, 'LBCR', row['chip'], 56500.0) == \
+            (row['gain'], row['rdnoise'])
+
+
+@pytest.mark.skipif(not PRODUCTS_PRESENT,
+                    reason='calibration/ not in this checkout')
 def test_packaged_table_has_2014_rows_from_product():
     """The rows from MJD 56830 are the product's rows, unchanged."""
     table = detector.read_detector_table()
     product = Table.read(PRODUCT_2014, format='ascii.ecsv')
     earlier = Table.read(PRODUCT_2010, format='ascii.ecsv')
-    earlier_b = Table.read(PRODUCT_2011, format='ascii.ecsv')
+    earlier_b = Table.read(PRODUCT_2013, format='ascii.ecsv')
     assert len(product) == 8 and np.all(product['mjd_start'] == 56830)
     assert np.all(np.isnan(product['mjd_end']))
     for row in product:
@@ -262,7 +295,7 @@ def test_packaged_table_has_2014_rows_from_product():
             assert detector.lookup_gain_flux(
                 table, row['channel'], row['chip'], mjd) == \
                 (row['gain_flux'], 'gain_flux')
-        # Before the product's start date: the 2011 rows (LBCB) or the 2010
+        # Before the product's start date: the 2013 rows (LBCB) or the 2010
         # rows (LBCR) stay in force
         src = earlier_b if row['channel'] == 'LBCB' else earlier
         prev = src[(src['channel'] == row['channel'])
@@ -281,6 +314,7 @@ def test_packaged_table_has_2025_rows_from_product():
     earlier = Table.read(PRODUCT_2014, format='ascii.ecsv')
     older = Table.read(PRODUCT_2010, format='ascii.ecsv')
     y2011 = Table.read(PRODUCT_2011, format='ascii.ecsv')
+    y2013 = Table.read(PRODUCT_2013, format='ascii.ecsv')
     oldest = Table.read(PRODUCT_2009, format='ascii.ecsv')
     first = Table.read(PRODUCT_2008, format='ascii.ecsv')
     assert len(product) == 8 and np.all(product['mjd_start'] == 60822)
@@ -299,7 +333,7 @@ def test_packaged_table_has_2025_rows_from_product():
             table, row['channel'], row['chip'], 60821.9) == \
             (prev['gain'], prev['rdnoise'])
     assert len(table) == (4 + len(first) + len(oldest) + len(older)
-                          + len(y2011) + len(earlier) + len(product))
+                          + len(y2011) + len(y2013) + len(earlier) + len(product))
 
 
 def test_packaged_table_lbcr_falls_back_to_header():
