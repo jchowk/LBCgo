@@ -102,8 +102,8 @@ run on the whole trimmed chip (`--box 0`):
   epochs by up to ~15 % in a way that does not follow the gain change.
 - **Dawn flats are unusable.** The g-SLOAN sets 8–10 (11:19–11:30 UT, rising
   sky level) have `gain_sum` of 0.86–1.24 e⁻/ADU against a per-pixel gain of
-  1.7–1.9, `rho_sum` of 0.5–1.1, and `rho_x`, `rho_y` of 0.01–0.02 (several times
-  several times the dusk values). The same failure affected the dawn flats of
+  1.7–1.9, `rho_sum` of 0.5–1.1, and `rho_x`, `rho_y` of 0.01–0.02
+  (several times the dusk values). The same failure affected the dawn flats of
   2011-04. Including them in the fit leaves the central gains almost
   unchanged but inflates the errors 3–5 times and makes the `gain_sum` slope
   meaningless. The cause was not identified.
