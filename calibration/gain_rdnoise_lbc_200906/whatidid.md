@@ -1,4 +1,4 @@
-# LBCgo Gain/ReadNoise: 2014.06 calibration
+# LBCgo Gain/ReadNoise: 2009.06 calibration
 
 # Environment for LBcgo
 ```
