@@ -1,0 +1,56 @@
+{
+  "date_utc": "2026-10-11T14:29:46.635669+00:00",
+  "lbcgo_version": "0.2.0.dev0",
+  "lbcgo_commit": "edcbd0d32294c15794808acdbe5c6e83a6b3bc7f",
+  "params": {
+    "box": null,
+    "sigma": 4.0,
+    "cell": 50,
+    "max_lag": 3,
+    "flux_max_dt": 60.0,
+    "gain_model": "linear",
+    "min_sets": 3,
+    "mjd_start": 55677.0,
+    "mjd_end": null,
+    "chips": {
+      "LBCB": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "LBCR": [
+        1,
+        2,
+        4
+      ]
+    }
+  },
+  "inputs_sha256": {
+    "lbcb.20110426.023854.fits.gz": "9809fa9a11ee809c6ee1954ff09d47ff3ac18857a3e1293193e353ac8fddc8ec",
+    "lbcb.20110426.023939.fits.gz": "1e3fbceb31638f4c81f6bc8959c81c59695a7c3bb57716b964c6e2c2f47c64ac",
+    "lbcb.20110427.010102.fits.gz": "5ee020a0a2aa0c2df2fa0acd294284614fd32d48f0ed3b789f1199a9840e7f2f",
+    "lbcb.20110427.010131.fits.gz": "78f27bd678fce82fd9ecf75087fd2b7b691be6b30745222c273e8ee01c5e5197",
+    "lbcb.20110428.023804.fits.gz": "b57aaf4384db66dbd4b318083119ef95ebeb654901f5ea1d58517cbb7571e55b",
+    "lbcb.20110428.023854.fits.gz": "2dda32611acf125b9c41c2b3c2c9edca2a8b4fb9997199f8c9fb364812517cc3",
+    "lbcb.20110428.003429.fits.gz": "efb3f1fdc3d3d7b63a18fcf3d1604ed38baa0000dd9fb64f0b60f1ba8b2add49",
+    "lbcb.20110428.003458.fits.gz": "d9e4fb846f9e73b678955b5f72b31cbee29f84fb0695f7a99982c03f444e1bef",
+    "lbcb.20110428.023941.fits.gz": "0c1975b69b164614f3e9cd8ba48d1d15935453db21d2e870684708ceafae5297",
+    "lbcb.20110428.024029.fits.gz": "58fb883683afffd0da846206a45802f80fdfd8575d24ab57a101a30872c22ae6",
+    "lbcb.20110428.003526.fits.gz": "da602de8fad6e6a1247337be05d4d10b1a1b4de1e88ad21c1dce1ebd8422693d",
+    "lbcb.20110428.003555.fits.gz": "e61a465eb849ca84a0c6b0af60adc9f288b4a2f2185069a50163bbe26fca52e3",
+    "lbcb.20110429.023349.fits.gz": "be974cde2ff98143dcce25618bf3412b807c9ab2b54019a4bf6aba13d17b29dc",
+    "lbcb.20110429.023449.fits.gz": "c86ef1b0b765b4b216346a1c60b72948770e86a889dfe3b79371b2dc3b45a5d6",
+    "lbcb.20110428.003624.fits.gz": "f24c5ddd5b9acf169317c2b67b5d7ac9f9a4b40847e23c1ddbc487fbb9c66d35",
+    "lbcb.20110428.003652.fits.gz": "1f895ed3662ffffd12f2984739ff190837485e1ecb2693f73addc0b580eb78c0",
+    "lbcb.20110429.023549.fits.gz": "79bb53d8242a7bea9a649d38cf2b3ce1d23d9b218a9745cb56cd47a8b660f9bc",
+    "lbcb.20110429.023649.fits.gz": "678a9fac33c8c861949569aa9d22b51cfb5ad588211d6734826a9dba39f4fb6f",
+    "lbcb.20110428.003721.fits.gz": "8ace64cbda06f622055dfa4760b526d9f648268da46282923062b075ca5f1c1a",
+    "lbcb.20110428.003750.fits.gz": "899204e2e54a47412dfcd2817e431a2ed262c2b53dbb7b11d007c73782853fe9"
+  },
+  "outputs_sha256": {
+    "results_per_set.ecsv": "07392770b82b609793e8a3c2ca789cfbaafef29b6ee690308fc51d95eca3fda3",
+    "gain_fit.ecsv": "9fc9305af4ea5776ea23e00fcb282d6cde2bf86783a3e29dcbc4cbe16fbee7c7",
+    "detector_rows.ecsv": "9fb87760f7239b9aaf72b31993bd934773ff535cebd661cc9df00b4771734ba1"
+  }
+}

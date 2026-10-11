@@ -54,4 +54,10 @@ model file naming this directory.
 | Directory | Product | Status |
 |---|---|---|
 | [`gain_rdnoise_lbcb_giallongo2008/`](gain_rdnoise_lbcb_giallongo2008/README.md) | LBCB rows of `conf/lbc_detector.ecsv` | Published values, seeded 2026-10-04 |
+| [`gain_rdnoise_lbc_200807/`](gain_rdnoise_lbc_200807/README.md) | LBCB rows of `conf/lbc_detector.ecsv` from MJD 54652 | Measured 2008-07 (LBCB only) |
+| [`gain_rdnoise_lbc_200906/`](gain_rdnoise_lbc_200906/README.md) | LBCB rows from MJD 55003 | Measured 2009-06 (LBCB only) |
+| [`gain_rdnoise_lbc_201003/`](gain_rdnoise_lbc_201003/README.md) | LBCB and LBCR rows from MJD 55273 | Measured 2010-03 |
+| [`gain_rdnoise_lbc_201104/`](gain_rdnoise_lbc_201104/README.md) | LBCB rows from MJD 55677 | Measured 2011-04 (LBCB only; LBCR rejected, chip 3 blank) |
+| [`gain_rdnoise_lbc_201406/`](gain_rdnoise_lbc_201406/README.md) | LBCB and LBCR rows from MJD 56830 | Measured 2014-06/07 |
+| [`gain_rdnoise_lbc_202505/`](gain_rdnoise_lbc_202505/README.md) | LBCB and LBCR rows from MJD 60822 | Measured 2025-05 |
 | [`gain_rdnoise_example/`](gain_rdnoise_example/README.md) | none (worked example of a `run.py` driver for measuring gain/read noise) | Example; illustrative inputs; smoke-tested by `tests/test_calibration_example.py` |

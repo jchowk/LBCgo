@@ -1,0 +1,43 @@
+# %ECSV 1.0
+# ---
+# datatype:
+# - {name: filename, datatype: string}
+# - {name: obs_id, datatype: string}
+# - {name: mjd_obs, datatype: float64}
+# - {name: channel, datatype: string}
+# - {name: filter, datatype: string}
+# - {name: exptime, datatype: float64}
+# - {name: role, datatype: string}
+# - {name: set, datatype: int64}
+# - {name: notes, datatype: string}
+# - {name: object, datatype: string}
+# - {name: propid, datatype: string}
+# - {name: lbcobnam, datatype: string}
+# - {name: imagetyp, datatype: string}
+# - {name: airmass, datatype: float64}
+# - {name: median_adu, datatype: float64}
+# meta: !!omap
+# - comments: ['2011-04 LBCR sets tried and rejected (see README): chip 3 blank; V-BESSEL sets 9-10 have rho_sum ~4 (gain_sum ~0.3); I-BESSEL
+#       sets 6-8 show rho_x -0.02 to -0.04 and set 7 gain_sum 12% below gain.']
+# schema: astropy-2.0
+filename obs_id mjd_obs channel filter exptime role set notes object propid lbcobnam imagetyp airmass median_adu
+lbcr.20110426.023407.fits.gz lbcr1303785225 55677.10703 LBCR I-BESSEL 4.545 flat 6 f SkyFlat flatcalib SkyFlat_VI_pa180 flat 1.01377 11739.0
+lbcr.20110426.023437.fits.gz lbcr1303785256 55677.10738 LBCR I-BESSEL 4.542 flat 6 f SkyFlat flatcalib SkyFlat_VI_pa180 flat 1.01404 10432.0
+lbcr.20110427.010053.fits.gz lbcr1303866029 55678.04228 LBCR Y-FAN 0.0 bias 6 b BinoBias biascheck 25Bias_Bino zero 1.0 3.0
+lbcr.20110427.010117.fits.gz lbcr1303866053 55678.04257 LBCR Y-FAN 0.0 bias 6 b BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.115926.fits.gz lbcr1303991943 55679.49962 LBCR I-BESSEL 7.547 flat 7 f SkyFlat flatcalib SkyFlat_VI_pa90 flat 1.0612 28836.0
+lbcr.20110428.120000.fits.gz lbcr1303991977 55679.50001 LBCR I-BESSEL 7.543 flat 7 f SkyFlat flatcalib SkyFlat_VI_pa90 flat 1.06202 32852.0
+lbcr.20110428.003420.fits.gz lbcr1303950836 55679.02385 LBCR Y-FAN 0.0 bias 7 b BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.003445.fits.gz lbcr1303950861 55679.02414 LBCR Y-FAN 0.0 bias 7 b BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.120132.fits.gz lbcr1303992071 55679.50107 LBCR I-BESSEL 2.232 flat 8 f SkyFlat flatcalib SkyFlat_VI_pa90 flat 1.06397 16088.0
+lbcr.20110428.120203.fits.gz lbcr1303992098 55679.50143 LBCR I-BESSEL 2.237 flat 8 f SkyFlat flatcalib SkyFlat_VI_pa90 flat 1.06482 18244.0
+lbcr.20110428.003509.fits.gz lbcr1303950886 55679.02442 LBCR Y-FAN 0.0 bias 8 b BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.003534.fits.gz lbcr1303950910 55679.02471 LBCR Y-FAN 0.0 bias 8 b BinoBias biascheck 25Bias_Bino zero 1.0 3.0
+lbcr.20110429.115601.fits.gz lbcr1304078137 55680.49724 LBCR V-BESSEL 10.23 flat 9 f SkyFlat flatcalib SkyFlat_VV_pa135 flat 1.01629 16984.0
+lbcr.20110429.115640.fits.gz lbcr1304078179 55680.49769 LBCR V-BESSEL 10.236 flat 9 f SkyFlat flatcalib SkyFlat_VV_pa135 flat 1.01581 19400.0
+lbcr.20110428.003558.fits.gz lbcr1303950935 55679.02499 LBCR Y-FAN 0.0 bias 9 b BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.003623.fits.gz lbcr1303950959 55679.02527 LBCR Y-FAN 0.0 bias 9 b BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110429.115726.fits.gz lbcr1304078221 55680.49822 LBCR V-BESSEL 10.23 flat 10 f SkyFlat flatcalib SkyFlat_VV_pa135 flat 1.01548 22801.0
+lbcr.20110429.115809.fits.gz lbcr1304078264 55680.49872 LBCR V-BESSEL 10.236 flat 10 f SkyFlat flatcalib SkyFlat_VV_pa135 flat 1.01525 26748.0
+lbcr.20110428.003647.fits.gz lbcr1303950983 55679.02555 LBCR Y-FAN 0.0 bias 10 b BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcr.20110428.003711.fits.gz lbcr1303951007 55679.02583 LBCR Y-FAN 0.0 bias 10 b BinoBias biascheck 25Bias_Bino zero 1.0 0.0
