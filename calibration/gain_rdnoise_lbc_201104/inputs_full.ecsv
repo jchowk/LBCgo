@@ -1,0 +1,302 @@
+# %ECSV 1.0
+# ---
+# datatype:
+# - {name: filename, datatype: string}
+# - {name: obs_id, datatype: string}
+# - {name: mjd_obs, datatype: float64}
+# - {name: channel, datatype: string}
+# - {name: filter, datatype: string}
+# - {name: exptime, datatype: float64}
+# - {name: role, datatype: string}
+# - {name: set, datatype: int64}
+# - {name: notes, datatype: string}
+# - {name: object, datatype: string}
+# - {name: propid, datatype: string}
+# - {name: lbcobnam, datatype: string}
+# - {name: imagetyp, datatype: string}
+# - {name: airmass, datatype: float64}
+# - {name: median_adu, datatype: float64}
+# meta: !!omap
+# - comments: [Calibration inputs built by calibration/make_inputs.py from 2011.04/., role from IMAGETYP; set = channel + UT date. Review
+#       and edit before use (e.g. 2 flats + 2 biases per set for gain/read noise).]
+# schema: astropy-2.0
+filename obs_id mjd_obs channel filter exptime role set notes object propid lbcobnam imagetyp airmass median_adu
+lbcb.20110426.023854.fits.gz lbcb1303785500 55677.11035 LBCB B-BESSEL 12.775 flat 1 "" SkyFlat flatcalib SkyFlat_BR_pa180 flat 1.01622 12204.0
+lbcb.20110426.023939.fits.gz lbcb1303785551 55677.11087 LBCB B-BESSEL 12.781 flat 1 "" SkyFlat flatcalib SkyFlat_BR_pa180 flat 1.01675 10742.0
+lbcb.20110426.024024.fits.gz lbcb1303785596 55677.11139 LBCB B-BESSEL 12.775 flat 1 "" SkyFlat flatcalib SkyFlat_BR_pa180 flat 1.01734 9469.0
+lbcb.20110426.024111.fits.gz lbcb1303785643 55677.11194 LBCB B-BESSEL 12.782 flat 1 "" SkyFlat flatcalib SkyFlat_BR_pa180 flat 1.01779 8304.0
+lbcb.20110426.024156.fits.gz lbcb1303785688 55677.11246 LBCB B-BESSEL 12.774 flat 1 "" SkyFlat flatcalib SkyFlat_BR_pa180 flat 1.01815 7334.0
+lbcb.20110427.010004.fits.gz lbcb1303865959 55678.04172 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110427.010033.fits.gz lbcb1303866005 55678.04205 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110427.010102.fits.gz lbcb1303866033 55678.04239 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcb.20110427.010131.fits.gz lbcb1303866063 55678.04272 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcb.20110427.010202.fits.gz lbcb1303866092 55678.04308 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcb.20110427.010231.fits.gz lbcb1303866123 55678.04342 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcb.20110427.010300.fits.gz lbcb1303866152 55678.04376 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcb.20110427.010329.fits.gz lbcb1303866181 55678.04409 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 2.0
+lbcb.20110427.010358.fits.gz lbcb1303866209 55678.04442 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110427.010426.fits.gz lbcb1303866238 55678.04475 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcb.20110427.010455.fits.gz lbcb1303866267 55678.04509 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcb.20110427.010524.fits.gz lbcb1303866296 55678.04543 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcb.20110427.010553.fits.gz lbcb1303866325 55678.04576 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110427.010622.fits.gz lbcb1303866354 55678.04609 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110427.010650.fits.gz lbcb1303866382 55678.04642 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110427.010720.fits.gz lbcb1303866411 55678.04676 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110427.010749.fits.gz lbcb1303866440 55678.0471 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcb.20110427.010817.fits.gz lbcb1303866469 55678.04743 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcb.20110427.010846.fits.gz lbcb1303866498 55678.04776 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110427.010915.fits.gz lbcb1303866526 55678.04809 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110427.010943.fits.gz lbcb1303866555 55678.04842 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110427.011012.fits.gz lbcb1303866584 55678.04875 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110427.011041.fits.gz lbcb1303866613 55678.04909 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcb.20110427.011110.fits.gz lbcb1303866641 55678.04943 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110427.011138.fits.gz lbcb1303866670 55678.04976 LBCB U-BESSEL 0.0 bias 2 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcb.20110428.003332.fits.gz lbcb1303950770 55679.02329 LBCB U-BESSEL 0.0 bias 3 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110428.003400.fits.gz lbcb1303950812 55679.02362 LBCB U-BESSEL 0.0 bias 3 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110428.003429.fits.gz lbcb1303950841 55679.02395 LBCB U-BESSEL 0.0 bias 3 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcb.20110428.003458.fits.gz lbcb1303950870 55679.02429 LBCB U-BESSEL 0.0 bias 3 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110428.003526.fits.gz lbcb1303950898 55679.02462 LBCB U-BESSEL 0.0 bias 3 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110428.003555.fits.gz lbcb1303950927 55679.02495 LBCB U-BESSEL 0.0 bias 3 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110428.003624.fits.gz lbcb1303950956 55679.02528 LBCB U-BESSEL 0.0 bias 3 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110428.003652.fits.gz lbcb1303950984 55679.02561 LBCB U-BESSEL 0.0 bias 3 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcb.20110428.003721.fits.gz lbcb1303951013 55679.02594 LBCB U-BESSEL 0.0 bias 3 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcb.20110428.003750.fits.gz lbcb1303951041 55679.02627 LBCB U-BESSEL 0.0 bias 3 "" BinoBias biascheck 25Bias_Bino zero 1.0 2.0
+lbcb.20110428.003818.fits.gz lbcb1303951070 55679.0266 LBCB U-BESSEL 0.0 bias 3 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110428.003847.fits.gz lbcb1303951099 55679.02694 LBCB U-BESSEL 0.0 bias 3 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcb.20110428.003917.fits.gz lbcb1303951128 55679.02728 LBCB U-BESSEL 0.0 bias 3 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcb.20110428.003945.fits.gz lbcb1303951157 55679.02761 LBCB U-BESSEL 0.0 bias 3 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110428.004014.fits.gz lbcb1303951187 55679.02794 LBCB U-BESSEL 0.0 bias 3 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110428.004043.fits.gz lbcb1303951214 55679.02828 LBCB U-BESSEL 0.0 bias 3 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110428.004112.fits.gz lbcb1303951244 55679.02861 LBCB U-BESSEL 0.0 bias 3 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110428.004140.fits.gz lbcb1303951272 55679.02894 LBCB U-BESSEL 0.0 bias 3 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110428.004209.fits.gz lbcb1303951301 55679.02928 LBCB U-BESSEL 0.0 bias 3 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110428.004238.fits.gz lbcb1303951330 55679.02961 LBCB U-BESSEL 0.0 bias 3 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110428.004306.fits.gz lbcb1303951358 55679.02994 LBCB U-BESSEL 0.0 bias 3 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcb.20110428.004335.fits.gz lbcb1303951387 55679.03027 LBCB U-BESSEL 0.0 bias 3 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcb.20110428.004404.fits.gz lbcb1303951416 55679.03061 LBCB U-BESSEL 0.0 bias 3 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcb.20110428.004433.fits.gz lbcb1303951445 55679.03094 LBCB U-BESSEL 0.0 bias 3 "" BinoBias biascheck 25Bias_Bino zero 1.0 2.0
+lbcb.20110428.004501.fits.gz lbcb1303951473 55679.03127 LBCB U-BESSEL 0.0 bias 3 "" BinoBias biascheck 25Bias_Bino zero 1.0 2.0
+lbcb.20110428.023804.fits.gz lbcb1303958263 55679.10978 LBCB B-BESSEL 15.278 flat 3 "" SkyFlat flatcalib SkyFlat_BR_pa36 flat 1.01479 21765.0
+lbcb.20110428.023854.fits.gz lbcb1303958308 55679.11035 LBCB B-BESSEL 15.279 flat 3 "" SkyFlat flatcalib SkyFlat_BR_pa36 flat 1.0152 18813.0
+lbcb.20110428.023941.fits.gz lbcb1303958353 55679.1109 LBCB B-BESSEL 15.278 flat 3 "" SkyFlat flatcalib SkyFlat_BR_pa36 flat 1.01557 16415.0
+lbcb.20110428.024029.fits.gz lbcb1303958401 55679.11145 LBCB B-BESSEL 15.279 flat 3 "" SkyFlat flatcalib SkyFlat_BR_pa36 flat 1.01614 14353.0
+lbcb.20110428.024117.fits.gz lbcb1303958449 55679.11201 LBCB B-BESSEL 15.279 flat 3 "" SkyFlat flatcalib SkyFlat_BR_pa36 flat 1.01649 12566.0
+lbcb.20110428.035945.fits.gz lbcb1303963144 55679.1665 LBCB SDT_Uspec 500.273 science 3 "" PG1338+416 ND_whim ND_whim_pg1338a object 1.18503 nan
+lbcb.20110428.040841.fits.gz lbcb1303963693 55679.17271 LBCB B-BESSEL 70.286 science 3 "" PG1338+416 ND_whim ND_whim_pg1338a object 1.16406 nan
+lbcb.20110428.041040.fits.gz lbcb1303963804 55679.17408 LBCB SDT_Uspec 500.272 science 3 "" PG1338+416 ND_whim ND_whim_pg1338a object 1.1594 nan
+lbcb.20110428.041943.fits.gz lbcb1303964353 55679.18036 LBCB B-BESSEL 70.284 science 3 "" PG1338+416 ND_whim ND_whim_pg1338a object 1.1405 nan
+lbcb.20110428.042556.fits.gz lbcb1303964715 55679.18468 LBCB SDT_Uspec 500.272 science 3 "" PG1338+416 ND_whim ND_whim_pg1338b object 1.12759 nan
+lbcb.20110428.043452.fits.gz lbcb1303965263 55679.19089 LBCB B-BESSEL 70.284 science 3 "" PG1338+416 ND_whim ND_whim_pg1338b object 1.11146 nan
+lbcb.20110428.043651.fits.gz lbcb1303965376 55679.19226 LBCB SDT_Uspec 500.273 science 3 "" PG1338+416 ND_whim ND_whim_pg1338b object 1.10789 nan
+lbcb.20110428.044551.fits.gz lbcb1303965923 55679.19852 LBCB B-BESSEL 70.285 science 3 "" PG1338+416 ND_whim ND_whim_pg1338b object 1.09338 nan
+lbcb.20110428.044920.fits.gz lbcb1303966120 55679.20093 LBCB SDT_Uspec 500.272 science 3 "" PG1338+416 ND_whim ND_whim_pg1338c object 1.08826 nan
+lbcb.20110428.045817.fits.gz lbcb1303966668 55679.20714 LBCB B-BESSEL 70.284 science 3 "" PG1338+416 ND_whim ND_whim_pg1338c object 1.0755 nan
+lbcb.20110428.050013.fits.gz lbcb1303966778 55679.20849 LBCB SDT_Uspec 500.275 science 3 "" PG1338+416 ND_whim ND_whim_pg1338c object 1.07281 nan
+lbcb.20110428.050910.fits.gz lbcb1303967322 55679.21471 LBCB B-BESSEL 70.284 science 3 "" PG1338+416 ND_whim ND_whim_pg1338c object 1.0618 nan
+lbcb.20110428.051800.fits.gz lbcb1303967847 55679.22083 LBCB B-BESSEL 100.275 science 3 "" PG1338+416 ND_whim ND_whim_pg1338d object 1.05178 nan
+lbcb.20110428.052018.fits.gz lbcb1303967989 55679.22244 LBCB B-BESSEL 100.284 science 3 "" PG1338+416 ND_whim ND_whim_pg1338d object 1.04968 nan
+lbcb.20110428.052235.fits.gz lbcb1303968127 55679.22403 LBCB B-BESSEL 100.276 science 3 "" PG1338+416 ND_whim ND_whim_pg1338d object 1.04743 nan
+lbcb.20110428.052453.fits.gz lbcb1303968263 55679.22562 LBCB B-BESSEL 100.283 science 3 "" PG1338+416 ND_whim ND_whim_pg1338d object 1.0452 nan
+lbcb.20110428.052709.fits.gz lbcb1303968400 55679.22719 LBCB B-BESSEL 100.274 science 3 "" PG1338+416 ND_whim ND_whim_pg1338d object 1.04291 nan
+lbcb.20110428.052925.fits.gz lbcb1303968536 55679.22876 LBCB B-BESSEL 100.283 science 3 "" PG1338+416 ND_whim ND_whim_pg1338d object 1.04111 nan
+lbcb.20110428.053149.fits.gz lbcb1303968680 55679.23044 LBCB B-BESSEL 100.274 science 3 "" PG1338+416 ND_whim ND_whim_pg1338d object 1.03901 nan
+lbcb.20110428.053412.fits.gz lbcb1303968824 55679.23209 LBCB B-BESSEL 100.281 science 3 "" PG1338+416 ND_whim ND_whim_pg1338d object 1.03702 nan
+lbcb.20110428.054731.fits.gz lbcb1303969615 55679.24134 LBCB SDT_Uspec 8.28 science 3 "" "SA 104" ND_whim ND_whim_SA104 object 1.19315 nan
+lbcb.20110428.054812.fits.gz lbcb1303969664 55679.24181 LBCB B-BESSEL 3.279 science 3 "" "SA 104" ND_whim ND_whim_SA104 object 1.19326 nan
+lbcb.20110428.054848.fits.gz lbcb1303969699 55679.24222 LBCB SDT_Uspec 8.28 science 3 "" "SA 104" ND_whim ND_whim_SA104 object 1.19332 nan
+lbcb.20110428.054928.fits.gz lbcb1303969740 55679.24269 LBCB B-BESSEL 3.28 science 3 "" "SA 104" ND_whim ND_whim_SA104 object 1.19342 nan
+lbcb.20110428.055003.fits.gz lbcb1303969775 55679.2431 LBCB SDT_Uspec 8.279 science 3 "" "SA 104" ND_whim ND_whim_SA104 object 1.19378 nan
+lbcb.20110428.055044.fits.gz lbcb1303969816 55679.24357 LBCB B-BESSEL 3.279 science 3 "" "SA 104" ND_whim ND_whim_SA104 object 1.19388 nan
+lbcb.20110428.101100.fits.gz lbcb1303985431 55679.42431 LBCB g-SLOAN 20.275 unknown 3 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00309 nan
+lbcb.20110428.101152.fits.gz lbcb1303985484 55679.42492 LBCB g-SLOAN 20.275 unknown 3 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00308 nan
+lbcb.20110428.101245.fits.gz lbcb1303985537 55679.42553 LBCB SDT_Uspec 120.275 unknown 3 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00306 nan
+lbcb.20110428.101525.fits.gz lbcb1303985696 55679.42737 LBCB SDT_Uspec 120.275 unknown 3 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00309 nan
+lbcb.20110428.101803.fits.gz lbcb1303985854 55679.42921 LBCB SDT_Uspec 120.275 unknown 3 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00322 nan
+lbcb.20110428.102044.fits.gz lbcb1303986012 55679.43107 LBCB g-SLOAN 20.275 unknown 3 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00347 nan
+lbcb.20110428.102137.fits.gz lbcb1303986069 55679.43169 LBCB g-SLOAN 20.279 unknown 3 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00353 nan
+lbcb.20110428.102230.fits.gz lbcb1303986122 55679.4323 LBCB SDT_Uspec 120.275 unknown 3 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00365 nan
+lbcb.20110428.102511.fits.gz lbcb1303986282 55679.43417 LBCB SDT_Uspec 120.275 unknown 3 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00403 nan
+lbcb.20110428.102749.fits.gz lbcb1303986439 55679.43599 LBCB SDT_Uspec 120.275 unknown 3 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00452 nan
+lbcb.20110428.103745.fits.gz lbcb1303987032 55679.44289 LBCB g-SLOAN 20.276 unknown 3 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00738 nan
+lbcb.20110428.103838.fits.gz lbcb1303987090 55679.4435 LBCB g-SLOAN 20.273 unknown 3 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00762 nan
+lbcb.20110428.103931.fits.gz lbcb1303987143 55679.44411 LBCB SDT_Uspec 120.276 unknown 3 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.008 nan
+lbcb.20110428.104212.fits.gz lbcb1303987302 55679.44598 LBCB SDT_Uspec 120.274 unknown 3 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.009 nan
+lbcb.20110428.104448.fits.gz lbcb1303987460 55679.44779 LBCB SDT_Uspec 120.276 unknown 3 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.01014 nan
+lbcb.20110428.104726.fits.gz lbcb1303987617 55679.44962 LBCB g-SLOAN 20.273 unknown 3 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.01153 nan
+lbcb.20110428.104820.fits.gz lbcb1303987671 55679.45024 LBCB g-SLOAN 20.276 unknown 3 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.01179 nan
+lbcb.20110428.104915.fits.gz lbcb1303987725 55679.45087 LBCB SDT_Uspec 120.279 unknown 3 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.01231 nan
+lbcb.20110428.105153.fits.gz lbcb1303987885 55679.45271 LBCB SDT_Uspec 120.275 unknown 3 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.01367 nan
+lbcb.20110428.105437.fits.gz lbcb1303988048 55679.4546 LBCB SDT_Uspec 120.273 unknown 3 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.01525 nan
+lbcb.20110429.023249.fits.gz lbcb1304044315 55680.10613 LBCB SDT_Uspec 27.28 flat 4 "" SkyFlat flatcalib SkyFlat_Sz_pa36 flat 1.01394 42171.0
+lbcb.20110429.023349.fits.gz lbcb1304044400 55680.10682 LBCB SDT_Uspec 27.278 flat 4 "" SkyFlat flatcalib SkyFlat_Sz_pa36 flat 1.01452 33811.0
+lbcb.20110429.023449.fits.gz lbcb1304044460 55680.10752 LBCB SDT_Uspec 27.28 flat 4 "" SkyFlat flatcalib SkyFlat_Sz_pa36 flat 1.01514 27375.0
+lbcb.20110429.023549.fits.gz lbcb1304044521 55680.10821 LBCB SDT_Uspec 27.279 flat 4 "" SkyFlat flatcalib SkyFlat_Sz_pa36 flat 1.0157 22361.0
+lbcb.20110429.023649.fits.gz lbcb1304044581 55680.10891 LBCB SDT_Uspec 27.28 flat 4 "" SkyFlat flatcalib SkyFlat_Sz_pa36 flat 1.01618 18411.0
+lbcb.20110429.103803.fits.gz lbcb1304073443 55680.4431 LBCB SDT_Uspec 500.275 science 4 "" PG1522+101 ND_whim ND_whim_pg1522a object 1.29973 nan
+lbcb.20110429.104705.fits.gz lbcb1304073996 55680.44937 LBCB B-BESSEL 70.273 science 4 "" PG1522+101 ND_whim ND_whim_pg1522a object 1.33311 nan
+lbcb.20110429.104857.fits.gz lbcb1304074102 55680.45067 LBCB SDT_Uspec 500.274 science 4 "" PG1522+101 ND_whim ND_whim_pg1522a object 1.34112 nan
+lbcb.20110429.110027.fits.gz lbcb1304074792 55680.45865 LBCB SDT_Uspec 500.275 science 4 "" PG1522+101 ND_whim ND_whim_pg1522a object 1.38982 nan
+lbcb.20110429.110924.fits.gz lbcb1304075335 55680.46487 LBCB B-BESSEL 70.272 science 4 "" PG1522+101 ND_whim ND_whim_pg1522a object 1.4332 nan
+lbcb.20110429.111116.fits.gz lbcb1304075441 55680.46616 LBCB SDT_Uspec 500.275 science 4 "" PG1522+101 ND_whim ND_whim_pg1522a object 1.4436 nan
+lbcb.20110429.112014.fits.gz lbcb1304075985 55680.47239 LBCB B-BESSEL 70.272 science 4 "" PG1522+101 ND_whim ND_whim_pg1522a object 1.4918 nan
+lbcr.20110426.023407.fits.gz lbcr1303785225 55677.10703 LBCR I-BESSEL 4.545 flat 5 "" SkyFlat flatcalib SkyFlat_VI_pa180 flat 1.01377 11739.0
+lbcr.20110426.023437.fits.gz lbcr1303785256 55677.10738 LBCR I-BESSEL 4.542 flat 5 "" SkyFlat flatcalib SkyFlat_VI_pa180 flat 1.01404 10432.0
+lbcr.20110426.023519.fits.gz lbcr1303785295 55677.10787 LBCR I-BESSEL 4.546 flat 5 "" SkyFlat flatcalib SkyFlat_VI_pa180 flat 1.01448 8897.0
+lbcr.20110426.023601.fits.gz lbcr1303785334 55677.10835 LBCR I-BESSEL 4.542 flat 5 "" SkyFlat flatcalib SkyFlat_VI_pa180 flat 1.01485 7616.0
+lbcr.20110426.023637.fits.gz lbcr1303785372 55677.10877 LBCR I-BESSEL 4.546 flat 5 "" SkyFlat flatcalib SkyFlat_VI_pa180 flat 1.0151 6612.0
+lbcr.20110427.010004.fits.gz lbcr1303865959 55678.04172 LBCR Y-FAN 0.0 bias 6 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcr.20110427.010028.fits.gz lbcr1303866005 55678.042 LBCR Y-FAN 0.0 bias 6 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcr.20110427.010053.fits.gz lbcr1303866029 55678.04228 LBCR Y-FAN 0.0 bias 6 "" BinoBias biascheck 25Bias_Bino zero 1.0 3.0
+lbcr.20110427.010117.fits.gz lbcr1303866053 55678.04257 LBCR Y-FAN 0.0 bias 6 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110427.010142.fits.gz lbcr1303866078 55678.04285 LBCR Y-FAN 0.0 bias 6 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcr.20110427.010207.fits.gz lbcr1303866103 55678.04314 LBCR Y-FAN 0.0 bias 6 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110427.010232.fits.gz lbcr1303866127 55678.04343 LBCR Y-FAN 0.0 bias 6 "" BinoBias biascheck 25Bias_Bino zero 1.0 3.0
+lbcr.20110427.010257.fits.gz lbcr1303866152 55678.04373 LBCR Y-FAN 0.0 bias 6 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110427.010322.fits.gz lbcr1303866178 55678.04401 LBCR Y-FAN 0.0 bias 6 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110427.010347.fits.gz lbcr1303866203 55678.0443 LBCR Y-FAN 0.0 bias 6 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110427.010411.fits.gz lbcr1303866227 55678.04458 LBCR Y-FAN 0.0 bias 6 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110427.010436.fits.gz lbcr1303866252 55678.04486 LBCR Y-FAN 0.0 bias 6 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110427.010501.fits.gz lbcr1303866277 55678.04515 LBCR Y-FAN 0.0 bias 6 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110427.010525.fits.gz lbcr1303866301 55678.04543 LBCR Y-FAN 0.0 bias 6 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcr.20110427.010549.fits.gz lbcr1303866325 55678.04571 LBCR Y-FAN 0.0 bias 6 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcr.20110427.010614.fits.gz lbcr1303866350 55678.046 LBCR Y-FAN 0.0 bias 6 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110427.010638.fits.gz lbcr1303866374 55678.04628 LBCR Y-FAN 0.0 bias 6 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110427.010702.fits.gz lbcr1303866398 55678.04656 LBCR Y-FAN 0.0 bias 6 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110427.010727.fits.gz lbcr1303866423 55678.04685 LBCR Y-FAN 0.0 bias 6 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110427.010751.fits.gz lbcr1303866448 55678.04713 LBCR Y-FAN 0.0 bias 6 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110427.010816.fits.gz lbcr1303866472 55678.04741 LBCR Y-FAN 0.0 bias 6 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110427.010840.fits.gz lbcr1303866497 55678.04769 LBCR Y-FAN 0.0 bias 6 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110427.010905.fits.gz lbcr1303866521 55678.04798 LBCR Y-FAN 0.0 bias 6 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110427.010930.fits.gz lbcr1303866546 55678.04827 LBCR Y-FAN 0.0 bias 6 "" BinoBias biascheck 25Bias_Bino zero 1.0 3.0
+lbcr.20110427.010954.fits.gz lbcr1303866571 55678.04855 LBCR Y-FAN 0.0 bias 6 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.003332.fits.gz lbcr1303950770 55679.02329 LBCR Y-FAN 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcr.20110428.003356.fits.gz lbcr1303950812 55679.02357 LBCR Y-FAN 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.003420.fits.gz lbcr1303950836 55679.02385 LBCR Y-FAN 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.003445.fits.gz lbcr1303950861 55679.02414 LBCR Y-FAN 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.003509.fits.gz lbcr1303950886 55679.02442 LBCR Y-FAN 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.003534.fits.gz lbcr1303950910 55679.02471 LBCR Y-FAN 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 3.0
+lbcr.20110428.003558.fits.gz lbcr1303950935 55679.02499 LBCR Y-FAN 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.003623.fits.gz lbcr1303950959 55679.02527 LBCR Y-FAN 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.003647.fits.gz lbcr1303950983 55679.02555 LBCR Y-FAN 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 1.0
+lbcr.20110428.003711.fits.gz lbcr1303951007 55679.02583 LBCR Y-FAN 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.003735.fits.gz lbcr1303951031 55679.02611 LBCR Y-FAN 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.003759.fits.gz lbcr1303951056 55679.02639 LBCR Y-FAN 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.003824.fits.gz lbcr1303951080 55679.02667 LBCR Y-FAN 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.003849.fits.gz lbcr1303951104 55679.02696 LBCR Y-FAN 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 3.0
+lbcr.20110428.003913.fits.gz lbcr1303951129 55679.02724 LBCR Y-FAN 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.003937.fits.gz lbcr1303951153 55679.02752 LBCR Y-FAN 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.004001.fits.gz lbcr1303951177 55679.0278 LBCR Y-FAN 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.004026.fits.gz lbcr1303951202 55679.02809 LBCR Y-FAN 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.004051.fits.gz lbcr1303951227 55679.02837 LBCR Y-FAN 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.004115.fits.gz lbcr1303951252 55679.02865 LBCR Y-FAN 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.004139.fits.gz lbcr1303951276 55679.02893 LBCR Y-FAN 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.004204.fits.gz lbcr1303951300 55679.02922 LBCR Y-FAN 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.004228.fits.gz lbcr1303951324 55679.0295 LBCR Y-FAN 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.004252.fits.gz lbcr1303951349 55679.02978 LBCR Y-FAN 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.004317.fits.gz lbcr1303951373 55679.03006 LBCR Y-FAN 0.0 bias 7 "" BinoBias biascheck 25Bias_Bino zero 1.0 0.0
+lbcr.20110428.035930.fits.gz lbcr1303963144 55679.16633 LBCR I-BESSEL 130.23 science 7 "" PG1338+416 ND_whim ND_whim_pg1338a object 1.18528 nan
+lbcr.20110428.040212.fits.gz lbcr1303963308 55679.1682 LBCR I-BESSEL 130.232 science 7 "" PG1338+416 ND_whim ND_whim_pg1338a object 1.17938 nan
+lbcr.20110428.040457.fits.gz lbcr1303963472 55679.17011 LBCR I-BESSEL 130.23 science 7 "" PG1338+416 ND_whim ND_whim_pg1338a object 1.17283 nan
+lbcr.20110428.040742.fits.gz lbcr1303963637 55679.17202 LBCR V-BESSEL 70.232 science 7 "" PG1338+416 ND_whim ND_whim_pg1338a object 1.16629 nan
+lbcr.20110428.041032.fits.gz lbcr1303963804 55679.17399 LBCR I-BESSEL 130.23 science 7 "" PG1338+416 ND_whim ND_whim_pg1338a object 1.15951 nan
+lbcr.20110428.041317.fits.gz lbcr1303963973 55679.1759 LBCR I-BESSEL 130.232 science 7 "" PG1338+416 ND_whim ND_whim_pg1338a object 1.15407 nan
+lbcr.20110428.041606.fits.gz lbcr1303964140 55679.17785 LBCR I-BESSEL 130.23 science 7 "" PG1338+416 ND_whim ND_whim_pg1338a object 1.14808 nan
+lbcr.20110428.041851.fits.gz lbcr1303964307 55679.17976 LBCR V-BESSEL 70.233 science 7 "" PG1338+416 ND_whim ND_whim_pg1338a object 1.14216 nan
+lbcr.20110428.042545.fits.gz lbcr1303964715 55679.18455 LBCR I-BESSEL 130.23 science 7 "" PG1338+416 ND_whim ND_whim_pg1338b object 1.12781 nan
+lbcr.20110428.042828.fits.gz lbcr1303964883 55679.18644 LBCR I-BESSEL 130.232 science 7 "" PG1338+416 ND_whim ND_whim_pg1338b object 1.1232 nan
+lbcr.20110428.043112.fits.gz lbcr1303965047 55679.18834 LBCR I-BESSEL 130.23 science 7 "" PG1338+416 ND_whim ND_whim_pg1338b object 1.11812 nan
+lbcr.20110428.043402.fits.gz lbcr1303965218 55679.19031 LBCR V-BESSEL 70.232 science 7 "" PG1338+416 ND_whim ND_whim_pg1338b object 1.11293 nan
+lbcr.20110428.043642.fits.gz lbcr1303965376 55679.19216 LBCR I-BESSEL 130.23 science 7 "" PG1338+416 ND_whim ND_whim_pg1338b object 1.10795 nan
+lbcr.20110428.043929.fits.gz lbcr1303965543 55679.19409 LBCR I-BESSEL 130.232 science 7 "" PG1338+416 ND_whim ND_whim_pg1338b object 1.1038 nan
+lbcr.20110428.044213.fits.gz lbcr1303965708 55679.19599 LBCR I-BESSEL 130.23 science 7 "" PG1338+416 ND_whim ND_whim_pg1338b object 1.09927 nan
+lbcr.20110428.044456.fits.gz lbcr1303965871 55679.19787 LBCR V-BESSEL 70.233 science 7 "" PG1338+416 ND_whim ND_whim_pg1338b object 1.09487 nan
+lbcr.20110428.044906.fits.gz lbcr1303966120 55679.20076 LBCR I-BESSEL 130.229 science 7 "" PG1338+416 ND_whim ND_whim_pg1338c object 1.08836 nan
+lbcr.20110428.045148.fits.gz lbcr1303966283 55679.20264 LBCR I-BESSEL 130.232 science 7 "" PG1338+416 ND_whim ND_whim_pg1338c object 1.08462 nan
+lbcr.20110428.045432.fits.gz lbcr1303966447 55679.20454 LBCR I-BESSEL 130.23 science 7 "" PG1338+416 ND_whim ND_whim_pg1338c object 1.0807 nan
+lbcr.20110428.045713.fits.gz lbcr1303966609 55679.20641 LBCR V-BESSEL 70.232 science 7 "" PG1338+416 ND_whim ND_whim_pg1338c object 1.07688 nan
+lbcr.20110428.050004.fits.gz lbcr1303966778 55679.20838 LBCR I-BESSEL 130.23 science 7 "" PG1338+416 ND_whim ND_whim_pg1338c object 1.07287 nan
+lbcr.20110428.050248.fits.gz lbcr1303966943 55679.21028 LBCR I-BESSEL 130.233 science 7 "" PG1338+416 ND_whim ND_whim_pg1338c object 1.06967 nan
+lbcr.20110428.050533.fits.gz lbcr1303967109 55679.21219 LBCR I-BESSEL 130.23 science 7 "" PG1338+416 ND_whim ND_whim_pg1338c object 1.06624 nan
+lbcr.20110428.050817.fits.gz lbcr1303967273 55679.21409 LBCR V-BESSEL 70.233 science 7 "" PG1338+416 ND_whim ND_whim_pg1338c object 1.06286 nan
+lbcr.20110428.051755.fits.gz lbcr1303967847 55679.22078 LBCR V-BESSEL 101.54 science 7 "" PG1338+416 ND_whim ND_whim_pg1338d object 1.05178 nan
+lbcr.20110428.052008.fits.gz lbcr1303967984 55679.22232 LBCR V-BESSEL 101.543 science 7 "" PG1338+416 ND_whim ND_whim_pg1338d object 1.04979 nan
+lbcr.20110428.052224.fits.gz lbcr1303968119 55679.22389 LBCR V-BESSEL 101.541 science 7 "" PG1338+416 ND_whim ND_whim_pg1338d object 1.04752 nan
+lbcr.20110428.052438.fits.gz lbcr1303968254 55679.22545 LBCR V-BESSEL 101.544 science 7 "" PG1338+416 ND_whim ND_whim_pg1338d object 1.04535 nan
+lbcr.20110428.052703.fits.gz lbcr1303968400 55679.22712 LBCR V-BESSEL 101.541 science 7 "" PG1338+416 ND_whim ND_whim_pg1338d object 1.04291 nan
+lbcr.20110428.052919.fits.gz lbcr1303968534 55679.22869 LBCR V-BESSEL 101.544 science 7 "" PG1338+416 ND_whim ND_whim_pg1338d object 1.04112 nan
+lbcr.20110428.053134.fits.gz lbcr1303968670 55679.23026 LBCR V-BESSEL 101.541 science 7 "" PG1338+416 ND_whim ND_whim_pg1338d object 1.03912 nan
+lbcr.20110428.053355.fits.gz lbcr1303968811 55679.2319 LBCR V-BESSEL 101.544 science 7 "" PG1338+416 ND_whim ND_whim_pg1338d object 1.03721 nan
+lbcr.20110428.054721.fits.gz lbcr1303969615 55679.24122 LBCR V-BESSEL 4.541 science 7 "" "SA 104" ND_whim ND_whim_SA104 object 1.19313 nan
+lbcr.20110428.054752.fits.gz lbcr1303969649 55679.24158 LBCR I-BESSEL 2.234 science 7 "" "SA 104" ND_whim ND_whim_SA104 object 1.19319 nan
+lbcr.20110428.054844.fits.gz lbcr1303969699 55679.24218 LBCR V-BESSEL 4.541 science 7 "" "SA 104" ND_whim ND_whim_SA104 object 1.1933 nan
+lbcr.20110428.054915.fits.gz lbcr1303969731 55679.24254 LBCR I-BESSEL 2.234 science 7 "" "SA 104" ND_whim ND_whim_SA104 object 1.19337 nan
+lbcr.20110428.055001.fits.gz lbcr1303969775 55679.24307 LBCR V-BESSEL 4.541 science 7 "" "SA 104" ND_whim ND_whim_SA104 object 1.19377 nan
+lbcr.20110428.055032.fits.gz lbcr1303969808 55679.24343 LBCR I-BESSEL 2.235 science 7 "" "SA 104" ND_whim ND_whim_SA104 object 1.19383 nan
+lbcr.20110428.101056.fits.gz lbcr1303985431 55679.42426 LBCR r-SLOAN 20.232 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00309 nan
+lbcr.20110428.101144.fits.gz lbcr1303985480 55679.42482 LBCR r-SLOAN 20.235 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00308 nan
+lbcr.20110428.101232.fits.gz lbcr1303985529 55679.42538 LBCR r-SLOAN 20.231 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00307 nan
+lbcr.20110428.101321.fits.gz lbcr1303985577 55679.42594 LBCR r-SLOAN 20.235 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00306 nan
+lbcr.20110428.101409.fits.gz lbcr1303985626 55679.4265 LBCR i-SLOAN 25.231 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00307 nan
+lbcr.20110428.101503.fits.gz lbcr1303985679 55679.42712 LBCR i-SLOAN 25.235 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00309 nan
+lbcr.20110428.101556.fits.gz lbcr1303985733 55679.42774 LBCR i-SLOAN 25.232 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00311 nan
+lbcr.20110428.101651.fits.gz lbcr1303985787 55679.42838 LBCR i-SLOAN 25.235 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00315 nan
+lbcr.20110428.102041.fits.gz lbcr1303986012 55679.43104 LBCR r-SLOAN 20.231 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00346 nan
+lbcr.20110428.102129.fits.gz lbcr1303986066 55679.43159 LBCR r-SLOAN 20.235 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00352 nan
+lbcr.20110428.102218.fits.gz lbcr1303986114 55679.43216 LBCR r-SLOAN 20.232 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00362 nan
+lbcr.20110428.102306.fits.gz lbcr1303986163 55679.43272 LBCR r-SLOAN 20.235 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00372 nan
+lbcr.20110428.102355.fits.gz lbcr1303986211 55679.43328 LBCR i-SLOAN 25.232 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00385 nan
+lbcr.20110428.102448.fits.gz lbcr1303986265 55679.4339 LBCR i-SLOAN 25.235 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00399 nan
+lbcr.20110428.102542.fits.gz lbcr1303986318 55679.43452 LBCR i-SLOAN 25.232 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00414 nan
+lbcr.20110428.102635.fits.gz lbcr1303986372 55679.43514 LBCR i-SLOAN 25.235 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00431 nan
+lbcr.20110428.103738.fits.gz lbcr1303987032 55679.44281 LBCR r-SLOAN 20.235 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00738 nan
+lbcr.20110428.103826.fits.gz lbcr1303987083 55679.44337 LBCR r-SLOAN 20.233 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00759 nan
+lbcr.20110428.103915.fits.gz lbcr1303987131 55679.44393 LBCR r-SLOAN 20.235 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00789 nan
+lbcr.20110428.104003.fits.gz lbcr1303987180 55679.44449 LBCR r-SLOAN 20.233 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00818 nan
+lbcr.20110428.104052.fits.gz lbcr1303987228 55679.44505 LBCR i-SLOAN 25.235 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00852 nan
+lbcr.20110428.104145.fits.gz lbcr1303987282 55679.44567 LBCR i-SLOAN 25.232 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00886 nan
+lbcr.20110428.104239.fits.gz lbcr1303987335 55679.44629 LBCR i-SLOAN 25.235 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00923 nan
+lbcr.20110428.104333.fits.gz lbcr1303987389 55679.44692 LBCR i-SLOAN 25.232 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.00963 nan
+lbcr.20110428.104724.fits.gz lbcr1303987617 55679.44958 LBCR r-SLOAN 20.235 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.01149 nan
+lbcr.20110428.104813.fits.gz lbcr1303987669 55679.45015 LBCR r-SLOAN 20.232 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.01176 nan
+lbcr.20110428.104901.fits.gz lbcr1303987717 55679.45071 LBCR r-SLOAN 20.235 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.01218 nan
+lbcr.20110428.104950.fits.gz lbcr1303987766 55679.45128 LBCR r-SLOAN 20.232 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.01264 nan
+lbcr.20110428.105040.fits.gz lbcr1303987815 55679.45186 LBCR i-SLOAN 25.235 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.01308 nan
+lbcr.20110428.105133.fits.gz lbcr1303987870 55679.45248 LBCR i-SLOAN 25.232 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.01353 nan
+lbcr.20110428.105227.fits.gz lbcr1303987923 55679.4531 LBCR i-SLOAN 25.235 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.01402 nan
+lbcr.20110428.105320.fits.gz lbcr1303987977 55679.45371 LBCR i-SLOAN 25.232 unknown 7 "" J1717+2814 ND_LLS ND_LLS_j1717a "" 1.01457 nan
+lbcr.20110428.115926.fits.gz lbcr1303991943 55679.49962 LBCR I-BESSEL 7.547 flat 7 "" SkyFlat flatcalib SkyFlat_VI_pa90 flat 1.0612 28836.0
+lbcr.20110428.120000.fits.gz lbcr1303991977 55679.50001 LBCR I-BESSEL 7.543 flat 7 "" SkyFlat flatcalib SkyFlat_VI_pa90 flat 1.06202 32852.0
+lbcr.20110428.120040.fits.gz lbcr1303992017 55679.50047 LBCR I-BESSEL 7.548 flat 7 "" SkyFlat flatcalib SkyFlat_VI_pa90 flat 1.06303 38399.0
+lbcr.20110428.120132.fits.gz lbcr1303992071 55679.50107 LBCR I-BESSEL 2.232 flat 7 "" SkyFlat flatcalib SkyFlat_VI_pa90 flat 1.06397 16088.0
+lbcr.20110428.120203.fits.gz lbcr1303992098 55679.50143 LBCR I-BESSEL 2.237 flat 7 "" SkyFlat flatcalib SkyFlat_VI_pa90 flat 1.06482 18244.0
+lbcr.20110429.024753.fits.gz lbcr1304045241 55680.11659 LBCR V-BESSEL 5.23 flat 8 "" SkyFlat flatcalib SkyFlat_VV_pa135 flat 1.0199 1305.0
+lbcr.20110429.024828.fits.gz lbcr1304045283 55680.11699 LBCR V-BESSEL 5.235 flat 8 "" SkyFlat flatcalib SkyFlat_VV_pa135 flat 1.02037 1196.0
+lbcr.20110429.024902.fits.gz lbcr1304045317 55680.11739 LBCR V-BESSEL 5.231 flat 8 "" SkyFlat flatcalib SkyFlat_VV_pa135 flat 1.0209 1097.0
+lbcr.20110429.024935.fits.gz lbcr1304045352 55680.11777 LBCR V-BESSEL 5.235 flat 8 "" SkyFlat flatcalib SkyFlat_VV_pa135 flat 1.02129 1013.0
+lbcr.20110429.025011.fits.gz lbcr1304045390 55680.11818 LBCR V-BESSEL 5.231 flat 8 "" SkyFlat flatcalib SkyFlat_VV_pa135 flat 1.02161 928.0
+lbcr.20110429.103750.fits.gz lbcr1304073443 55680.44294 LBCR I-BESSEL 130.237 science 8 "" PG1522+101 ND_whim ND_whim_pg1522a object 1.29937 nan
+lbcr.20110429.104034.fits.gz lbcr1304073610 55680.44485 LBCR I-BESSEL 130.231 science 8 "" PG1522+101 ND_whim ND_whim_pg1522a object 1.30831 nan
+lbcr.20110429.104317.fits.gz lbcr1304073772 55680.44673 LBCR I-BESSEL 130.238 science 8 "" PG1522+101 ND_whim ND_whim_pg1522a object 1.3182 nan
+lbcr.20110429.104603.fits.gz lbcr1304073939 55680.44865 LBCR V-BESSEL 70.231 science 8 "" PG1522+101 ND_whim ND_whim_pg1522a object 1.32918 nan
+lbcr.20110429.104851.fits.gz lbcr1304074102 55680.45059 LBCR I-BESSEL 130.238 science 8 "" PG1522+101 ND_whim ND_whim_pg1522a object 1.34071 nan
+lbcr.20110429.105136.fits.gz lbcr1304074272 55680.45251 LBCR I-BESSEL 130.231 science 8 "" PG1522+101 ND_whim ND_whim_pg1522a object 1.3509 nan
+lbcr.20110429.105422.fits.gz lbcr1304074437 55680.45442 LBCR I-BESSEL 130.237 science 8 "" PG1522+101 ND_whim ND_whim_pg1522a object 1.36259 nan
+lbcr.20110429.105709.fits.gz lbcr1304074605 55680.45636 LBCR V-BESSEL 70.231 science 8 "" PG1522+101 ND_whim ND_whim_pg1522a object 1.3748 nan
+lbcr.20110429.110017.fits.gz lbcr1304074792 55680.45853 LBCR I-BESSEL 130.238 science 8 "" PG1522+101 ND_whim ND_whim_pg1522a object 1.3895 nan
+lbcr.20110429.110259.fits.gz lbcr1304074955 55680.46041 LBCR I-BESSEL 130.231 science 8 "" PG1522+101 ND_whim ND_whim_pg1522a object 1.40135 nan
+lbcr.20110429.110545.fits.gz lbcr1304075120 55680.46233 LBCR I-BESSEL 130.237 science 8 "" PG1522+101 ND_whim ND_whim_pg1522a object 1.41451 nan
+lbcr.20110429.110833.fits.gz lbcr1304075289 55680.46428 LBCR V-BESSEL 70.231 science 8 "" PG1522+101 ND_whim ND_whim_pg1522a object 1.42884 nan
+lbcr.20110429.111110.fits.gz lbcr1304075441 55680.4661 LBCR I-BESSEL 130.237 science 8 "" PG1522+101 ND_whim ND_whim_pg1522a object 1.44317 nan
+lbcr.20110429.111356.fits.gz lbcr1304075611 55680.46801 LBCR I-BESSEL 130.231 science 8 "" PG1522+101 ND_whim ND_whim_pg1522a object 1.45619 nan
+lbcr.20110429.111641.fits.gz lbcr1304075776 55680.46992 LBCR I-BESSEL 130.237 science 8 "" PG1522+101 ND_whim ND_whim_pg1522a object 1.47136 nan
+lbcr.20110429.111926.fits.gz lbcr1304075941 55680.47183 LBCR V-BESSEL 70.231 science 8 "" PG1522+101 ND_whim ND_whim_pg1522a object 1.48725 nan
+lbcr.20110429.115127.fits.gz lbcr1304077822 55680.49407 LBCR V-BESSEL 5.23 flat 8 "" SkyFlat flatcalib SkyFlat_VV_pa135 flat 1.01877 3640.0
+lbcr.20110429.115201.fits.gz lbcr1304077899 55680.49447 LBCR V-BESSEL 5.237 flat 8 "" SkyFlat flatcalib SkyFlat_VV_pa135 flat 1.01809 4019.0
+lbcr.20110429.115238.fits.gz lbcr1304077938 55680.49489 LBCR V-BESSEL 5.23 flat 8 "" SkyFlat flatcalib SkyFlat_VV_pa135 flat 1.01779 4465.0
+lbcr.20110429.115321.fits.gz lbcr1304077975 55680.49539 LBCR V-BESSEL 5.236 flat 8 "" SkyFlat flatcalib SkyFlat_VV_pa135 flat 1.01735 5088.0
+lbcr.20110429.115356.fits.gz lbcr1304078013 55680.49579 LBCR V-BESSEL 5.23 flat 8 "" SkyFlat flatcalib SkyFlat_VV_pa135 flat 1.01715 5656.0
+lbcr.20110429.115522.fits.gz lbcr1304078100 55680.49679 LBCR V-BESSEL 10.236 flat 8 "" SkyFlat flatcalib SkyFlat_VV_pa135 flat 1.01649 14924.0
+lbcr.20110429.115601.fits.gz lbcr1304078137 55680.49724 LBCR V-BESSEL 10.23 flat 8 "" SkyFlat flatcalib SkyFlat_VV_pa135 flat 1.01629 16984.0
+lbcr.20110429.115640.fits.gz lbcr1304078179 55680.49769 LBCR V-BESSEL 10.236 flat 8 "" SkyFlat flatcalib SkyFlat_VV_pa135 flat 1.01581 19400.0
+lbcr.20110429.115726.fits.gz lbcr1304078221 55680.49822 LBCR V-BESSEL 10.23 flat 8 "" SkyFlat flatcalib SkyFlat_VV_pa135 flat 1.01548 22801.0
+lbcr.20110429.115809.fits.gz lbcr1304078264 55680.49872 LBCR V-BESSEL 10.236 flat 8 "" SkyFlat flatcalib SkyFlat_VV_pa135 flat 1.01525 26748.0
