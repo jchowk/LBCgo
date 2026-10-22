@@ -19,6 +19,7 @@ from ccdproc import  ImageFileCollection,CCDData
 from .lbcregister import *
 from . import masks as lbcmasks
 from . import detector as lbcdetector
+from .headers import HeaderCollection, read_primary_header
 from ccdproc.utils.slices import slice_from_string
 
 
@@ -111,7 +112,7 @@ def go_overscan(image_collection,
 
     Parameters
     ----------
-    image_collection : ccdproc.ImageFileCollection
+    image_collection : LBCgo.headers.HeaderCollection or ccdproc.ImageFileCollection
         Collection of raw LBC FITS files.
     lbc_chips : bool or list of int, optional
         Chips to process. If True, processes all 4 chips. Default: True
@@ -165,7 +166,7 @@ def go_overscan(image_collection,
 
         # Set up the output HDU list
         # Capture the 0th header
-        base_header = fits.getheader(os.path.join(raw_directory, filename))
+        base_header = read_primary_header(os.path.join(raw_directory, filename))
         master_hdu = fits.PrimaryHDU(header=base_header)
         # Start output HDU list:
         output_hdu = fits.HDUList([master_hdu])
@@ -267,7 +268,7 @@ def make_bias(image_collection,
 
     Parameters
     ----------
-    image_collection : ccdproc.ImageFileCollection
+    image_collection : LBCgo.headers.HeaderCollection or ccdproc.ImageFileCollection
         Collection containing raw bias frames (``IMAGETYP=zero``).
     bias_filename : str or None, optional
         Output filename for the master bias. Default: ``'zero.fits'``
@@ -316,7 +317,7 @@ def make_bias(image_collection,
 
             # Set up the output HDU list
             # Capture the 0th header
-            base_header = fits.getheader(os.path.join(raw_directory, filename))
+            base_header = read_primary_header(os.path.join(raw_directory, filename))
             master_hdu = fits.PrimaryHDU(header=base_header)
             # Start output HDU list:
             output_hdu = fits.HDUList([master_hdu])
@@ -389,7 +390,7 @@ def go_bias(image_collection, bias_file=None,
 
     Parameters
     ----------
-    image_collection : ccdproc.ImageFileCollection or list of str
+    image_collection : HeaderCollection, ccdproc.ImageFileCollection or list of str
         Collection or list of filenames for the overscan-corrected object frames.
     bias_file : str or None, optional
         Filename of the master bias. Default: ``'zero.fits'``
@@ -419,8 +420,8 @@ def go_bias(image_collection, bias_file=None,
         lbc_chips = [1,2,3,4]
 
     # Process the input data list
-    if isinstance(image_collection,ImageFileCollection):
-        # image_collection is a CCDPROC-style ImageFileCollection
+    if isinstance(image_collection,(ImageFileCollection,HeaderCollection)):
+        # image_collection is a HeaderCollection or CCDPROC ImageFileCollection
         image_files = image_collection.files
     elif isinstance(image_collection,list):
         # image_collection is a list of filenames.
@@ -491,6 +492,22 @@ def go_bias(image_collection, bias_file=None,
         return zero_corrected
 
 
+def flat_norm_section(shape, fraction=0.5):
+    """Slices selecting the central `fraction` of an image in each axis.
+
+    Used to normalise flats before combining. The box follows the chip
+    shape, so it stays on the chip for partial readouts and small test
+    images (for a trimmed 4608 x 2048 LBC chip: rows 1152:3456, columns
+    512:1536). Each side is at least one pixel.
+    """
+    section = []
+    for n in shape:
+        size = max(1, int(round(n * fraction)))
+        start = (n - size) // 2
+        section.append(slice(start, start + size))
+    return tuple(section)
+
+
 def make_flatfield(image_collection,
                    filter_name=None,
                    lbc_chips = True,
@@ -502,13 +519,14 @@ def make_flatfield(image_collection,
 
     Overscan-subtracts and trims each sky flat (``IMAGETYP=flat``,
     ``OBJECT=SkyFlat``), rejects frames with mean counts above 55,000 ADU as
-    saturated, normalises the remaining frames to a common level, and
+    saturated, normalises the remaining frames to a common level (the
+    central half of the chip in each axis, `flat_norm_section`), and
     median-combines with 3-sigma clipping. The number of combined frames is
     stored as ``NCOMBINE`` in the primary header.
 
     Parameters
     ----------
-    image_collection : ccdproc.ImageFileCollection
+    image_collection : LBCgo.headers.HeaderCollection or ccdproc.ImageFileCollection
         Collection containing raw sky flat frames.
     filter_name : str or None, optional
         Filter to process. If None, uses the first filter found in the
@@ -572,7 +590,7 @@ def make_flatfield(image_collection,
         if filename == flt_files[0]:
             # Set up the output HDU list
             # Capture the 0th header
-            base_header = fits.getheader(os.path.join(raw_directory, filename))
+            base_header = read_primary_header(os.path.join(raw_directory, filename))
             master_hdu = fits.PrimaryHDU(header=base_header)
 
             # Start output HDU list:
@@ -640,7 +658,8 @@ def make_flatfield(image_collection,
         flat_scale = []
         for j in np.arange(num_flat_images[chip-1]):
             # Select section in middle of chip. No need to do whole chip.
-            section = chip_list[j].data[500:1500,2000:2500]
+            section = chip_list[j].data[flat_norm_section(
+                                            chip_list[j].data.shape)]
             flat_scale.append(np.average(1./section))
 
         # TODO Weight the images to avoid adding too much noise. Prob weight by inverse sqrt.
@@ -743,7 +762,7 @@ def go_flatfield(image_collection,
 
     Parameters
     ----------
-    image_collection : ccdproc.ImageFileCollection
+    image_collection : LBCgo.headers.HeaderCollection or ccdproc.ImageFileCollection
         Collection of bias-corrected (or overscan-only) object frames.
     flat_file : str or None, optional
         Override flat filename. If None, expects ``flat.<filter>.fits``
@@ -1024,7 +1043,7 @@ def make_targetdirectories(image_collection,
 
     Parameters
     ----------
-    image_collection : ccdproc.ImageFileCollection
+    image_collection : LBCgo.headers.HeaderCollection or ccdproc.ImageFileCollection
         Collection of flat-fielded object frames to organise.
     image_directory : str, optional
         Root output directory under which target subdirectories are created.
@@ -1084,9 +1103,9 @@ def make_targetdirectories(image_collection,
 
         # The following should select only the filters appropriate for this object:
         keywds = ['object','filter']
-        image_collectionObj = ImageFileCollection(dirname, keywords=keywds,
-                            filenames = \
-                            (image_collection.files_filtered(object=obj.replace('+','\+').replace('-','\-'))).tolist())
+        image_collectionObj = HeaderCollection(dirname, keywords=keywds,
+                            filenames=image_collection.files_filtered(
+                                object=obj).tolist())
 
 
         # Now select the unique filters for this objects
@@ -1165,7 +1184,7 @@ def go_extractchips(filter_directories,
     datadir = os.path.join(image_directory, 'data')
     os.makedirs(datadir, exist_ok=True)
 
-    # ImageFileCollection keywords
+    # Header keywords
     keywds = ['object', 'filter', 'exptime', 'objra', 'objdec']
 
     # Create a list of files to split apart.
@@ -1233,19 +1252,31 @@ def go_extractchips(filter_directories,
     if return_files == True:
         return chip_files
 
-def go_scrub():
+def go_scrub(image_directory='./', verbose=True):
+    """Remove the ``data/`` directory of intermediate files.
 
-    # Remove data/ directory holding _over, _flat files.
-    cmd = 'rm data/'
-    go_cmd = Popen(shlex.split(cmd),
-          close_fds=True)
-    go_cmd.wait()
+    ``data/`` under `image_directory` holds the ``_over`` and ``_flat``
+    multi-extension files (and their mask/weight sidecars) left by
+    `go_flatfield` and `go_extractchips`. The per-chip images, the master
+    flats and the registration products are kept. A ``data`` symlink is
+    left alone.
 
-    # Remove astrometric diagnostic files
-    cmd = 'rm astro*pdf'
-    go_cmd = Popen(shlex.split(cmd),
-          close_fds=True)
-    go_cmd.wait()
+    Parameters
+    ----------
+    image_directory : str, optional
+        Directory that holds ``data/``. Default: './'
+    verbose : bool, optional
+        Print what is removed. Default: True
+    """
+    datadir = os.path.join(image_directory, 'data')
+    if os.path.islink(datadir) or not os.path.isdir(datadir):
+        if verbose:
+            print('go_scrub: no data/ directory to remove in {0}'.format(
+                image_directory))
+        return
+    shutil.rmtree(datadir)
+    if verbose:
+        print('Removed {0}'.format(datadir))
 
 
 def lbcgo(raw_directory='./raw/',
@@ -1311,9 +1342,9 @@ def lbcgo(raw_directory='./raw/',
     verbose : bool, optional
         Print detailed processing information and progress. Default: True
     clean : bool, optional
-        Clean up intermediate files after processing. If True, removes intermediate
-        files and diagnostic outputs. If False, preserves catalog files in 'cat/' 
-        directory for inspection. Default: True
+        Clean up intermediate files after processing. If True, removes the
+        ``data/`` directory of ``_over`` and ``_flat`` files under
+        ``image_directory`` (see `go_scrub`). Default: True
         
     Returns
     -------
@@ -1376,9 +1407,11 @@ def lbcgo(raw_directory='./raw/',
               'airmass', 'HA', 
               'objra', 'objdec']
 
-    ##### Create an ImageFileCollection object to hold the raw data list.    
-    ic0_all = ImageFileCollection(raw_directory, keywords=keywds,
-                                  glob_include=lbc_file_base)
+    ##### Collect the raw data list. HeaderCollection reads only the
+    # keywords above, so raw frames with invalid header cards (e.g. the
+    # 2010-03 LBCB frames' ``PA_PNT = nan``) do not stop the scan.
+    ic0_all = HeaderCollection(raw_directory, keywords=keywds,
+                               glob_include=lbc_file_base)
 
     ### Remove sky flat test images by excluding files with lbcobnam matching 'SkyFlatTest*'
     # Get all files that do NOT match the SkyFlatTest pattern
@@ -1390,8 +1423,8 @@ def lbcgo(raw_directory='./raw/',
             non_test_files.append(file)
     
     # Create final collection with only non-SkyFlatTest files
-    ic0 = ImageFileCollection(raw_directory,
-                              keywords=keywds, filenames=non_test_files)
+    ic0 = HeaderCollection(raw_directory,
+                           keywords=keywds, filenames=non_test_files)
 
     # Exit if (for some reason) no images are found in the raw_directory.
     num_images = np.size(ic0.summary['object'])
@@ -1421,7 +1454,7 @@ def lbcgo(raw_directory='./raw/',
     # TODO: Loop B/R to avoid issues w/V-band from LBCB/LBCR?
     # TODO: Check for co-pointing files
     if filter_names == None:
-        icX = ImageFileCollection(raw_directory,
+        icX = HeaderCollection(raw_directory,
                         keywords=keywds,
                         filenames=(ic0.files_filtered(imagetyp='object')).tolist())
         filter_names = icX.values('filter',unique=True)
@@ -1433,7 +1466,7 @@ def lbcgo(raw_directory='./raw/',
             print('Processing {0} files.'.format(filter))
 
         # List of images in the current filter
-        ic1 = ImageFileCollection(raw_directory,
+        ic1 = HeaderCollection(raw_directory,
                         keywords=keywds,
                         filenames=(ic0.files_filtered(filter=filter)).tolist())
 
@@ -1462,7 +1495,7 @@ def lbcgo(raw_directory='./raw/',
             print('')
 
         # Image collection of object frames overscanned & bias subtracted
-        ic2 = ImageFileCollection(image_directory,
+        ic2 = HeaderCollection(image_directory,
                     keywords=keywds,filenames=overfiles)
 
         # Apply the flatfields
@@ -1474,7 +1507,7 @@ def lbcgo(raw_directory='./raw/',
                                  cosmiccorrect=False)
 
         # Image collection of object frames overscanned & bias subtracted + flattened
-        ic3 = ImageFileCollection(image_directory,
+        ic3 = HeaderCollection(image_directory,
                     keywords=keywds,filenames=flatfiles)
 
 
@@ -1497,10 +1530,8 @@ def lbcgo(raw_directory='./raw/',
 
     # Let's do some clean-up.
     if clean:
-        # We will eventually ...
-        #remove _over, _zero, _flat files.
-        go_scrub()
-        print('')
+        # Remove data/ (_over, _flat files).
+        go_scrub(image_directory=image_directory, verbose=verbose)
     else:
         # We will eventually ...
         # Move _over, _zero, _flat files.

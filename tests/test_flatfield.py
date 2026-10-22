@@ -104,6 +104,78 @@ def test_make_flat_skips_saturated_frames(work_dir, raw_dir):
 
 
 # ---------------------------------------------------------------------------
+# make_flatfield: normalization box follows the chip shape (Stage A4)
+# ---------------------------------------------------------------------------
+
+def test_flat_norm_section_full_chip():
+    """Central half of a trimmed LBC chip (4608 rows x 2048 columns)."""
+    from LBCgo.lbcproc import flat_norm_section
+    rows, cols = flat_norm_section((4608, 2048))
+    assert (rows.start, rows.stop) == (1152, 3456)
+    assert (cols.start, cols.stop) == (512, 1536)
+
+
+@pytest.mark.parametrize('shape', [(50, 80), (51, 79), (3, 2), (1, 1)])
+def test_flat_norm_section_small_shapes(shape):
+    """Non-empty, on the chip, and centred for any shape."""
+    from LBCgo.lbcproc import flat_norm_section
+    section = flat_norm_section(shape)
+    box = np.zeros(shape)[section]
+    assert box.size > 0
+    for sl, n in zip(section, shape):
+        assert 0 <= sl.start < sl.stop <= n
+        # Centred to within one pixel
+        assert abs(sl.start - (n - sl.stop)) <= 1
+
+
+def test_make_flat_normalizes_frames_of_different_level(work_dir, raw_dir):
+    """Flats at 10k, 20k and 40k ADU combine to a master normalized to 1
+    over the central box, with the pixel pattern preserved.
+
+    With the old hard-coded box the section was empty on these chips, so the
+    scale factors (and the master flat) were NaN.
+    """
+    from LBCgo.headers import HeaderCollection
+    from LBCgo.lbcproc import make_flatfield, flat_norm_section
+
+    rng = np.random.default_rng(3)
+    ny, nx = 50, 80
+    # Smooth illumination pattern, asymmetric so that the central box and
+    # the whole chip have different means (~1 %)
+    pattern = (0.9 + 0.2 * (np.arange(nx) / (nx - 1))**2)[None, :] \
+        * np.ones((ny, 1))
+    pattern /= pattern[flat_norm_section(pattern.shape)].mean()
+    noise = 1e-3   # fractional, per pixel
+    for i, level in enumerate([10000., 20000., 40000.], start=1):
+        p = write_lbc_file(raw_dir, f'lbcb.20230101.00050{i}.fits',
+                           imagetyp='flat', filter_name='g-SLOAN',
+                           object_name='SkyFlat', lbcobnam='SkyFlat',
+                           pixel_value=level)
+        with fits.open(p, mode='update') as hdul:
+            for chip in range(1, N_CHIPS + 1):
+                data = hdul[chip].data
+                data[:, :nx] = level * pattern * \
+                    (1 + noise * rng.standard_normal((ny, nx)))
+                data[:, nx:] = 0.0    # flat overscan
+
+    ic = HeaderCollection(str(raw_dir), keywords=LBC_KEYWORDS)
+    make_flatfield(ic, filter_name='g-SLOAN',
+                   image_directory=str(work_dir) + '/',
+                   raw_directory=str(raw_dir) + '/', verbose=False)
+
+    with fits.open(work_dir / 'flat.g-SLOAN.fits') as hdul:
+        assert hdul[0].header['NCOMBINE'] == 3
+        for chip in range(1, N_CHIPS + 1):
+            master = hdul[chip].data.astype(float)
+            assert np.all(np.isfinite(master))
+            # Median of 3 frames: per-pixel error ~ 1.25 * noise; the box
+            # mean of 1/x adds a bias of order noise**2.
+            assert np.abs(master - pattern).max() < 6 * 1.25 * noise
+            box = master[flat_norm_section(master.shape)]
+            assert box.mean() == pytest.approx(1.0, abs=1e-3)
+
+
+# ---------------------------------------------------------------------------
 # make_flatfield: header keywords
 # ---------------------------------------------------------------------------
 
@@ -172,9 +244,7 @@ def test_make_flat_four_chip_extensions(ic_with_flats, work_dir, raw_dir):
 # go_flatfield: output filename
 # ---------------------------------------------------------------------------
 # NOTE: These tests use write_master_flat() to build the master flat directly
-# rather than calling make_flatfield(), because make_flatfield's normalization
-# section (data[500:1500, 2000:2500]) is hardcoded for full LBC chip dimensions
-# and returns an empty array on our small (50×80) synthetic data.
+# rather than calling make_flatfield(), so that the expected flat is exact.
 
 def test_go_flat_output_filename(overscan_files):
     """go_flatfield() output must be named *_flat.fits."""

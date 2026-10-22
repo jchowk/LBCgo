@@ -5,7 +5,7 @@ from subprocess import Popen, DEVNULL
 import shlex
 from glob import glob
 from astropy.io import fits
-from ccdproc import  ImageFileCollection
+from .headers import HeaderCollection
 import astropy.io.votable as votable
 from astropy.table import Table
 import LBCgo
@@ -870,8 +870,8 @@ def go_swarp(inputfiles,
     # Gather some information about the input files
     keywds = ['object', 'filter', 'exptime', 'imagetyp', 'propid', 'lbcobnam',
                   'airmass', 'HA', 'objra', 'objdec']
-    ic_swarp = ImageFileCollection('./', keywords=keywds,
-                                    filenames = inputfiles)
+    ic_swarp = HeaderCollection('./', keywords=keywds,
+                                filenames=inputfiles)
 
     # Check all are the same filter:
     fltrs = ic_swarp.values('filter',unique=True)

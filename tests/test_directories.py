@@ -221,9 +221,8 @@ def test_lbcgo_writes_only_to_image_directory(cwd_dir, out_dir, raw_dir,
                                               ic_with_flats, monkeypatch):
     """Run lbcgo (no astrometry) with an existing flat in image_directory.
 
-    The flat must be found there and reused (make_flatfield's normalization
-    box is hard-coded for full-size LBC chips, so it cannot run on the
-    synthetic data), and every output must land under image_directory.
+    The flat must be found there and reused, and every output must land
+    under image_directory.
     """
     import LBCgo.lbcproc as lbcproc
 

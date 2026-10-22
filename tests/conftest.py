@@ -106,6 +106,26 @@ def write_lbc_file(directory, filename, **kwargs):
     return path
 
 
+def add_unparsable_card(path, keyword='PA_PNT', extensions=(0,)):
+    """Give the headers of `path` an unparsable ``<keyword> = nan`` card.
+
+    Mimics the 2010-03-18 LBCB raw frames, whose unquoted ``PA_PNT = nan``
+    astropy cannot parse (``VerifyError: Unparsable card``). astropy will
+    not write such a card, so a valid placeholder is written and its bytes
+    replaced.
+    """
+    with fits.open(path) as hdul:
+        for ext in extensions:
+            hdul[ext].header[keyword] = 360.186
+        hdul.writeto(path, overwrite=True)
+    good = fits.Card(keyword, 360.186).image.encode('ascii')
+    bad = '{0:8s}= {1:>20s}'.format(keyword, 'nan').ljust(80).encode('ascii')
+    raw = Path(path).read_bytes()
+    assert raw.count(good) == len(extensions)
+    Path(path).write_bytes(raw.replace(good, bad))
+    return path
+
+
 # ---------------------------------------------------------------------------
 # Directory fixtures
 # ---------------------------------------------------------------------------
