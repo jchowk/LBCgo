@@ -58,6 +58,7 @@ lbcproc.lbcgo(data_dir, ...)
 - `LBCgo/lbcproc.py` — main reduction pipeline (~1500 lines)
 - `LBCgo/lbcregister.py` — astrometric registration (~1200 lines; astromatic path, still the default)
 - `LBCgo/detector.py` — per-chip gain/read noise: table lookup (`conf/lbc_detector.ecsv`) plus the photon-transfer measurement (`measure_ptc`, `measure_gain_rdnoise_files`, `summarize_gain_rdnoise`)
+- `LBCgo/headers.py` — `HeaderCollection` (header-keyword scan of a directory, replaces `ccdproc.ImageFileCollection`; tolerates unparsable cards) and `clean_header`/`read_primary_header`
 - `LBCgo/masks.py` — pixel masks and inverse-variance weight maps, written as `<image>.mask.fits` / `<image>.weight.fits` sidecars (`.weight.fits` matches the SExtractor/SWarp `WEIGHT_SUFFIX` default). Saturation is flagged in `lbcproc.go_overscan` on raw ADU.
 - `LBCgo/conf/` — SExtractor/SCAMP/SWARP configs and `lbc_detector.ecsv`
 
@@ -69,7 +70,7 @@ Not part of the installed package. One subdirectory per calibration product *ver
 
 - `run.py` only orchestrates calls into `LBCgo` (logic and tests live in the package). Raw-data path comes from `$LBCGO_RAW` or `--raw`; raw frames are not in git. Template: `gain_rdnoise_example/run.py`. The gain/read-noise drivers are near-identical; only `PARAMS['mjd_start']` differs.
 - Workflow: `python calibration/make_inputs.py $LBCGO_RAW -o inputs_full.ecsv --levels` → edit down to `inputs.ecsv` (each `set` = 2 flats + 2 biases of one channel) → `LBCGO_RAW=... python run.py --box 0` → review `detector_rows.ecsv` → merge into `LBCgo/conf/lbc_detector.ecsv` as a separate, reviewed step (a test checks the merged rows match each product's `detector_rows.ecsv`).
-- Raw frames may have invalid header cards (e.g. `PA_PNT = nan` in 2010-03 LBCB); `ccdproc.ImageFileCollection` fails on these, `make_inputs.py` reads only the needed keywords. `lbcproc.py` still has this problem (see `LBCgo/00ToDo.md`).
+- Raw frames may have invalid header cards (e.g. `PA_PNT = nan` in 2010-03 LBCB); `ccdproc.ImageFileCollection` fails on these. `make_inputs.py` reads only the needed keywords; `lbcproc.py`/`lbcregister.py` use `LBCgo/headers.py` (`HeaderCollection`, `read_primary_header`), not `ImageFileCollection`.
 - Photon-transfer facts: gain rises with flat level (brighter-fatter effect), so product `gain` is the zero-level intercept of a linear fit; use 10,000–30,000 ADU flats; run `gain_sum` on the whole chip (`--box 0`).
 
 ## Planning docs

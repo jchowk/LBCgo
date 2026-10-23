@@ -195,12 +195,25 @@ checks of Phase 0. Each item gets a synthetic unit test where possible and
 is checked on the dataset named.
 
 Stops a real-data run:
-- [ ] **A1. Invalid header cards.** `ccdproc.ImageFileCollection` parses
+- [x] **A1. Invalid header cards.** `ccdproc.ImageFileCollection` parses
       every card, so one bad card (e.g. `PA_PNT = nan` in the 2010-03 LBCB
       frames) kills the scan. Read only the needed keywords with
       `fits.getheader`, as `calibration/make_inputs.py` (`_scan_headers`)
       does, wherever `lbcproc.py` or `lbcregister.py` (`go_swarp` also
       builds a collection) scan frames. Test with a 2010-03 frame.
+      Done: `LBCgo/headers.py` (`HeaderCollection`, the subset of the
+      `ImageFileCollection` API LBCgo uses, reading only the requested
+      keywords; `clean_header`/`read_primary_header`). All scans in
+      `lbcproc.py` and `go_swarp` use it; the raw primary headers copied by
+      `go_overscan`, `make_flatfield` and `make_bias` drop unparsable cards
+      (recorded in HISTORY), since `writeto` refuses them. Not dropped: a
+      bad card in a *chip* header, which `CCDData.read` turns into the
+      string `'nan'` itself. Tested on synthetic frames with the card
+      (`tests/test_headers.py`, end to end through `lbcgo`). **Still to do:**
+      a run on a real 2010-03 frame. Found on the way: the object-name
+      regex escaping in `make_targetdirectories` was escaped again by
+      ccdproc ≥ 2.5, so names with `+`/`-` (e.g. `J1419+4207`) never
+      reached their filter directory; removed.
 - [ ] **A2. Missing or switched-off chips.** Co-pointing or single-chip
       files raise `IndexError` (the code assumes all files have the same
       chips); 2011 data have chip 3 off (V5). Use `LBCCHIP1..4` / the
@@ -211,9 +224,14 @@ Stops a real-data run:
       the whole run, even if other filters are fine. Skip that filter with
       a warning (and its science frames, or process them unflattened only
       on request).
-- [ ] **A4. Flat normalization box.** `make_flatfield` normalizes on a
+- [x] **A4. Flat normalization box.** `make_flatfield` normalizes on a
       hard-coded `data[500:1500, 2000:2500]`; derive the region from the
-      chip shape (also needed for partial readouts, A6).
+      chip shape (also needed for partial readouts, A6). Done:
+      `lbcproc.flat_norm_section`, the central half of the chip in each
+      axis (rows 1152:3456, columns 512:1536 of a trimmed chip). The old
+      box was rows 500:1500 × columns 2000:2048 of a 4608 × 2048 chip, a
+      48-px strip at the chip edge, so real flats were normalized on
+      that strip.
 
 Correctness on real data:
 - [ ] **A5. Epoch for proper motions.** SCAMP's `FIELDS_AVERAGE` needs the
@@ -248,9 +266,17 @@ Correctness on real data:
 - [ ] **A12. Few reference stars (V6).** Check how SCAMP and the QA behave
       with few Gaia stars per chip; the joint solution should carry
       star-poor chips.
-- [ ] **A13. `go_scrub` is a no-op** (`rm data/` lacks `-r`, no glob
+- [x] **A13. `go_scrub` is a no-op** (`rm data/` lacks `-r`, no glob
       expansion, works relative to the cwd). Fix with `shutil`/`pathlib`
       on `image_directory`, so `lbcgo(clean=True)` does what it says.
+      Done: `go_scrub(image_directory)` removes the `_over`/`_zero`/`_flat`
+      files and their sidecars from `<image_directory>/data/`, then
+      `data/` if empty. Not `rmtree`: `data/` can also be the raw
+      directory (`raw_directory='./data'`) or a target directory
+      (`OBJECT = 'data'`). A `data` symlink is left alone. The `rm astro*pdf` step is gone:
+      the pattern matched none of SCAMP's check plots (`astr_*`,
+      `fgroups`, `distort`, …), so they were always kept, and they are QA
+      output.
 - [ ] **A14. Chip 3/4 readout layout** (low priority; PI expects it to
       hold). Confirm from raw headers of
       both cameras that chips 3 and 4 have the same readout layout as chips

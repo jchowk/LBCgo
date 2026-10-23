@@ -2,7 +2,7 @@
 
 - [ ] Identify high background images?
 
-- [ ] Make `lbcproc.py` robust to invalid FITS header cards. `ImageFileCollection` (ccdproc) parses every card in each header, so one bad card kills the whole scan. Known case: the 2010-03-18 LBCB frames (20 files, e.g. `lbcb.20100318.223618.fits.gz`) have an unquoted `PA_PNT = nan`, giving `VerifyError: Unparsable card (PA_PNT)`. `calibration/make_inputs.py` already works around this by reading only the needed keywords with `fits.getheader` (`_scan_headers`). Goal: do the same (or equivalent) wherever `lbcproc.py` / `lbcregister.py` build an `ImageFileCollection` from raw frames, and test with a 2010.03 frame.
+- [x] Make `lbcproc.py` robust to invalid FITS header cards. (Done: `LBCgo/headers.py`; still to run on a real 2010-03 frame.) `ImageFileCollection` (ccdproc) parses every card in each header, so one bad card kills the whole scan. Known case: the 2010-03-18 LBCB frames (20 files, e.g. `lbcb.20100318.223618.fits.gz`) have an unquoted `PA_PNT = nan`, giving `VerifyError: Unparsable card (PA_PNT)`. `calibration/make_inputs.py` already works around this by reading only the needed keywords with `fits.getheader` (`_scan_headers`). Goal: do the same (or equivalent) wherever `lbcproc.py` / `lbcregister.py` build an `ImageFileCollection` from raw frames, and test with a 2010.03 frame.
 
 - [ ] FIXPIX
 - [ ] Auto-identify bad astrometric fits.
@@ -16,9 +16,9 @@
 - [ ] Update to use SourceExtractor++
 - [ ] Consider whether MONTAGE is better than SCAMP+SWARP
 
-- [ ] `go_scrub` is a no-op: `rm data/` lacks `-r`, and `rm astro*pdf` via `Popen` has no shell glob expansion. It also works relative to the cwd; should take `image_directory`. Fixing it means `lbcgo(clean=True)` will actually delete `data/`.
+- [x] `go_scrub` is a no-op: `rm data/` lacks `-r`, and `rm astro*pdf` via `Popen` has no shell glob expansion. It also works relative to the cwd; should take `image_directory`. Fixing it means `lbcgo(clean=True)` will actually delete `data/`.
 
-- [ ] `make_flatfield` normalizes on a hard-coded box (`data[500:1500, 2000:2500]`) sized for full chips; a smaller ROI/readout gives an empty or off-chip region. Derive the box from the chip shape.
+- [x] `make_flatfield` normalizes on a hard-coded box (`data[500:1500, 2000:2500]`) sized for full chips; a smaller ROI/readout gives an empty or off-chip region. Derive the box from the chip shape.
 
 - [ ] Consider Claude's notes on potential concerns:
 ## Design limitations documented in tests (not bugs, but worth knowing)

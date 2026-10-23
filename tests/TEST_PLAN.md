@@ -61,7 +61,7 @@ Use `superpowers:test-driven-development` skill if available.
 **Key pipeline logic details:**
 - `go_overscan`: fits 4th-degree polynomial to overscan, trims, removes `BIASSEC/TRIMSEC/DATASEC/ROTANGLE/PARANGLE/C*A` from each chip header
 - `make_bias`: median-combines with sigma clipping (3σ), adds `NCOMBINE` to header
-- `make_flatfield`: rejects frames with per-chip average > 55000 ADU (saturation); scale factor = `1/median(section[500:1500, 2000:2500])`; returns `None` if no valid flats
+- `make_flatfield`: rejects frames with per-chip average > 55000 ADU (saturation); scale factor = mean of `1/data` over `flat_norm_section(shape)`, the central half of the chip in each axis; returns `None` if no valid flats
 - `go_flatfield`: calls `ccdproc.flat_correct(..., norm_value=np.median(flat))`; moves input files to `data/` after flattening
 - `go_extractchips`: reads chip N from MEF, writes single-chip file; sets `NEXTEND=1`; moves input `*_flat.fits` to `data/`
 - `make_targetdirectories`: strips spaces from OBJECT name for directory; moves files via `Popen('mv ...')`
