@@ -1,7 +1,7 @@
 """Header scanning that tolerates invalid FITS header cards.
 
-Raw LBC frames can carry cards astropy cannot parse (the 2010-03-18 LBCB
-frames have an unquoted ``PA_PNT = nan``). ``ccdproc.ImageFileCollection``
+Raw LBC frames can carry cards astropy cannot parse (e.g. an unquoted
+``PA_PNT = nan``). ``ccdproc.ImageFileCollection``
 parses every card of every header, so one such card stops the whole scan,
 and ``HDUList.writeto`` refuses to write a header that still holds it.
 

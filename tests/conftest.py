@@ -109,8 +109,8 @@ def write_lbc_file(directory, filename, **kwargs):
 def add_unparsable_card(path, keyword='PA_PNT', extensions=(0,)):
     """Give the headers of `path` an unparsable ``<keyword> = nan`` card.
 
-    Mimics the 2010-03-18 LBCB raw frames, whose unquoted ``PA_PNT = nan``
-    astropy cannot parse (``VerifyError: Unparsable card``). astropy will
+    Mimics raw frames with an unquoted ``PA_PNT = nan``, which astropy
+    cannot parse (``VerifyError: Unparsable card``). astropy will
     not write such a card, so a valid placeholder is written and its bytes
     replaced.
     """

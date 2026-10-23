@@ -269,8 +269,11 @@ Correctness on real data:
 - [x] **A13. `go_scrub` is a no-op** (`rm data/` lacks `-r`, no glob
       expansion, works relative to the cwd). Fix with `shutil`/`pathlib`
       on `image_directory`, so `lbcgo(clean=True)` does what it says.
-      Done: `go_scrub(image_directory)` removes `<image_directory>/data/`
-      (a `data` symlink is left alone). The `rm astro*pdf` step is gone:
+      Done: `go_scrub(image_directory)` removes the `_over`/`_zero`/`_flat`
+      files and their sidecars from `<image_directory>/data/`, then
+      `data/` if empty. Not `rmtree`: `data/` can also be the raw
+      directory (`raw_directory='./data'`) or a target directory
+      (`OBJECT = 'data'`). A `data` symlink is left alone. The `rm astro*pdf` step is gone:
       the pattern matched none of SCAMP's check plots (`astr_*`,
       `fgroups`, `distort`, …), so they were always kept, and they are QA
       output.

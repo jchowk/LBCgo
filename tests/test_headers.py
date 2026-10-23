@@ -2,8 +2,8 @@
 Tests for LBCgo/headers.py and for lbcproc on raw frames with an invalid
 header card (astromatic plan Stage A1).
 
-The 2010-03-18 LBCB raw frames carry an unquoted ``PA_PNT = nan``, which
-astropy cannot parse. ccdproc's ImageFileCollection parses every card, so
+Some raw LBC frames carry an unquoted ``PA_PNT = nan``, which astropy
+cannot parse. ccdproc's ImageFileCollection parses every card, so
 one such frame stopped lbcgo before any processing. HeaderCollection reads
 only the requested keywords; clean_header drops unparsable cards before a
 raw header is copied into an output file.

@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import re
 import shlex
 from glob import glob
 
@@ -1252,14 +1253,21 @@ def go_extractchips(filter_directories,
     if return_files == True:
         return chip_files
 
-def go_scrub(image_directory='./', verbose=True):
-    """Remove the ``data/`` directory of intermediate files.
+# Intermediate files that go_flatfield and go_extractchips move into
+# <image_directory>/data/, with their mask/weight sidecars.
+_INTERMEDIATE = re.compile(r'_(over|zero|flat)(\.(mask|weight))?\.fits$')
 
-    ``data/`` under `image_directory` holds the ``_over`` and ``_flat``
-    multi-extension files (and their mask/weight sidecars) left by
-    `go_flatfield` and `go_extractchips`. The per-chip images, the master
-    flats and the registration products are kept. A ``data`` symlink is
-    left alone.
+
+def go_scrub(image_directory='./', verbose=True):
+    """Remove the intermediate files in ``data/``.
+
+    ``data/`` under `image_directory` holds the ``_over``, ``_zero`` and
+    ``_flat`` multi-extension files (and their mask/weight sidecars) left
+    by `go_flatfield` and `go_extractchips`. Only files with those names,
+    directly in ``data/``, are removed, and ``data/`` itself only if it is
+    then empty: ``data/`` can also be the raw directory
+    (``raw_directory='./data'``) or a target directory (``OBJECT =
+    'data'``), whose files are kept. A ``data`` symlink is left alone.
 
     Parameters
     ----------
@@ -1274,9 +1282,18 @@ def go_scrub(image_directory='./', verbose=True):
             print('go_scrub: no data/ directory to remove in {0}'.format(
                 image_directory))
         return
-    shutil.rmtree(datadir)
+    removed = 0
+    for name in sorted(os.listdir(datadir)):
+        path = os.path.join(datadir, name)
+        if _INTERMEDIATE.search(name) and os.path.isfile(path) \
+                and not os.path.islink(path):
+            os.remove(path)
+            removed += 1
+    if not os.listdir(datadir):
+        os.rmdir(datadir)
     if verbose:
-        print('Removed {0}'.format(datadir))
+        print('Removed {0} intermediate files from {1}'.format(removed,
+                                                              datadir))
 
 
 def lbcgo(raw_directory='./raw/',
@@ -1343,8 +1360,9 @@ def lbcgo(raw_directory='./raw/',
         Print detailed processing information and progress. Default: True
     clean : bool, optional
         Clean up intermediate files after processing. If True, removes the
-        ``data/`` directory of ``_over`` and ``_flat`` files under
-        ``image_directory`` (see `go_scrub`). Default: True
+        ``_over``/``_zero``/``_flat`` files from ``data/`` under
+        ``image_directory``, and ``data/`` if it is then empty (see
+        `go_scrub`). Default: True
         
     Returns
     -------
@@ -1408,8 +1426,8 @@ def lbcgo(raw_directory='./raw/',
               'objra', 'objdec']
 
     ##### Collect the raw data list. HeaderCollection reads only the
-    # keywords above, so raw frames with invalid header cards (e.g. the
-    # 2010-03 LBCB frames' ``PA_PNT = nan``) do not stop the scan.
+    # keywords above, so raw frames with invalid header cards (e.g. an
+    # unquoted ``PA_PNT = nan``) do not stop the scan.
     ic0_all = HeaderCollection(raw_directory, keywords=keywds,
                                glob_include=lbc_file_base)
 
