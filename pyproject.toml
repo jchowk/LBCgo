@@ -12,7 +12,10 @@ dependencies = [
     "numpy>=2.0",
     "scipy>=1.13",
     "astropy>=6.1.4",
-    "ccdproc>=2.5.0,<3.0.0"
+    "ccdproc>=2.5.0,<3.0.0",
+    # Not imported by LBCgo; reaches it via ccdproc (reproject,
+    # scikit-image). Floor clears a security advisory (patched in 13.0.0).
+    "pillow>=13.0.0"
 ]
 
 [project.urls]
@@ -23,6 +26,9 @@ docs = [
     "sphinx>=7.0",
     "sphinx-autoapi>=3.0",
     "furo",
+    # Via sphinx -> requests. Floor clears a security advisory (patched in
+    # 2026.10.19).
+    "certifi>=2026.10.19",
 ]
 
 [tool.poetry]
@@ -34,6 +40,7 @@ packages = [{include = "LBCgo"}]
 sphinx = ">=7.0"
 sphinx-autoapi = ">=3.0"
 furo = "*"
+certifi = ">=2026.10.19"
 
 [build-system]
 requires = ["poetry-core>=2.0.0"]
